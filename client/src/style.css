@@ -58,6 +58,8 @@ header.pageHeader { display: flex; justify-content: space-between; align-items: 
 .word { cursor: pointer; border-radius: 5px; padding: 1px 2px; transition: .12s }
 .word:hover, .word:active { background: #e8f0f8; color: #173e64 }
 .word.learned { text-decoration: underline dotted var(--learned); text-underline-offset: 3px }
+.word.compoundPart { border-bottom: 2px dotted var(--accent); padding-bottom: 0 }
+.word.compoundPart.compoundActive { background: #e8f0f8; color: #173e64 }
 .popup { position: fixed; z-index: 50; max-width: min(360px, calc(100vw - 24px)); background: var(--popup); color: var(--popupText); padding: 13px 15px; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,.28); display: none }
 .popup .w { font-weight: 700; font-size: 18px; margin-bottom: 5px }
 .popup .g { font-size: 15px; line-height: 1.65; direction: rtl; text-align: right }

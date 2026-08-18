@@ -1,6 +1,7 @@
 import { api } from '../api.js';
 import { getDictionary, normalizeWord } from '../state.js';
 import { showPopupFor, hidePopup } from '../popup.js';
+import { findSeparableCompounds } from '../separableVerbs.js';
 
 const TOKEN_RE = /[A-Za-zÀ-ÖØ-öø-ÿ'’-]+|[^A-Za-zÀ-ÖØ-öø-ÿ'’-]+/g;
 const NO_GLOSS = 'ترجمهٔ این واژه هنوز در واژه‌نامه وارد نشده است.';
@@ -129,13 +130,31 @@ export async function renderReader(host, bookId) {
     const de = document.createElement('p');
     de.className = 'de';
     const tokens = sentence.de.match(TOKEN_RE) || [];
-    for (const token of tokens) {
+
+    // "teilte ... aus" -> austeilen: a separable-prefix verb split across the
+    // clause. Detected generically (see separableVerbs.js), not per-sentence.
+    const compoundByIndex = new Map();
+    for (const compound of findSeparableCompounds(tokens, dictionary)) {
+      const groupId = `${sentence.num}-${compound.prefixIndex}`;
+      compoundByIndex.set(compound.verbIndex, { ...compound, groupId });
+      compoundByIndex.set(compound.prefixIndex, { ...compound, groupId });
+    }
+
+    tokens.forEach((token, index) => {
       if (/^[A-Za-zÀ-ÖØ-öø-ÿ'’-]+$/.test(token)) {
+        const compound = compoundByIndex.get(index);
+        const effectiveWord = compound ? compound.infinitive : token;
+
         const span = document.createElement('span');
         span.className = 'word';
-        if (clickedWords[normalize(token)]) span.classList.add('learned');
-        span.dataset.word = token;
-        span.dataset.gloss = glossFor(token);
+        if (compound) {
+          span.classList.add('compoundPart');
+          span.dataset.compoundGroup = compound.groupId;
+          span.title = `فعل جدا‌شدنی: ${compound.infinitive}`;
+        }
+        if (clickedWords[normalize(effectiveWord)]) span.classList.add('learned');
+        span.dataset.word = effectiveWord;
+        span.dataset.gloss = compound ? compound.gloss : glossFor(token);
         span.dataset.page = pageNum;
         span.textContent = token;
         span.addEventListener('click', onWordClick);
@@ -143,7 +162,7 @@ export async function renderReader(host, bookId) {
       } else {
         de.appendChild(document.createTextNode(token));
       }
-    }
+    });
     article.appendChild(de);
 
     const fa = document.createElement('p');
@@ -163,6 +182,15 @@ export async function renderReader(host, bookId) {
     const key = normalize(el.dataset.word);
     clickedWords[key] = (clickedWords[key] || 0) + 1;
     el.classList.add('learned');
+
+    // Both halves of a separable verb share one dataset.word (the resolved
+    // infinitive), so mark the other half learned too and highlight the pair.
+    if (el.dataset.compoundGroup) {
+      el.closest('.sentence')
+        ?.querySelectorAll(`.word[data-compound-group="${el.dataset.compoundGroup}"]`)
+        .forEach((span) => span.classList.add('learned', 'compoundActive'));
+    }
+
     api.recordWordClick(bookId, Number(el.dataset.page), el.dataset.word).catch(() => {});
   }
 
