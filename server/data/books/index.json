@@ -1,0 +1,13 @@
+[
+  {
+    "id": "laurie-saunders",
+    "title": "Interactive German–Persian Reader",
+    "language": {
+      "source": "de",
+      "target": "fa"
+    },
+    "pageCount": 9,
+    "firstPage": 7,
+    "lastPage": 15
+  }
+]
