@@ -1,31 +1,31 @@
 import { api } from '../api.js';
 
 export async function renderLibrary(host) {
-  host.innerHTML = '<div class="loading">در حال بارگذاری کتاب‌ها…</div>';
+  host.innerHTML = '<div class="loading">Loading books…</div>';
 
   let books;
   try {
     books = await api.listBooks();
   } catch (err) {
-    host.innerHTML = `<div class="error">دریافت فهرست کتاب‌ها با خطا مواجه شد.<br><small>${err.message}</small></div>`;
+    host.innerHTML = `<div class="error">Failed to load the book list.<br><small>${err.message}</small></div>`;
     return;
   }
 
   if (!books.length) {
     host.innerHTML = `
-      <div class="loading" dir="rtl">
-        هنوز کتابی اضافه نشده است.
+      <div class="loading">
+        No books added yet.
         <br><br>
-        <a class="button" href="#/add">افزودن کتاب</a>
+        <a class="button" href="#/add">Add a book</a>
       </div>
     `;
     return;
   }
 
   host.innerHTML = `
-    <div class="libraryHeader" dir="rtl">
-      <h1>کتابخانه</h1>
-      <a class="button" href="#/add">+ افزودن کتاب</a>
+    <div class="libraryHeader">
+      <h1>Library</h1>
+      <a class="button" href="#/add">+ Add Book</a>
     </div>
     <div class="bookGrid"></div>
   `;
@@ -39,22 +39,21 @@ export async function renderLibrary(host) {
 function renderBookCard(book) {
   const card = document.createElement('div');
   card.className = 'bookCard';
-  card.dir = 'rtl';
   card.innerHTML = `
     <a class="bookCardTitle" href="#/book/${encodeURIComponent(book.id)}">${escapeHtml(book.title)}</a>
     <div class="bookCardMeta">
       ${book.language.source.toUpperCase()} → ${book.language.target.toUpperCase()}
-      · ${book.pageCount} صفحه (${book.firstPage}–${book.lastPage})
+      · ${book.pageCount} pages (${book.firstPage}–${book.lastPage})
     </div>
     <div class="bookCardActions">
-      <button class="linkButton" data-action="rename">✏️ ویرایش نام</button>
-      <a class="linkButton" href="#/book/${encodeURIComponent(book.id)}/add-pages">+ افزودن صفحه</a>
+      <button class="linkButton" data-action="rename">✏️ Edit name</button>
+      <a class="linkButton" href="#/book/${encodeURIComponent(book.id)}/add-pages">+ Add Pages</a>
     </div>
     <div class="renameBox" hidden>
       <input type="text" class="renameInput" value="${escapeAttr(book.title)}">
       <div class="renameActions">
-        <button data-action="save">ذخیره</button>
-        <button data-action="cancel">لغو</button>
+        <button data-action="save">Save</button>
+        <button data-action="cancel">Cancel</button>
       </div>
       <div class="renameStatus"></div>
     </div>
@@ -85,7 +84,7 @@ function renderBookCard(book) {
   saveBtn.onclick = async () => {
     const newTitle = renameInput.value.trim();
     if (!newTitle) {
-      status.textContent = 'نام نمی‌تواند خالی باشد.';
+      status.textContent = 'Name cannot be empty.';
       status.className = 'renameStatus error';
       return;
     }
@@ -98,7 +97,7 @@ function renderBookCard(book) {
       renameBtn.parentElement.hidden = false;
       status.textContent = '';
     } catch (err) {
-      status.textContent = `خطا: ${err.message}`;
+      status.textContent = `Error: ${err.message}`;
       status.className = 'renameStatus error';
     } finally {
       saveBtn.disabled = false;

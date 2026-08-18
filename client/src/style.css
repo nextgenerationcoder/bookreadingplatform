@@ -50,7 +50,7 @@ button:disabled { opacity: .35 }
 .filterInput { width: 100%; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--paper); font-size: 14px; margin: 12px 0 }
 .wordsTableWrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 12px; background: var(--paper) }
 .wordsTable { width: 100%; border-collapse: collapse; font-size: 14px }
-.wordsTable th, .wordsTable td { padding: 10px 12px; text-align: right; border-bottom: 1px solid #eee8dc; white-space: nowrap }
+.wordsTable th, .wordsTable td { padding: 10px 12px; text-align: left; border-bottom: 1px solid #eee8dc; white-space: nowrap }
 .wordsTable th:nth-child(4), .wordsTable td:nth-child(4) { white-space: normal }
 .wordsTable thead th { color: var(--muted); font-weight: 600; font-size: 12px }
 .wordsTable tbody tr:last-child td { border-bottom: none }

@@ -2,7 +2,7 @@ import { api } from '../api.js';
 import { getDictionary, normalizeWord } from '../state.js';
 
 export async function renderMyWords(host) {
-  host.innerHTML = '<div class="loading">در حال بارگذاری واژه‌ها…</div>';
+  host.innerHTML = '<div class="loading">Loading words…</div>';
 
   let clicks, dictionary, books;
   try {
@@ -12,7 +12,7 @@ export async function renderMyWords(host) {
       api.listBooks(),
     ]);
   } catch (err) {
-    host.innerHTML = `<div class="error">دریافت واژه‌ها با خطا مواجه شد.<br><small>${err.message}</small></div>`;
+    host.innerHTML = `<div class="error">Failed to load your words.<br><small>${err.message}</small></div>`;
     return;
   }
 
@@ -20,27 +20,27 @@ export async function renderMyWords(host) {
   const rows = Object.values(clicks).sort((a, b) => b.count - a.count);
 
   host.innerHTML = `
-    <div class="formPage" dir="rtl">
-      <h1>واژه‌های من</h1>
+    <div class="formPage">
+      <h1>My Words</h1>
       <p class="hint">
-        هر واژهٔ آلمانی که در حین مطالعه رویش کلیک کرده‌ای، همراه با تعداد دفعات و اینکه در کدام کتاب/صفحه بوده، اینجا نشان داده می‌شود.
+        Every German word you've tapped while reading shows up here, with how many times and which book/page it was on.
       </p>
-      <input id="filterInput" class="filterInput" type="text" placeholder="جست‌وجوی واژه…" dir="ltr">
+      <input id="filterInput" class="filterInput" type="text" placeholder="Search words…" dir="ltr">
       <div class="wordsTableWrap">
         <table class="wordsTable">
           <thead>
             <tr>
-              <th>واژه</th>
-              <th>معنی</th>
-              <th>تعداد کلیک</th>
-              <th>کتاب‌ها</th>
-              <th>آخرین بار</th>
+              <th>Word</th>
+              <th>Meaning</th>
+              <th>Clicks</th>
+              <th>Books</th>
+              <th>Last Clicked</th>
             </tr>
           </thead>
           <tbody id="wordsBody"></tbody>
         </table>
       </div>
-      <div id="emptyState" class="loading" hidden>هنوز روی هیچ واژه‌ای کلیک نکرده‌ای.</div>
+      <div id="emptyState" class="loading" hidden>You haven't clicked any words yet.</div>
     </div>
   `;
 
@@ -57,8 +57,8 @@ export async function renderMyWords(host) {
     if (!filtered.length) {
       emptyState.hidden = false;
       emptyState.textContent = rows.length
-        ? 'هیچ واژه‌ای با این جست‌وجو پیدا نشد.'
-        : 'هنوز روی هیچ واژه‌ای کلیک نکرده‌ای.';
+        ? 'No words match that search.'
+        : "You haven't clicked any words yet.";
       return;
     }
     emptyState.hidden = true;
@@ -68,11 +68,11 @@ export async function renderMyWords(host) {
       const gloss = dictionary[normalizeWord(row.word)] || '—';
       const bookList = Object.entries(row.books)
         .map(([bookId, info]) => `${titleById[bookId] || bookId} (${info.count})`)
-        .join('، ');
+        .join(', ');
 
       tr.innerHTML = `
         <td dir="ltr" class="wordCell">${escapeHtml(row.word)}</td>
-        <td>${escapeHtml(gloss)}</td>
+        <td dir="rtl">${escapeHtml(gloss)}</td>
         <td>${row.count}</td>
         <td>${escapeHtml(bookList)}</td>
         <td>${formatRelative(row.lastClickedAt)}</td>
@@ -89,12 +89,12 @@ function formatRelative(isoString) {
   const then = new Date(isoString).getTime();
   const diffMs = Date.now() - then;
   const minutes = Math.floor(diffMs / 60000);
-  if (minutes < 1) return 'همین الان';
-  if (minutes < 60) return `${minutes} دقیقه پیش`;
+  if (minutes < 1) return 'just now';
+  if (minutes < 60) return `${minutes} min ago`;
   const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours} ساعت پیش`;
+  if (hours < 24) return `${hours} h ago`;
   const days = Math.floor(hours / 24);
-  return `${days} روز پیش`;
+  return `${days} d ago`;
 }
 
 function escapeHtml(str) {

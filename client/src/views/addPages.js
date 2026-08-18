@@ -13,35 +13,36 @@ CHAPTER: Kapitel 2
 و به همین ترتیب.`;
 
 export async function renderAddPages(host, bookId) {
-  host.innerHTML = '<div class="loading">در حال بارگذاری کتاب…</div>';
+  host.innerHTML = '<div class="loading">Loading book…</div>';
 
   let book;
   try {
     book = await api.getBook(bookId);
   } catch (err) {
-    host.innerHTML = `<div class="error">کتاب پیدا نشد.<br><small>${err.message}</small></div>`;
+    host.innerHTML = `<div class="error">Book not found.<br><small>${err.message}</small></div>`;
     return;
   }
 
   const lastPage = book.pages[book.pages.length - 1]?.page ?? 0;
 
   host.innerHTML = `
-    <div class="formPage" dir="rtl">
-      <a href="#/">← کتابخانه</a>
-      <h1>افزودن صفحه به «${escapeHtml(book.title)}»</h1>
+    <div class="formPage">
+      <a href="#/">← Library</a>
+      <h1>Add pages to "${escapeHtml(book.title)}"</h1>
       <p class="hint">
-        این کتاب تا صفحهٔ ${lastPage} را دارد. متن صفحه‌های جدید را به همان فرمت هر کتاب وارد کن —
-        فقط <code>PAGE</code>، <code>CHAPTER</code> و جمله‌ها، نیازی به تکرار <code>BOOK</code>/<code>TITLE</code> نیست.
-        اگر شمارهٔ صفحه‌ای که قبلاً وجود داشته را دوباره وارد کنی، همان صفحه جایگزین می‌شود (برای تصحیح).
+        This book currently goes up to page ${lastPage}. Paste the new pages in the same format as
+        any book — just <code>PAGE</code>, <code>CHAPTER</code>, and sentences; no need to repeat
+        <code>BOOK</code>/<code>TITLE</code>. If you enter a page number that already exists, that
+        page gets replaced (useful for corrections).
       </p>
       <details class="exampleBox">
-        <summary>نمونهٔ فرمت</summary>
+        <summary>Example format</summary>
         <pre>${EXAMPLE}</pre>
       </details>
       <textarea id="pagesText" dir="ltr" placeholder="${EXAMPLE.replace(/"/g, '&quot;')}"></textarea>
       <div class="formActions">
-        <button id="appendBtn">افزودن صفحه‌ها</button>
-        <a href="#/book/${encodeURIComponent(bookId)}">انصراف</a>
+        <button id="appendBtn">Add Pages</button>
+        <a href="#/book/${encodeURIComponent(bookId)}">Cancel</a>
       </div>
       <div id="appendStatus" class="importStatus"></div>
     </div>
@@ -54,22 +55,22 @@ export async function renderAddPages(host, bookId) {
   btn.onclick = async () => {
     const text = textarea.value.trim();
     if (!text) {
-      status.textContent = 'ابتدا متن صفحه‌های جدید را وارد کن.';
+      status.textContent = 'Enter the new page text first.';
       status.className = 'importStatus error';
       return;
     }
     btn.disabled = true;
-    status.textContent = 'در حال افزودن…';
+    status.textContent = 'Adding…';
     status.className = 'importStatus';
     try {
       const meta = await api.appendToBook(bookId, text);
-      status.textContent = `اضافه شد — «${meta.title}» حالا ${meta.pageCount} صفحه دارد (تا صفحهٔ ${meta.lastPage}).`;
+      status.textContent = `Added — "${meta.title}" now has ${meta.pageCount} pages (up to page ${meta.lastPage}).`;
       status.className = 'importStatus success';
       setTimeout(() => {
         window.location.hash = `#/book/${encodeURIComponent(bookId)}`;
       }, 900);
     } catch (err) {
-      status.textContent = `خطا: ${err.message}`;
+      status.textContent = `Error: ${err.message}`;
       status.className = 'importStatus error';
     } finally {
       btn.disabled = false;

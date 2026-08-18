@@ -18,21 +18,22 @@ CHAPTER: Kapitel 1
 
 export function renderAddBook(host) {
   host.innerHTML = `
-    <div class="formPage" dir="rtl">
-      <h1>افزودن کتاب</h1>
+    <div class="formPage">
+      <h1>Add Book</h1>
       <p class="hint">
-        متن کتاب را به این فرمت وارد کن: هر جمله یک خط آلمانی و زیرش یک خط ترجمهٔ فارسی،
-        صفحه‌ها با <code>PAGE &lt;شماره&gt;</code> و فصل‌ها با <code>CHAPTER: &lt;نام&gt;</code> مشخص می‌شوند.
-        ترجمهٔ تک‌تک کلمات لازم نیست — از واژه‌نامهٔ مشترک به‌صورت خودکار خوانده می‌شود.
+        Paste the book text in this format: one German line per sentence, with its Persian
+        translation on the line below, pages marked with <code>PAGE &lt;number&gt;</code> and
+        chapters with <code>CHAPTER: &lt;name&gt;</code>.
+        You don't need to translate individual words — those come from the shared dictionary automatically.
       </p>
       <details class="exampleBox">
-        <summary>نمونهٔ فرمت</summary>
+        <summary>Example format</summary>
         <pre>${EXAMPLE}</pre>
       </details>
       <textarea id="bookText" dir="ltr" placeholder="${EXAMPLE.replace(/"/g, '&quot;')}"></textarea>
       <div class="formActions">
-        <button id="importBtn">وارد کردن کتاب</button>
-        <a href="#/">انصراف</a>
+        <button id="importBtn">Import Book</button>
+        <a href="#/">Cancel</a>
       </div>
       <div id="importStatus" class="importStatus"></div>
     </div>
@@ -45,22 +46,22 @@ export function renderAddBook(host) {
   btn.onclick = async () => {
     const text = textarea.value.trim();
     if (!text) {
-      status.textContent = 'ابتدا متن کتاب را وارد کن.';
+      status.textContent = 'Enter the book text first.';
       status.className = 'importStatus error';
       return;
     }
     btn.disabled = true;
-    status.textContent = 'در حال وارد کردن…';
+    status.textContent = 'Importing…';
     status.className = 'importStatus';
     try {
       const meta = await api.importBook(text);
-      status.textContent = `«${meta.title}» با موفقیت اضافه شد (${meta.pageCount} صفحه).`;
+      status.textContent = `"${meta.title}" was added successfully (${meta.pageCount} pages).`;
       status.className = 'importStatus success';
       setTimeout(() => {
         window.location.hash = `#/book/${encodeURIComponent(meta.id)}`;
       }, 800);
     } catch (err) {
-      status.textContent = `خطا: ${err.message}`;
+      status.textContent = `Error: ${err.message}`;
       status.className = 'importStatus error';
     } finally {
       btn.disabled = false;

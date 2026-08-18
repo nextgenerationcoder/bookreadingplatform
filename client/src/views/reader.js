@@ -4,10 +4,10 @@ import { showPopupFor, hidePopup } from '../popup.js';
 import { findSeparableCompounds } from '../separableVerbs.js';
 
 const TOKEN_RE = /[A-Za-zÀ-ÖØ-öø-ÿ'’-]+|[^A-Za-zÀ-ÖØ-öø-ÿ'’-]+/g;
-const NO_GLOSS = 'ترجمهٔ این واژه هنوز در واژه‌نامه وارد نشده است.';
+const NO_GLOSS = 'Not yet in the dictionary.';
 
 export async function renderReader(host, bookId) {
-  host.innerHTML = '<div class="loading">در حال بارگذاری کتاب…</div>';
+  host.innerHTML = '<div class="loading">Loading book…</div>';
 
   let book, dictionary, clickedWords;
   try {
@@ -22,7 +22,7 @@ export async function renderReader(host, bookId) {
       Object.entries(clicksRaw).map(([w, v]) => [normalizeWord(w), v.count])
     );
   } catch (err) {
-    host.innerHTML = `<div class="error">بارگذاری کتاب با خطا مواجه شد. مطمئن شوید سرور در حال اجراست.<br><small>${err.message}</small></div>`;
+    host.innerHTML = `<div class="error">Failed to load the book. Make sure the server is running.<br><small>${err.message}</small></div>`;
     return;
   }
 
@@ -46,12 +46,12 @@ export async function renderReader(host, bookId) {
 
   host.innerHTML = `
     <div class="toolbar">
-      <a class="backLink" href="#/">← کتابخانه</a>
-      <button id="prev">← صفحه قبل</button>
-      <button id="next">صفحه بعد →</button>
+      <a class="backLink" href="#/">← Library</a>
+      <button id="prev">← Previous</button>
+      <button id="next">Next →</button>
       <span id="pageIndicator"></span>
     </div>
-    <div class="hint" dir="rtl">روی هر کلمهٔ آلمانی بزن تا معنی آن باز شود. کلمه‌هایی که می‌زنی به‌صورت خودکار ذخیره می‌شوند.</div>
+    <div class="hint">Tap any German word to see its meaning. Words you tap are saved automatically.</div>
     <div id="pageHost"></div>
   `;
 
@@ -88,7 +88,7 @@ export async function renderReader(host, bookId) {
     nextBtn.disabled = pageIndex === book.pages.length - 1;
     const first = book.pages[0].page;
     const last = book.pages[book.pages.length - 1].page;
-    indicator.textContent = `صفحه ${page.page} از ${first}–${last}`;
+    indicator.textContent = `Page ${page.page} of ${first}–${last}`;
 
     pageHost.innerHTML = '';
     const section = document.createElement('section');
@@ -150,7 +150,7 @@ export async function renderReader(host, bookId) {
         if (compound) {
           span.classList.add('compoundPart');
           span.dataset.compoundGroup = compound.groupId;
-          span.title = `فعل جدا‌شدنی: ${compound.infinitive}`;
+          span.title = `Separable verb: ${compound.infinitive}`;
         }
         if (clickedWords[normalize(effectiveWord)]) span.classList.add('learned');
         span.dataset.word = effectiveWord;

@@ -20,12 +20,12 @@ function parseRoute() {
 
 function buildShell() {
   app.innerHTML = `
-    <nav class="topNav" dir="rtl">
-      <a href="#/" class="brand">کتابخوان دوزبانه</a>
+    <nav class="topNav">
+      <a href="#/" class="brand">Bilingual Reader</a>
       <div class="navLinks">
-        <a href="#/">کتابخانه</a>
-        <a href="#/words">واژه‌های من</a>
-        <a href="#/add">+ افزودن کتاب</a>
+        <a href="#/">Library</a>
+        <a href="#/words">My Words</a>
+        <a href="#/add">+ Add Book</a>
       </div>
     </nav>
     <div id="viewHost"></div>
