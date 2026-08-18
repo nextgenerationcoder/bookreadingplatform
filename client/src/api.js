@@ -9,9 +9,18 @@ export function getUserId() {
   return id;
 }
 
+async function extractError(res) {
+  try {
+    const body = await res.json();
+    return body?.error || `${res.status} ${res.statusText}`;
+  } catch {
+    return `${res.status} ${res.statusText}`;
+  }
+}
+
 async function get(url) {
   const res = await fetch(url);
-  if (!res.ok) throw new Error(`GET ${url} failed: ${res.status}`);
+  if (!res.ok) throw new Error(await extractError(res));
   return res.json();
 }
 
@@ -21,13 +30,14 @@ async function post(url, body) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
   });
-  if (!res.ok) throw new Error(`POST ${url} failed: ${res.status}`);
+  if (!res.ok) throw new Error(await extractError(res));
   return res.json();
 }
 
 export const api = {
   listBooks: () => get('/api/books'),
   getBook: (bookId) => get(`/api/books/${bookId}`),
+  importBook: (text) => post('/api/books/import', { text }),
   getDictionary: () => get('/api/dictionary'),
   getProgress: (bookId) => get(`/api/progress/${bookId}?userId=${getUserId()}`),
   setProgress: (bookId, page) =>
