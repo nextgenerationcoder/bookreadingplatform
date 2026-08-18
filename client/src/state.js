@@ -9,6 +9,12 @@ export function getDictionary() {
   return dictionaryPromise;
 }
 
+// Call after importing new dictionary entries so the next read (e.g.
+// navigating back to the reader) picks them up instead of the stale cache.
+export function invalidateDictionaryCache() {
+  dictionaryPromise = null;
+}
+
 export function normalizeWord(word) {
   return word.toLowerCase();
 }

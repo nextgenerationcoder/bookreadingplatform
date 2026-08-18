@@ -51,6 +51,7 @@ export const api = {
   appendToBook: (bookId, text) => post(`/api/books/${bookId}/append`, { text }),
   renameBook: (bookId, title) => patch(`/api/books/${bookId}`, { title }),
   getDictionary: () => get('/api/dictionary'),
+  importDictionary: (text) => post('/api/dictionary/import', { text }),
   getProgress: (bookId) => get(`/api/progress/${bookId}?userId=${getUserId()}`),
   setProgress: (bookId, page) =>
     post(`/api/progress/${bookId}`, { userId: getUserId(), page }),
