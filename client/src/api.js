@@ -34,10 +34,22 @@ async function post(url, body) {
   return res.json();
 }
 
+async function patch(url, body) {
+  const res = await fetch(url, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) throw new Error(await extractError(res));
+  return res.json();
+}
+
 export const api = {
   listBooks: () => get('/api/books'),
   getBook: (bookId) => get(`/api/books/${bookId}`),
   importBook: (text) => post('/api/books/import', { text }),
+  appendToBook: (bookId, text) => post(`/api/books/${bookId}/append`, { text }),
+  renameBook: (bookId, title) => patch(`/api/books/${bookId}`, { title }),
   getDictionary: () => get('/api/dictionary'),
   getProgress: (bookId) => get(`/api/progress/${bookId}?userId=${getUserId()}`),
   setProgress: (bookId, page) =>

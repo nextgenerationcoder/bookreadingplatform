@@ -101,11 +101,8 @@ export function parseBookText(text) {
   };
 }
 
-export async function saveImportedBook(book) {
-  await writeJson(`books/${book.id}.json`, book);
-
-  const index = await readJson('books/index.json', []);
-  const meta = {
+function bookMetaFrom(book) {
+  return {
     id: book.id,
     title: book.title,
     language: book.language,
@@ -113,9 +110,53 @@ export async function saveImportedBook(book) {
     firstPage: book.pages[0]?.page ?? null,
     lastPage: book.pages[book.pages.length - 1]?.page ?? null,
   };
-  const nextIndex = [...index.filter((b) => b.id !== book.id), meta].sort((a, b) =>
+}
+
+async function updateIndex(meta) {
+  const index = await readJson('books/index.json', []);
+  const nextIndex = [...index.filter((b) => b.id !== meta.id), meta].sort((a, b) =>
     a.id.localeCompare(b.id)
   );
   await writeJson('books/index.json', nextIndex);
+}
+
+export async function saveImportedBook(book) {
+  await writeJson(`books/${book.id}.json`, book);
+  const meta = bookMetaFrom(book);
+  await updateIndex(meta);
+  return meta;
+}
+
+// Parses `text` as extra PAGE/CHAPTER/sentence blocks (no BOOK:/TITLE:/LANG:
+// header needed - those are inherited from the existing book) and merges the
+// resulting pages into it: a page number that already exists gets replaced
+// (lets you fix a page), a new page number gets added, then pages are kept
+// sorted by page number.
+export async function appendToBook(bookId, text) {
+  const existing = await readJson(`books/${bookId}.json`, null);
+  if (!existing) throw new Error(`Book "${bookId}" not found`);
+
+  const header = `BOOK: ${existing.id}\nTITLE: ${existing.title}\nLANG: ${existing.language.source} -> ${existing.language.target}\n\n`;
+  const parsed = parseBookText(header + text);
+
+  const pagesByNumber = new Map(existing.pages.map((p) => [p.page, p]));
+  for (const page of parsed.pages) pagesByNumber.set(page.page, page);
+  const mergedPages = [...pagesByNumber.values()].sort((a, b) => a.page - b.page);
+
+  const updated = { ...existing, pages: mergedPages };
+  await writeJson(`books/${bookId}.json`, updated);
+  const meta = bookMetaFrom(updated);
+  await updateIndex(meta);
+  return meta;
+}
+
+export async function renameBook(bookId, title) {
+  const existing = await readJson(`books/${bookId}.json`, null);
+  if (!existing) throw new Error(`Book "${bookId}" not found`);
+
+  const updated = { ...existing, title };
+  await writeJson(`books/${bookId}.json`, updated);
+  const meta = bookMetaFrom(updated);
+  await updateIndex(meta);
   return meta;
 }
