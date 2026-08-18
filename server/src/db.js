@@ -1,0 +1,84 @@
+import Database from 'better-sqlite3';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { promises as fs } from 'node:fs';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
+// DB_PATH lets deployments point at a mounted volume (e.g. Docker) so data
+// survives container rebuilds; defaults to a local file for plain dev use.
+const DB_PATH = process.env.DB_PATH || path.join(__dirname, '..', 'data', 'app.db');
+
+await fs.mkdir(path.dirname(DB_PATH), { recursive: true });
+
+export const db = new Database(DB_PATH);
+db.pragma('journal_mode = WAL');
+db.pragma('foreign_keys = ON');
+
+db.exec(`
+  CREATE TABLE IF NOT EXISTS books (
+    id TEXT PRIMARY KEY,
+    title TEXT NOT NULL,
+    source_lang TEXT NOT NULL,
+    target_lang TEXT NOT NULL
+  );
+
+  CREATE TABLE IF NOT EXISTS pages (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    book_id TEXT NOT NULL REFERENCES books(id) ON DELETE CASCADE,
+    page_number INTEGER NOT NULL,
+    chapter TEXT,
+    UNIQUE (book_id, page_number)
+  );
+
+  CREATE TABLE IF NOT EXISTS sentences (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    page_id INTEGER NOT NULL REFERENCES pages(id) ON DELETE CASCADE,
+    num INTEGER NOT NULL,
+    de TEXT NOT NULL,
+    fa TEXT NOT NULL,
+    chapter TEXT
+  );
+
+  CREATE TABLE IF NOT EXISTS dictionary (
+    word TEXT PRIMARY KEY,
+    gloss TEXT NOT NULL
+  );
+
+  CREATE TABLE IF NOT EXISTS progress (
+    user_id TEXT NOT NULL,
+    book_id TEXT NOT NULL,
+    page INTEGER NOT NULL,
+    updated_at TEXT NOT NULL,
+    PRIMARY KEY (user_id, book_id)
+  );
+
+  CREATE TABLE IF NOT EXISTS word_clicks (
+    user_id TEXT NOT NULL,
+    word TEXT NOT NULL,
+    count INTEGER NOT NULL DEFAULT 0,
+    first_clicked_at TEXT NOT NULL,
+    last_clicked_at TEXT NOT NULL,
+    PRIMARY KEY (user_id, word)
+  );
+
+  CREATE TABLE IF NOT EXISTS word_click_books (
+    user_id TEXT NOT NULL,
+    word TEXT NOT NULL,
+    book_id TEXT NOT NULL,
+    count INTEGER NOT NULL DEFAULT 0,
+    PRIMARY KEY (user_id, word, book_id)
+  );
+
+  CREATE TABLE IF NOT EXISTS word_click_pages (
+    user_id TEXT NOT NULL,
+    word TEXT NOT NULL,
+    book_id TEXT NOT NULL,
+    page INTEGER NOT NULL,
+    count INTEGER NOT NULL DEFAULT 0,
+    PRIMARY KEY (user_id, word, book_id, page)
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_pages_book ON pages(book_id);
+  CREATE INDEX IF NOT EXISTS idx_sentences_page ON sentences(page_id);
+`);

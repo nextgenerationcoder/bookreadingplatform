@@ -1,10 +1,11 @@
 import { Router } from 'express';
-import { readJson } from '../store.js';
+import { db } from '../db.js';
 
 const router = Router();
 
-router.get('/', async (_req, res) => {
-  const dict = await readJson('dictionary.json', {});
+router.get('/', (_req, res) => {
+  const rows = db.prepare('SELECT word, gloss FROM dictionary').all();
+  const dict = Object.fromEntries(rows.map((r) => [r.word, r.gloss]));
   res.json(dict);
 });
 

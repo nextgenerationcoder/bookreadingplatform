@@ -17,7 +17,7 @@
 //   CHAPTER: Kapitel 1
 //   ...
 
-import { writeJson, readJson } from './store.js';
+import { db } from './db.js';
 
 export function parseBookText(text) {
   const lines = text.split(/\r?\n/);
@@ -101,62 +101,98 @@ export function parseBookText(text) {
   };
 }
 
-function bookMetaFrom(book) {
+function bookMeta(bookId) {
+  const book = db.prepare('SELECT id, title, source_lang, target_lang FROM books WHERE id = ?').get(bookId);
+  if (!book) return null;
+  const range = db
+    .prepare('SELECT COUNT(*) AS count, MIN(page_number) AS first, MAX(page_number) AS last FROM pages WHERE book_id = ?')
+    .get(bookId);
   return {
     id: book.id,
     title: book.title,
-    language: book.language,
-    pageCount: book.pages.length,
-    firstPage: book.pages[0]?.page ?? null,
-    lastPage: book.pages[book.pages.length - 1]?.page ?? null,
+    language: { source: book.source_lang, target: book.target_lang },
+    pageCount: range.count,
+    firstPage: range.first,
+    lastPage: range.last,
   };
 }
 
-async function updateIndex(meta) {
-  const index = await readJson('books/index.json', []);
-  const nextIndex = [...index.filter((b) => b.id !== meta.id), meta].sort((a, b) =>
-    a.id.localeCompare(b.id)
+function replacePage(bookId, page) {
+  db.prepare('DELETE FROM pages WHERE book_id = ? AND page_number = ?').run(bookId, page.page);
+  const insertPage = db.prepare(
+    'INSERT INTO pages (book_id, page_number, chapter) VALUES (?, ?, ?)'
   );
-  await writeJson('books/index.json', nextIndex);
+  const { lastInsertRowid: pageId } = insertPage.run(bookId, page.page, page.chapter || null);
+
+  const insertSentence = db.prepare(
+    'INSERT INTO sentences (page_id, num, de, fa, chapter) VALUES (?, ?, ?, ?, ?)'
+  );
+  for (const sentence of page.sentences) {
+    insertSentence.run(pageId, sentence.num, sentence.de, sentence.fa, sentence.chapter || null);
+  }
 }
 
-export async function saveImportedBook(book) {
-  await writeJson(`books/${book.id}.json`, book);
-  const meta = bookMetaFrom(book);
-  await updateIndex(meta);
-  return meta;
+export function saveImportedBook(book) {
+  const tx = db.transaction(() => {
+    db.prepare(
+      `INSERT INTO books (id, title, source_lang, target_lang) VALUES (?, ?, ?, ?)
+       ON CONFLICT(id) DO UPDATE SET title = excluded.title, source_lang = excluded.source_lang, target_lang = excluded.target_lang`
+    ).run(book.id, book.title, book.language.source, book.language.target);
+
+    for (const page of book.pages) replacePage(book.id, page);
+  });
+  tx();
+  return bookMeta(book.id);
 }
 
 // Parses `text` as extra PAGE/CHAPTER/sentence blocks (no BOOK:/TITLE:/LANG:
 // header needed - those are inherited from the existing book) and merges the
 // resulting pages into it: a page number that already exists gets replaced
-// (lets you fix a page), a new page number gets added, then pages are kept
-// sorted by page number.
-export async function appendToBook(bookId, text) {
-  const existing = await readJson(`books/${bookId}.json`, null);
+// (lets you fix a page), a new page number gets added.
+export function appendToBook(bookId, text) {
+  const existing = bookMeta(bookId);
   if (!existing) throw new Error(`Book "${bookId}" not found`);
 
-  const header = `BOOK: ${existing.id}\nTITLE: ${existing.title}\nLANG: ${existing.language.source} -> ${existing.language.target}\n\n`;
+  const header = `BOOK: ${bookId}\nTITLE: ${existing.title}\nLANG: ${existing.language.source} -> ${existing.language.target}\n\n`;
   const parsed = parseBookText(header + text);
 
-  const pagesByNumber = new Map(existing.pages.map((p) => [p.page, p]));
-  for (const page of parsed.pages) pagesByNumber.set(page.page, page);
-  const mergedPages = [...pagesByNumber.values()].sort((a, b) => a.page - b.page);
-
-  const updated = { ...existing, pages: mergedPages };
-  await writeJson(`books/${bookId}.json`, updated);
-  const meta = bookMetaFrom(updated);
-  await updateIndex(meta);
-  return meta;
+  const tx = db.transaction(() => {
+    for (const page of parsed.pages) replacePage(bookId, page);
+  });
+  tx();
+  return bookMeta(bookId);
 }
 
-export async function renameBook(bookId, title) {
-  const existing = await readJson(`books/${bookId}.json`, null);
-  if (!existing) throw new Error(`Book "${bookId}" not found`);
+export function renameBook(bookId, title) {
+  const result = db.prepare('UPDATE books SET title = ? WHERE id = ?').run(title, bookId);
+  if (result.changes === 0) throw new Error(`Book "${bookId}" not found`);
+  return bookMeta(bookId);
+}
 
-  const updated = { ...existing, title };
-  await writeJson(`books/${bookId}.json`, updated);
-  const meta = bookMetaFrom(updated);
-  await updateIndex(meta);
-  return meta;
+export function listBooks() {
+  const ids = db.prepare('SELECT id FROM books ORDER BY id').all();
+  return ids.map((row) => bookMeta(row.id));
+}
+
+export function getBook(bookId) {
+  const meta = bookMeta(bookId);
+  if (!meta) return null;
+
+  const pages = db
+    .prepare('SELECT id, page_number, chapter FROM pages WHERE book_id = ? ORDER BY page_number')
+    .all(bookId);
+  const sentenceStmt = db.prepare(
+    'SELECT num, de, fa, chapter FROM sentences WHERE page_id = ? ORDER BY num'
+  );
+
+  return {
+    id: meta.id,
+    title: meta.title,
+    language: meta.language,
+    pages: pages.map((p) => ({
+      page: p.page_number,
+      chapter: p.chapter,
+      sentences: sentenceStmt.all(p.id),
+    })),
+  };
 }
