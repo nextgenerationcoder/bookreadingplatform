@@ -1,4 +1,6 @@
 import './style.css';
+import { api } from './api.js';
+import { renderAuth } from './views/auth.js';
 import { renderLibrary } from './views/library.js';
 import { renderReader } from './views/reader.js';
 import { renderAddBook } from './views/addBook.js';
@@ -7,6 +9,7 @@ import { renderAddWords } from './views/addWords.js';
 import { renderMyWords } from './views/myWords.js';
 
 const app = document.getElementById('app');
+let currentUser = null;
 
 function parseRoute() {
   const hash = window.location.hash.replace(/^#/, '') || '/';
@@ -30,9 +33,18 @@ function buildShell() {
         <a href="#/add-words">+ Add Words</a>
         <a href="#/add">+ Add Book</a>
       </div>
+      <div class="navUser">
+        <span class="navEmail">${currentUser.email}</span>
+        <button id="logoutBtn" class="linkButton">Log out</button>
+      </div>
     </nav>
     <div id="viewHost"></div>
   `;
+  document.getElementById('logoutBtn').onclick = async () => {
+    await api.logout().catch(() => {});
+    currentUser = null;
+    init();
+  };
 }
 
 function setActiveNav(view) {
@@ -62,6 +74,27 @@ async function route() {
   }
 }
 
-buildShell();
-window.addEventListener('hashchange', route);
-route();
+async function init() {
+  if (!currentUser) {
+    try {
+      currentUser = await api.me();
+    } catch {
+      currentUser = null;
+    }
+  }
+
+  if (!currentUser) {
+    app.innerHTML = '';
+    renderAuth(app, (user) => {
+      currentUser = user;
+      init();
+    });
+    return;
+  }
+
+  buildShell();
+  window.addEventListener('hashchange', route);
+  route();
+}
+
+init();

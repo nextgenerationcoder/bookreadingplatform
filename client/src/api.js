@@ -1,14 +1,3 @@
-const USER_ID_KEY = 'bookPlatformUserId';
-
-export function getUserId() {
-  let id = localStorage.getItem(USER_ID_KEY);
-  if (!id) {
-    id = crypto.randomUUID();
-    localStorage.setItem(USER_ID_KEY, id);
-  }
-  return id;
-}
-
 async function extractError(res) {
   try {
     const body = await res.json();
@@ -18,8 +7,10 @@ async function extractError(res) {
   }
 }
 
+// credentials: 'include' sends/accepts the session cookie so login works the
+// same in dev (client on :5173, API on :4000) and in production (same origin).
 async function get(url) {
-  const res = await fetch(url);
+  const res = await fetch(url, { credentials: 'include' });
   if (!res.ok) throw new Error(await extractError(res));
   return res.json();
 }
@@ -27,6 +18,7 @@ async function get(url) {
 async function post(url, body) {
   const res = await fetch(url, {
     method: 'POST',
+    credentials: 'include',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
   });
@@ -37,6 +29,7 @@ async function post(url, body) {
 async function patch(url, body) {
   const res = await fetch(url, {
     method: 'PATCH',
+    credentials: 'include',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
   });
@@ -45,6 +38,11 @@ async function patch(url, body) {
 }
 
 export const api = {
+  signup: (email, password) => post('/api/auth/signup', { email, password }),
+  login: (email, password) => post('/api/auth/login', { email, password }),
+  logout: () => post('/api/auth/logout', {}),
+  me: () => get('/api/auth/me'),
+
   listBooks: () => get('/api/books'),
   getBook: (bookId) => get(`/api/books/${bookId}`),
   importBook: (text) => post('/api/books/import', { text }),
@@ -52,10 +50,8 @@ export const api = {
   renameBook: (bookId, title) => patch(`/api/books/${bookId}`, { title }),
   getDictionary: () => get('/api/dictionary'),
   importDictionary: (text) => post('/api/dictionary/import', { text }),
-  getProgress: (bookId) => get(`/api/progress/${bookId}?userId=${getUserId()}`),
-  setProgress: (bookId, page) =>
-    post(`/api/progress/${bookId}`, { userId: getUserId(), page }),
-  recordWordClick: (bookId, page, word) =>
-    post('/api/word-clicks', { userId: getUserId(), bookId, page, word }),
-  getWordClicks: () => get(`/api/word-clicks?userId=${getUserId()}`),
+  getProgress: (bookId) => get(`/api/progress/${bookId}`),
+  setProgress: (bookId, page) => post(`/api/progress/${bookId}`, { page }),
+  recordWordClick: (bookId, page, word) => post('/api/word-clicks', { bookId, page, word }),
+  getWordClicks: () => get('/api/word-clicks'),
 };

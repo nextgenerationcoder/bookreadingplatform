@@ -45,6 +45,20 @@ db.exec(`
     gloss TEXT NOT NULL
   );
 
+  CREATE TABLE IF NOT EXISTS users (
+    id TEXT PRIMARY KEY,
+    email TEXT NOT NULL UNIQUE,
+    password_hash TEXT NOT NULL,
+    created_at TEXT NOT NULL
+  );
+
+  CREATE TABLE IF NOT EXISTS sessions (
+    token TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    created_at TEXT NOT NULL,
+    expires_at TEXT NOT NULL
+  );
+
   CREATE TABLE IF NOT EXISTS progress (
     user_id TEXT NOT NULL,
     book_id TEXT NOT NULL,
@@ -81,4 +95,5 @@ db.exec(`
 
   CREATE INDEX IF NOT EXISTS idx_pages_book ON pages(book_id);
   CREATE INDEX IF NOT EXISTS idx_sentences_page ON sentences(page_id);
+  CREATE INDEX IF NOT EXISTS idx_sessions_user ON sessions(user_id);
 `);

@@ -1,9 +1,12 @@
 import express from 'express';
 import cors from 'cors';
+import cookieParser from 'cookie-parser';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { existsSync } from 'node:fs';
 import { seedIfEmpty } from './seed.js';
+import { requireAuth } from './auth.js';
+import authRouter from './routes/auth.js';
 import booksRouter from './routes/books.js';
 import dictionaryRouter from './routes/dictionary.js';
 import progressRouter from './routes/progress.js';
@@ -16,15 +19,24 @@ await seedIfEmpty();
 const app = express();
 const PORT = process.env.PORT || 4000;
 
-app.use(cors());
+// credentials:true is required for the session cookie to be sent/accepted
+// cross-origin (the Vite dev server on :5173 talking to the API on :4000);
+// in production client+server share an origin so this is a no-op there.
+app.use(cors({ origin: true, credentials: true }));
+app.use(cookieParser());
 app.use(express.json());
 
 app.get('/api/health', (_req, res) => res.json({ ok: true }));
 
-app.use('/api/books', booksRouter);
-app.use('/api/dictionary', dictionaryRouter);
-app.use('/api/progress', progressRouter);
-app.use('/api/word-clicks', wordClicksRouter);
+app.use('/api/auth', authRouter);
+
+// Everything below requires a logged-in user: books/dictionary content is
+// shared across all accounts, but only visible to people who've signed in,
+// and progress/word-clicks are scoped per-account inside their own routes.
+app.use('/api/books', requireAuth, booksRouter);
+app.use('/api/dictionary', requireAuth, dictionaryRouter);
+app.use('/api/progress', requireAuth, progressRouter);
+app.use('/api/word-clicks', requireAuth, wordClicksRouter);
 
 // In production the client is built to client/dist and served by this same
 // process, so the whole app is one container behind one port. In local dev

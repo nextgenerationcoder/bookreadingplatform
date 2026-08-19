@@ -12,6 +12,18 @@ a { color: var(--accent); text-decoration: none }
 .navLinks { display: flex; gap: 18px; font-size: 14px }
 .navLinks a { color: var(--muted) }
 .navLinks a.active { color: var(--accent); font-weight: 600 }
+.navUser { display: flex; align-items: center; gap: 12px; font-size: 13px }
+.navEmail { color: var(--muted) }
+
+.authPage { display: flex; justify-content: center; padding: 60px 10px }
+.authCard { width: 100%; max-width: 360px; background: var(--paper); border: 1px solid var(--line); border-radius: 16px; padding: 28px 24px; box-shadow: 0 5px 18px rgba(0,0,0,.05) }
+.authCard h1 { font-size: 20px; margin: 0 0 6px }
+.authCard #authForm { display: flex; flex-direction: column; gap: 14px; margin-top: 18px }
+.authCard label { display: flex; flex-direction: column; gap: 6px; font-size: 13px; color: var(--muted) }
+.authCard input { padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; font-size: 15px; background: var(--paper); color: var(--ink) }
+.authCard button[type="submit"] { margin-top: 4px; border: 1px solid var(--accent); background: var(--accent); color: #fff; padding: 10px 14px; border-radius: 10px; font-size: 15px }
+.authCard button[type="submit"]:disabled { opacity: .5; cursor: default }
+.authSwitch { font-size: 13px; color: var(--muted); margin-top: 16px; text-align: center }
 
 .toolbar { position: sticky; top: 57px; z-index: 5; background: rgba(245,241,232,.94); backdrop-filter: blur(8px); padding: 10px 0 12px; border-bottom: 1px solid var(--line); display: flex; gap: 8px; align-items: center }
 .toolbar .backLink { margin-inline-end: 4px; font-size: 14px; color: var(--muted) }
