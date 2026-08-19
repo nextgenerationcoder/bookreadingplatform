@@ -42,7 +42,8 @@ db.exec(`
 
   CREATE TABLE IF NOT EXISTS dictionary (
     word TEXT PRIMARY KEY,
-    gloss TEXT NOT NULL
+    gloss TEXT NOT NULL,
+    source TEXT NOT NULL DEFAULT 'manual'
   );
 
   CREATE TABLE IF NOT EXISTS users (
@@ -97,3 +98,10 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_sentences_page ON sentences(page_id);
   CREATE INDEX IF NOT EXISTS idx_sessions_user ON sessions(user_id);
 `);
+
+// CREATE TABLE IF NOT EXISTS doesn't add new columns to a table that already
+// exists from before this column was introduced, so patch it in by hand.
+const dictionaryColumns = db.prepare('PRAGMA table_info(dictionary)').all().map((c) => c.name);
+if (!dictionaryColumns.includes('source')) {
+  db.exec("ALTER TABLE dictionary ADD COLUMN source TEXT NOT NULL DEFAULT 'manual'");
+}

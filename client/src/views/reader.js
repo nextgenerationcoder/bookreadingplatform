@@ -174,12 +174,29 @@ export async function renderReader(host, bookId) {
     return article;
   }
 
-  function onWordClick(e) {
+  async function onWordClick(e) {
     e.stopPropagation();
     const el = e.currentTarget;
-    showPopupFor(el, el.dataset.word, el.dataset.gloss);
+    const word = el.dataset.word;
+    const key = normalize(word);
+    const knownGloss = el.dataset.gloss;
 
-    const key = normalize(el.dataset.word);
+    if (knownGloss === NO_GLOSS) {
+      showPopupFor(el, word, 'Looking up…');
+      try {
+        const { gloss } = await api.lookupWord(word);
+        dictionary[key] = gloss;
+        pageHost.querySelectorAll(`.word[data-word="${CSS.escape(word)}"]`).forEach((span) => {
+          span.dataset.gloss = gloss;
+        });
+        showPopupFor(el, word, gloss);
+      } catch {
+        showPopupFor(el, word, NO_GLOSS);
+      }
+    } else {
+      showPopupFor(el, word, knownGloss);
+    }
+
     clickedWords[key] = (clickedWords[key] || 0) + 1;
     el.classList.add('learned');
 
@@ -191,7 +208,7 @@ export async function renderReader(host, bookId) {
         .forEach((span) => span.classList.add('learned', 'compoundActive'));
     }
 
-    api.recordWordClick(bookId, Number(el.dataset.page), el.dataset.word).catch(() => {});
+    api.recordWordClick(bookId, Number(el.dataset.page), word).catch(() => {});
   }
 
   prevBtn.onclick = () => go(-1);

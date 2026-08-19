@@ -50,6 +50,7 @@ export const api = {
   renameBook: (bookId, title) => patch(`/api/books/${bookId}`, { title }),
   getDictionary: () => get('/api/dictionary'),
   importDictionary: (text) => post('/api/dictionary/import', { text }),
+  lookupWord: (word) => get(`/api/dictionary/lookup/${encodeURIComponent(word)}`),
   getProgress: (bookId) => get(`/api/progress/${bookId}`),
   setProgress: (bookId, page) => post(`/api/progress/${bookId}`, { page }),
   recordWordClick: (bookId, page, word) => post('/api/word-clicks', { bookId, page, word }),
