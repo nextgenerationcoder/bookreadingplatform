@@ -65,6 +65,10 @@ button:disabled { opacity: .35 }
 .exampleBox summary { cursor: pointer; color: var(--accent); font-size: 14px }
 .exampleBox pre { direction: ltr; text-align: left; white-space: pre-wrap; font-size: 13px; margin: 10px 0 0; color: #4d4d4d }
 #bookText, #pagesText, #pageText { width: 100%; min-height: 300px; font-family: ui-monospace, monospace; font-size: 14px; padding: 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--paper); resize: vertical }
+.ocrBox { margin: 4px 0 16px; padding: 12px 14px; background: var(--paper); border: 1px solid var(--line); border-radius: 10px }
+.ocrControls { display: flex; flex-wrap: wrap; gap: 8px; align-items: center }
+.ocrControls input[type="text"] { flex: 1; min-width: 140px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--paper); font-size: 14px }
+.ocrControls input[type="number"] { padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--paper); font-size: 14px }
 .formActions { display: flex; gap: 12px; align-items: center; margin-top: 12px }
 .dangerButton { border-color: #b3261e; color: #b3261e; background: var(--paper) }
 .dangerButton:hover { background: #fbeceb }

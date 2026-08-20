@@ -12,12 +12,17 @@ CHAPTER: Kapitel 2
 1: Und so weiter.
 و به همین ترتیب.`;
 
+const MAX_PHOTOS = 10;
+
 export async function renderAddPages(host, bookId) {
   host.innerHTML = '<div class="loading">Loading book…</div>';
 
-  let book;
+  let book, llmSettings;
   try {
-    book = await api.getBook(bookId);
+    [book, llmSettings] = await Promise.all([
+      api.getBook(bookId),
+      api.getLlmSettings().catch(() => ({ configured: false })),
+    ]);
   } catch (err) {
     host.innerHTML = `<div class="error">Book not found.<br><small>${err.message}</small></div>`;
     return;
@@ -29,12 +34,28 @@ export async function renderAddPages(host, bookId) {
     <div class="formPage">
       <a href="#/">← Library</a>
       <h1>Add pages to "${escapeHtml(book.title)}"</h1>
-      <p class="hint">
-        This book currently goes up to page ${lastPage}. Paste the new pages in the same format as
-        any book — just <code>PAGE</code>, <code>CHAPTER</code>, and sentences; no need to repeat
-        <code>BOOK</code>/<code>TITLE</code>. If you enter a page number that already exists, that
-        page gets replaced (useful for corrections).
-      </p>
+
+      <div class="ocrBox">
+        <p class="hint" style="padding-top:0">
+          Upload up to ${MAX_PHOTOS} page photos at once — an AI reads each one directly and writes
+          out the German text and Persian translation in the format below, which you can then review
+          and fix before adding.
+        </p>
+        ${
+          llmSettings.configured
+            ? `<div class="ocrControls">
+                 <input type="file" id="batchFiles" accept="image/*" capture="environment" multiple>
+                 <input type="number" id="batchStartPage" value="${lastPage + 1}" min="1" style="width:90px">
+                 <input type="text" id="batchChapter" placeholder="Chapter (optional)">
+                 <button id="batchBtn" type="button">Analyze &amp; Fill In</button>
+               </div>`
+            : `<p class="hint" style="padding:0">
+                 You need an AI API key configured first — <a href="#/settings">add one in Settings</a>.
+               </p>`
+        }
+        <div id="batchStatus" class="importStatus"></div>
+      </div>
+
       <details class="exampleBox">
         <summary>Example format</summary>
         <pre>${EXAMPLE}</pre>
@@ -51,6 +72,44 @@ export async function renderAddPages(host, bookId) {
   const textarea = host.querySelector('#pagesText');
   const status = host.querySelector('#appendStatus');
   const btn = host.querySelector('#appendBtn');
+  const batchBtn = host.querySelector('#batchBtn');
+  const batchStatus = host.querySelector('#batchStatus');
+
+  if (batchBtn) {
+    batchBtn.onclick = async () => {
+      const files = [...host.querySelector('#batchFiles').files];
+      if (!files.length) {
+        batchStatus.textContent = 'Choose at least one photo first.';
+        batchStatus.className = 'importStatus error';
+        return;
+      }
+      if (files.length > MAX_PHOTOS) {
+        batchStatus.textContent = `Choose at most ${MAX_PHOTOS} photos at a time.`;
+        batchStatus.className = 'importStatus error';
+        return;
+      }
+      const startPage = Number(host.querySelector('#batchStartPage').value) || lastPage + 1;
+      const chapter = host.querySelector('#batchChapter').value.trim();
+
+      batchBtn.disabled = true;
+      batchStatus.textContent = `Analyzing ${files.length} photo${files.length > 1 ? 's' : ''}… this can take a minute or two.`;
+      batchStatus.className = 'importStatus';
+      try {
+        const result = await api.analyzePages(files, startPage, chapter);
+        textarea.value = textarea.value.trim() ? `${textarea.value.trim()}\n\n${result.text}` : result.text;
+        const failCount = result.errors?.length || 0;
+        batchStatus.textContent = failCount
+          ? `Got ${result.pagesFound} of ${files.length} pages (${failCount} photo${failCount > 1 ? 's' : ''} couldn't be read). Review the text below before adding.`
+          : `Got all ${result.pagesFound} pages. Review the text below before adding (AI can still make mistakes).`;
+        batchStatus.className = failCount ? 'importStatus error' : 'importStatus success';
+      } catch (err) {
+        batchStatus.textContent = `Error: ${err.message}`;
+        batchStatus.className = 'importStatus error';
+      } finally {
+        batchBtn.disabled = false;
+      }
+    };
+  }
 
   btn.onclick = async () => {
     const text = textarea.value.trim();

@@ -1,12 +1,9 @@
 import { Router } from 'express';
 import { db } from '../db.js';
 import { encrypt } from '../crypto.js';
+import { LLM_PROVIDERS } from '../llm.js';
 
 const router = Router();
-
-// Providers the settings form accepts today. What actually calls this key is
-// intentionally not wired up yet - this route only stores/reports/clears it.
-export const LLM_PROVIDERS = ['anthropic', 'openai'];
 
 // GET /api/settings/llm — never returns the key itself, only whether one is
 // set and which provider, so the settings page can show state without ever

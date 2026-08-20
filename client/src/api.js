@@ -43,6 +43,12 @@ async function del(url) {
   return res.json();
 }
 
+async function postForm(url, formData) {
+  const res = await fetch(url, { method: 'POST', credentials: 'include', body: formData });
+  if (!res.ok) throw new Error(await extractError(res));
+  return res.json();
+}
+
 export const api = {
   signup: (email, password) => post('/api/auth/signup', { email, password }),
   login: (email, password) => post('/api/auth/login', { email, password }),
@@ -55,6 +61,13 @@ export const api = {
   appendToBook: (bookId, text) => post(`/api/books/${bookId}/append`, { text }),
   renameBook: (bookId, title) => patch(`/api/books/${bookId}`, { title }),
   deletePage: (bookId, pageNumber) => del(`/api/books/${bookId}/pages/${pageNumber}`),
+  analyzePages: (files, startPage, chapter) => {
+    const fd = new FormData();
+    for (const file of files) fd.append('images', file);
+    fd.append('startPage', startPage);
+    fd.append('chapter', chapter || '');
+    return postForm('/api/ocr/batch', fd);
+  },
   getDictionary: () => get('/api/dictionary'),
   importDictionary: (text) => post('/api/dictionary/import', { text }),
   lookupWord: (word) => get(`/api/dictionary/lookup/${encodeURIComponent(word)}`),
