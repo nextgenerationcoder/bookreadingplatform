@@ -53,8 +53,10 @@ button:disabled { opacity: .35 }
 .exampleBox { margin: 12px 0; background: var(--paper); border: 1px solid var(--line); border-radius: 10px; padding: 10px 14px }
 .exampleBox summary { cursor: pointer; color: var(--accent); font-size: 14px }
 .exampleBox pre { direction: ltr; text-align: left; white-space: pre-wrap; font-size: 13px; margin: 10px 0 0; color: #4d4d4d }
-#bookText { width: 100%; min-height: 300px; font-family: ui-monospace, monospace; font-size: 14px; padding: 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--paper); resize: vertical }
+#bookText, #pagesText, #pageText { width: 100%; min-height: 300px; font-family: ui-monospace, monospace; font-size: 14px; padding: 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--paper); resize: vertical }
 .formActions { display: flex; gap: 12px; align-items: center; margin-top: 12px }
+.dangerButton { border-color: #b3261e; color: #b3261e; background: var(--paper) }
+.dangerButton:hover { background: #fbeceb }
 .importStatus { margin-top: 10px; font-size: 14px }
 .importStatus.success { color: #1a7a3d }
 .importStatus.error { color: #b3261e }

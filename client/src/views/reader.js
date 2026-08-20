@@ -50,6 +50,7 @@ export async function renderReader(host, bookId) {
       <button id="prev">← Previous</button>
       <button id="next">Next →</button>
       <span id="pageIndicator"></span>
+      <a id="editPageLink" class="backLink" href="#">Edit page</a>
     </div>
     <div class="hint">Tap any German word to see its meaning. Words you tap are saved automatically.</div>
     <div id="pageHost"></div>
@@ -58,6 +59,7 @@ export async function renderReader(host, bookId) {
   const prevBtn = host.querySelector('#prev');
   const nextBtn = host.querySelector('#next');
   const indicator = host.querySelector('#pageIndicator');
+  const editPageLink = host.querySelector('#editPageLink');
   const pageHost = host.querySelector('#pageHost');
 
   function go(delta) {
@@ -89,6 +91,7 @@ export async function renderReader(host, bookId) {
     const first = book.pages[0].page;
     const last = book.pages[book.pages.length - 1].page;
     indicator.textContent = `Page ${page.page} of ${first}–${last}`;
+    editPageLink.href = `#/book/${encodeURIComponent(bookId)}/page/${page.page}/edit`;
 
     pageHost.innerHTML = '';
     const section = document.createElement('section');

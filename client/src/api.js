@@ -37,6 +37,12 @@ async function patch(url, body) {
   return res.json();
 }
 
+async function del(url) {
+  const res = await fetch(url, { method: 'DELETE', credentials: 'include' });
+  if (!res.ok) throw new Error(await extractError(res));
+  return res.json();
+}
+
 export const api = {
   signup: (email, password) => post('/api/auth/signup', { email, password }),
   login: (email, password) => post('/api/auth/login', { email, password }),
@@ -48,6 +54,7 @@ export const api = {
   importBook: (text) => post('/api/books/import', { text }),
   appendToBook: (bookId, text) => post(`/api/books/${bookId}/append`, { text }),
   renameBook: (bookId, title) => patch(`/api/books/${bookId}`, { title }),
+  deletePage: (bookId, pageNumber) => del(`/api/books/${bookId}/pages/${pageNumber}`),
   getDictionary: () => get('/api/dictionary'),
   importDictionary: (text) => post('/api/dictionary/import', { text }),
   lookupWord: (word) => get(`/api/dictionary/lookup/${encodeURIComponent(word)}`),

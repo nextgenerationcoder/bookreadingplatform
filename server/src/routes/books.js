@@ -4,6 +4,7 @@ import {
   saveImportedBook,
   appendToBook,
   renameBook,
+  deletePage,
   listBooks,
   getBook,
 } from '../bookImporter.js';
@@ -62,6 +63,23 @@ router.patch('/:bookId', (req, res) => {
   }
   try {
     const meta = renameBook(req.params.bookId, title.trim());
+    res.json(meta);
+  } catch (err) {
+    const status = err.message.includes('not found') ? 404 : 400;
+    res.status(status).json({ error: err.message });
+  }
+});
+
+// DELETE /api/books/:bookId/pages/:pageNumber — removes one page (and its
+// sentences). To edit a page instead, re-submit it through the append
+// endpoint above with the same page number - that replaces it in place.
+router.delete('/:bookId/pages/:pageNumber', (req, res) => {
+  const pageNumber = Number(req.params.pageNumber);
+  if (!Number.isFinite(pageNumber)) {
+    return res.status(400).json({ error: 'invalid page number' });
+  }
+  try {
+    const meta = deletePage(req.params.bookId, pageNumber);
     res.json(meta);
   } catch (err) {
     const status = err.message.includes('not found') ? 404 : 400;

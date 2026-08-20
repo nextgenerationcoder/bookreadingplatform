@@ -5,6 +5,7 @@ import { renderLibrary } from './views/library.js';
 import { renderReader } from './views/reader.js';
 import { renderAddBook } from './views/addBook.js';
 import { renderAddPages } from './views/addPages.js';
+import { renderEditPage } from './views/editPage.js';
 import { renderAddWords } from './views/addWords.js';
 import { renderMyWords } from './views/myWords.js';
 
@@ -15,6 +16,10 @@ function parseRoute() {
   const hash = window.location.hash.replace(/^#/, '') || '/';
   const addPagesMatch = hash.match(/^\/book\/([^/]+)\/add-pages$/);
   if (addPagesMatch) return { view: 'addPages', bookId: decodeURIComponent(addPagesMatch[1]) };
+  const editPageMatch = hash.match(/^\/book\/([^/]+)\/page\/(\d+)\/edit$/);
+  if (editPageMatch) {
+    return { view: 'editPage', bookId: decodeURIComponent(editPageMatch[1]), pageNumber: Number(editPageMatch[2]) };
+  }
   const bookMatch = hash.match(/^\/book\/([^/]+)$/);
   if (bookMatch) return { view: 'reader', bookId: decodeURIComponent(bookMatch[1]) };
   if (hash === '/add') return { view: 'add' };
@@ -51,18 +56,20 @@ function setActiveNav(view) {
   const links = app.querySelectorAll('.navLinks a');
   links.forEach((a) => a.classList.remove('active'));
   const map = { library: 0, words: 1, addWords: 2, add: 3 };
-  const idx = map[view === 'reader' || view === 'addPages' ? 'library' : view];
+  const idx = map[view === 'reader' || view === 'addPages' || view === 'editPage' ? 'library' : view];
   if (idx != null) links[idx]?.classList.add('active');
 }
 
 async function route() {
-  const { view, bookId } = parseRoute();
+  const { view, bookId, pageNumber } = parseRoute();
   setActiveNav(view);
   const host = document.getElementById('viewHost');
   if (view === 'reader') {
     await renderReader(host, bookId);
   } else if (view === 'addPages') {
     await renderAddPages(host, bookId);
+  } else if (view === 'editPage') {
+    await renderEditPage(host, bookId, pageNumber);
   } else if (view === 'add') {
     renderAddBook(host);
   } else if (view === 'addWords') {

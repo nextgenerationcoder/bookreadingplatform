@@ -163,6 +163,18 @@ export function appendToBook(bookId, text) {
   return bookMeta(bookId);
 }
 
+// Deletes a single page (its sentences cascade via the pages->sentences FK).
+// To edit a page's content instead of removing it, re-append text for that
+// same page number through appendToBook() above - a matching page number
+// replaces rather than duplicates.
+export function deletePage(bookId, pageNumber) {
+  const existing = bookMeta(bookId);
+  if (!existing) throw new Error(`Book "${bookId}" not found`);
+  const result = db.prepare('DELETE FROM pages WHERE book_id = ? AND page_number = ?').run(bookId, pageNumber);
+  if (result.changes === 0) throw new Error(`Page ${pageNumber} not found in "${bookId}"`);
+  return bookMeta(bookId);
+}
+
 export function renameBook(bookId, title) {
   const result = db.prepare('UPDATE books SET title = ? WHERE id = ?').run(title, bookId);
   if (result.changes === 0) throw new Error(`Book "${bookId}" not found`);
