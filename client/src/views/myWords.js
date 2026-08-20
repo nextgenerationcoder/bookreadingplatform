@@ -16,6 +16,19 @@ export async function renderMyWords(host) {
     return;
   }
 
+  // Words that only exist in the wikidict backfill aren't part of the bulk
+  // dictionary snapshot (it's kept small on purpose), so look those up
+  // individually - each is an instant indexed DB hit, not a network call.
+  const missing = Object.keys(clicks).filter((w) => !(normalizeWord(w) in dictionary));
+  if (missing.length) {
+    const results = await Promise.all(
+      missing.map((w) => api.lookupWord(w).catch(() => null))
+    );
+    results.forEach((result) => {
+      if (result) dictionary[normalizeWord(result.word)] = result.gloss;
+    });
+  }
+
   const titleById = Object.fromEntries(books.map((b) => [b.id, b.title]));
   const rows = Object.values(clicks).sort((a, b) => b.count - a.count);
 

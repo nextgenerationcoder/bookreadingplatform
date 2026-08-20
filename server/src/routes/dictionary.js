@@ -5,8 +5,14 @@ import { translateWord } from '../translate.js';
 
 const router = Router();
 
+// The bulk snapshot deliberately excludes the wikidict-sourced backfill
+// (~226k rows, mostly Wikipedia article-title equivalents) so this stays a
+// small payload every page load. Those words are still fully in the
+// database and resolve instantly through GET /lookup/:word below (an
+// indexed lookup, not a network translation call) the first time a reader
+// taps one that isn't in this snapshot.
 router.get('/', (_req, res) => {
-  const rows = db.prepare('SELECT word, gloss FROM dictionary').all();
+  const rows = db.prepare("SELECT word, gloss FROM dictionary WHERE source != 'wikidict'").all();
   const dict = Object.fromEntries(rows.map((r) => [r.word, r.gloss]));
   res.json(dict);
 });
