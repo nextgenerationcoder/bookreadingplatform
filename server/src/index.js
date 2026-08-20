@@ -11,7 +11,6 @@ import booksRouter from './routes/books.js';
 import dictionaryRouter from './routes/dictionary.js';
 import progressRouter from './routes/progress.js';
 import wordClicksRouter from './routes/wordClicks.js';
-import ocrRouter from './routes/ocr.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -38,7 +37,6 @@ app.use('/api/books', requireAuth, booksRouter);
 app.use('/api/dictionary', requireAuth, dictionaryRouter);
 app.use('/api/progress', requireAuth, progressRouter);
 app.use('/api/word-clicks', requireAuth, wordClicksRouter);
-app.use('/api/ocr', requireAuth, ocrRouter);
 
 // In production the client is built to client/dist and served by this same
 // process, so the whole app is one container behind one port. In local dev

@@ -1,5 +1,4 @@
 import { api } from '../api.js';
-import { scanPageToText } from '../ocrScan.js';
 
 const EXAMPLE = `PAGE 16
 CHAPTER: Kapitel 2
@@ -40,21 +39,6 @@ export async function renderAddPages(host, bookId) {
         <summary>Example format</summary>
         <pre>${EXAMPLE}</pre>
       </details>
-
-      <div class="ocrBox">
-        <p class="hint" style="padding-top:0">
-          Or scan a photo of the page: extracts the German text and auto-translates it into the
-          format above, which you can then review and fix before adding.
-        </p>
-        <div class="ocrControls">
-          <input type="file" id="ocrFile" accept="image/*" capture="environment">
-          <input type="number" id="ocrPage" value="${lastPage + 1}" min="1" style="width:80px">
-          <input type="text" id="ocrChapter" placeholder="Chapter (optional)">
-          <button id="ocrBtn" type="button">Scan &amp; Translate</button>
-        </div>
-        <div id="ocrStatus" class="importStatus"></div>
-      </div>
-
       <textarea id="pagesText" dir="ltr" placeholder="${EXAMPLE.replace(/"/g, '&quot;')}"></textarea>
       <div class="formActions">
         <button id="appendBtn">Add Pages</button>
@@ -67,34 +51,6 @@ export async function renderAddPages(host, bookId) {
   const textarea = host.querySelector('#pagesText');
   const status = host.querySelector('#appendStatus');
   const btn = host.querySelector('#appendBtn');
-  const ocrBtn = host.querySelector('#ocrBtn');
-  const ocrStatus = host.querySelector('#ocrStatus');
-
-  ocrBtn.onclick = async () => {
-    const file = host.querySelector('#ocrFile').files[0];
-    if (!file) {
-      ocrStatus.textContent = 'Choose a photo first.';
-      ocrStatus.className = 'importStatus error';
-      return;
-    }
-    const pageNumber = Number(host.querySelector('#ocrPage').value) || lastPage + 1;
-    const chapter = host.querySelector('#ocrChapter').value.trim();
-
-    ocrBtn.disabled = true;
-    ocrStatus.textContent = 'Scanning photo… (this can take a little while)';
-    ocrStatus.className = 'importStatus';
-    try {
-      const scanned = await scanPageToText(file, pageNumber, chapter);
-      textarea.value = textarea.value.trim() ? `${textarea.value.trim()}\n\n${scanned}` : scanned;
-      ocrStatus.textContent = 'Scanned — review the text below before adding (OCR and translation can both make mistakes).';
-      ocrStatus.className = 'importStatus success';
-    } catch (err) {
-      ocrStatus.textContent = `Error: ${err.message}`;
-      ocrStatus.className = 'importStatus error';
-    } finally {
-      ocrBtn.disabled = false;
-    }
-  };
 
   btn.onclick = async () => {
     const text = textarea.value.trim();

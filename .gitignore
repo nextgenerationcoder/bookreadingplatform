@@ -3,4 +3,3 @@ dist/
 *.log
 .DS_Store
 server/data/app.db*
-server/data/ocr-cache/

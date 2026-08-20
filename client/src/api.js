@@ -26,12 +26,6 @@ async function post(url, body) {
   return res.json();
 }
 
-async function postForm(url, formData) {
-  const res = await fetch(url, { method: 'POST', credentials: 'include', body: formData });
-  if (!res.ok) throw new Error(await extractError(res));
-  return res.json();
-}
-
 async function patch(url, body) {
   const res = await fetch(url, {
     method: 'PATCH',
@@ -57,13 +51,6 @@ export const api = {
   getDictionary: () => get('/api/dictionary'),
   importDictionary: (text) => post('/api/dictionary/import', { text }),
   lookupWord: (word) => get(`/api/dictionary/lookup/${encodeURIComponent(word)}`),
-
-  scanImage: (file) => {
-    const fd = new FormData();
-    fd.append('image', file);
-    return postForm('/api/ocr/scan', fd);
-  },
-  translateLines: (lines) => post('/api/ocr/translate', { lines }),
   getProgress: (bookId) => get(`/api/progress/${bookId}`),
   setProgress: (bookId, page) => post(`/api/progress/${bookId}`, { page }),
   recordWordClick: (bookId, page, word) => post('/api/word-clicks', { bookId, page, word }),
