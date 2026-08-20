@@ -105,3 +105,11 @@ const dictionaryColumns = db.prepare('PRAGMA table_info(dictionary)').all().map(
 if (!dictionaryColumns.includes('source')) {
   db.exec("ALTER TABLE dictionary ADD COLUMN source TEXT NOT NULL DEFAULT 'manual'");
 }
+
+const userColumns = db.prepare('PRAGMA table_info(users)').all().map((c) => c.name);
+if (!userColumns.includes('llm_provider')) {
+  db.exec('ALTER TABLE users ADD COLUMN llm_provider TEXT');
+}
+if (!userColumns.includes('llm_api_key_enc')) {
+  db.exec('ALTER TABLE users ADD COLUMN llm_api_key_enc TEXT');
+}

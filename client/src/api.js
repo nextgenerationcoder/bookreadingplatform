@@ -62,4 +62,8 @@ export const api = {
   setProgress: (bookId, page) => post(`/api/progress/${bookId}`, { page }),
   recordWordClick: (bookId, page, word) => post('/api/word-clicks', { bookId, page, word }),
   getWordClicks: () => get('/api/word-clicks'),
+
+  getLlmSettings: () => get('/api/settings/llm'),
+  saveLlmSettings: (provider, apiKey) => post('/api/settings/llm', { provider, apiKey }),
+  clearLlmSettings: () => del('/api/settings/llm'),
 };

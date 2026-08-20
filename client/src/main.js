@@ -8,6 +8,7 @@ import { renderAddPages } from './views/addPages.js';
 import { renderEditPage } from './views/editPage.js';
 import { renderAddWords } from './views/addWords.js';
 import { renderMyWords } from './views/myWords.js';
+import { renderSettings } from './views/settings.js';
 
 const app = document.getElementById('app');
 let currentUser = null;
@@ -25,10 +26,12 @@ function parseRoute() {
   if (hash === '/add') return { view: 'add' };
   if (hash === '/add-words') return { view: 'addWords' };
   if (hash === '/words') return { view: 'words' };
+  if (hash === '/settings') return { view: 'settings' };
   return { view: 'library' };
 }
 
 function buildShell() {
+  const initial = currentUser.email.trim().charAt(0).toUpperCase();
   app.innerHTML = `
     <nav class="topNav">
       <a href="#/" class="brand">Bilingual Reader</a>
@@ -38,13 +41,40 @@ function buildShell() {
         <a href="#/add-words">+ Add Words</a>
         <a href="#/add">+ Add Book</a>
       </div>
-      <div class="navUser">
-        <span class="navEmail">${currentUser.email}</span>
-        <button id="logoutBtn" class="linkButton">Log out</button>
-      </div>
+      <button id="menuBtn" class="menuBtn" type="button" aria-label="Open menu">
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+      </button>
     </nav>
+    <div id="drawerOverlay" class="drawerOverlay"></div>
+    <aside id="drawer" class="drawer">
+      <div class="drawerProfile">
+        <div class="avatar">${initial}</div>
+        <div class="drawerEmail">${currentUser.email}</div>
+      </div>
+      <a href="#/settings" id="settingsLink" class="drawerItem">Settings</a>
+      <div class="drawerSpacer"></div>
+      <button id="logoutBtn" class="drawerItem drawerLogout" type="button">Log out</button>
+    </aside>
     <div id="viewHost"></div>
   `;
+
+  const drawer = document.getElementById('drawer');
+  const overlay = document.getElementById('drawerOverlay');
+  const menuBtn = document.getElementById('menuBtn');
+
+  function openDrawer() {
+    drawer.classList.add('open');
+    overlay.classList.add('open');
+  }
+  function closeDrawer() {
+    drawer.classList.remove('open');
+    overlay.classList.remove('open');
+  }
+
+  menuBtn.onclick = openDrawer;
+  overlay.onclick = closeDrawer;
+  document.getElementById('settingsLink').onclick = closeDrawer;
+
   document.getElementById('logoutBtn').onclick = async () => {
     await api.logout().catch(() => {});
     currentUser = null;
@@ -76,6 +106,8 @@ async function route() {
     renderAddWords(host);
   } else if (view === 'words') {
     await renderMyWords(host);
+  } else if (view === 'settings') {
+    await renderSettings(host);
   } else {
     await renderLibrary(host);
   }
