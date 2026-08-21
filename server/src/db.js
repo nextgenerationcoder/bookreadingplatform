@@ -113,3 +113,9 @@ if (!userColumns.includes('llm_provider')) {
 if (!userColumns.includes('llm_api_key_enc')) {
   db.exec('ALTER TABLE users ADD COLUMN llm_api_key_enc TEXT');
 }
+if (!userColumns.includes('voice_id')) {
+  db.exec('ALTER TABLE users ADD COLUMN voice_id TEXT');
+}
+if (!userColumns.includes('speech_rate')) {
+  db.exec('ALTER TABLE users ADD COLUMN speech_rate REAL');
+}

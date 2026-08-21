@@ -79,4 +79,9 @@ export const api = {
   getLlmSettings: () => get('/api/settings/llm'),
   saveLlmSettings: (provider, apiKey) => post('/api/settings/llm', { provider, apiKey }),
   clearLlmSettings: () => del('/api/settings/llm'),
+
+  getVoices: () => get('/api/tts/voices'),
+  getVoiceSettings: () => get('/api/settings/voice'),
+  saveVoiceSettings: (voiceId, speechRate) => post('/api/settings/voice', { voiceId, speechRate }),
+  synthesize: (text) => post('/api/tts/synthesize', { text }),
 };

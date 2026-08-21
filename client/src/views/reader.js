@@ -52,6 +52,12 @@ export async function renderReader(host, bookId) {
       <span id="pageIndicator"></span>
       <a id="editPageLink" class="backLink" href="#">Edit page</a>
     </div>
+    <div class="ttsBar">
+      <button id="playPauseBtn" type="button">▶ Play</button>
+      <button id="prevSentenceBtn" type="button" title="Previous sentence">⏮</button>
+      <button id="nextSentenceBtn" type="button" title="Next sentence">⏭</button>
+      <span id="ttsStatus" class="importStatus"></span>
+    </div>
     <div class="hint">Tap any German word to see its meaning. Words you tap are saved automatically.</div>
     <div id="pageHost"></div>
   `;
@@ -61,11 +67,168 @@ export async function renderReader(host, bookId) {
   const indicator = host.querySelector('#pageIndicator');
   const editPageLink = host.querySelector('#editPageLink');
   const pageHost = host.querySelector('#pageHost');
+  const playPauseBtn = host.querySelector('#playPauseBtn');
+  const prevSentenceBtn = host.querySelector('#prevSentenceBtn');
+  const nextSentenceBtn = host.querySelector('#nextSentenceBtn');
+  const ttsStatus = host.querySelector('#ttsStatus');
+
+  // --- Read Aloud (Piper TTS) state ---------------------------------------
+  // Word timing is estimated server-side (proportional to word length, not
+  // true phoneme alignment), so highlighting is close but not frame-exact.
+  let speaking = false;
+  let currentSentenceIndex = 0;
+  let audioEl = null;
+  let currentWordSpans = [];
+  let currentTimings = [];
+  let speakToken = 0;
+
+  function getSentenceEls() {
+    return [...pageHost.querySelectorAll('.sentence')];
+  }
+
+  function updatePlayButton() {
+    playPauseBtn.textContent = speaking ? '⏸ Pause' : '▶ Play';
+  }
+
+  function stopAudio() {
+    speakToken++;
+    if (audioEl) {
+      audioEl.pause();
+      audioEl.onended = null;
+      audioEl.ontimeupdate = null;
+      audioEl.onerror = null;
+      audioEl = null;
+    }
+    currentWordSpans.forEach((span) => span?.classList.remove('speaking'));
+    currentWordSpans = [];
+    currentTimings = [];
+  }
+
+  // Crosses into the previous/next page (re-rendering it) when index runs
+  // past the current page's sentences, returning the resolved in-page
+  // index, or null if there's no more book in that direction.
+  function resolveSentencePosition(index) {
+    const sentences = book.pages[pageIndex].sentences;
+    if (index < 0) {
+      if (pageIndex === 0) return null;
+      pageIndex -= 1;
+      renderPage();
+      return book.pages[pageIndex].sentences.length - 1;
+    }
+    if (index >= sentences.length) {
+      if (pageIndex >= book.pages.length - 1) return null;
+      pageIndex += 1;
+      renderPage();
+      return 0;
+    }
+    return index;
+  }
+
+  async function playSentenceAudio(index) {
+    const myToken = speakToken;
+    const sentence = book.pages[pageIndex].sentences[index];
+    const article = getSentenceEls()[index];
+    if (!article || !sentence) {
+      speaking = false;
+      updatePlayButton();
+      return;
+    }
+
+    ttsStatus.textContent = 'Loading audio…';
+    ttsStatus.className = 'importStatus';
+    let result;
+    try {
+      result = await api.synthesize(sentence.de);
+    } catch (err) {
+      if (myToken !== speakToken) return;
+      ttsStatus.textContent = `Couldn't read this sentence: ${err.message}`;
+      ttsStatus.className = 'importStatus error';
+      speaking = false;
+      updatePlayButton();
+      return;
+    }
+    if (myToken !== speakToken) return;
+    ttsStatus.textContent = '';
+
+    const wordSpans = [...article.querySelectorAll('.word')];
+    currentWordSpans = wordSpans;
+    currentTimings = result.timings;
+
+    const bytes = Uint8Array.from(atob(result.audio), (c) => c.charCodeAt(0));
+    const url = URL.createObjectURL(new Blob([bytes], { type: 'audio/wav' }));
+    audioEl = new Audio(url);
+
+    audioEl.ontimeupdate = () => {
+      if (myToken !== speakToken) return;
+      const t = audioEl.currentTime;
+      wordSpans.forEach((span, i) => {
+        const timing = currentTimings[i];
+        span.classList.toggle('speaking', Boolean(timing && t >= timing.start && t < timing.end));
+      });
+    };
+    audioEl.onended = () => {
+      URL.revokeObjectURL(url);
+      if (myToken !== speakToken) return;
+      goToSentence(currentSentenceIndex + 1, { autoplay: true });
+    };
+    audioEl.onerror = () => {
+      if (myToken !== speakToken) return;
+      ttsStatus.textContent = 'Playback error.';
+      ttsStatus.className = 'importStatus error';
+      speaking = false;
+      updatePlayButton();
+    };
+
+    try {
+      await audioEl.play();
+    } catch {
+      // Autoplay can be blocked by the browser in some contexts; the user
+      // can just press Play again.
+    }
+  }
+
+  function goToSentence(index, { autoplay }) {
+    stopAudio();
+    const resolved = resolveSentencePosition(index);
+    if (resolved === null) {
+      speaking = false;
+      updatePlayButton();
+      return;
+    }
+    currentSentenceIndex = resolved;
+    getSentenceEls()[resolved]?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    if (autoplay) {
+      speaking = true;
+      updatePlayButton();
+      playSentenceAudio(resolved);
+    }
+  }
+
+  playPauseBtn.onclick = () => {
+    if (speaking) {
+      speaking = false;
+      audioEl?.pause();
+      updatePlayButton();
+    } else if (audioEl) {
+      speaking = true;
+      updatePlayButton();
+      audioEl.play().catch(() => {});
+    } else {
+      goToSentence(currentSentenceIndex, { autoplay: true });
+    }
+  };
+  prevSentenceBtn.onclick = () => goToSentence(currentSentenceIndex - 1, { autoplay: speaking });
+  nextSentenceBtn.onclick = () => goToSentence(currentSentenceIndex + 1, { autoplay: speaking });
+  // ------------------------------------------------------------------------
 
   function go(delta) {
     const next = pageIndex + delta;
     if (next < 0 || next >= book.pages.length) return;
+    stopAudio();
+    speaking = false;
+    updatePlayButton();
     pageIndex = next;
+    currentSentenceIndex = 0;
     renderPage();
   }
 
@@ -75,10 +238,13 @@ export async function renderReader(host, bookId) {
   }
   document.addEventListener('keydown', onKeydown);
   // Reader views are replaced wholesale on navigation, so drop the listener
-  // once this host is no longer in the document to avoid stacking handlers.
+  // (and stop any in-progress narration - an <audio> element keeps playing
+  // in the background otherwise, since it isn't attached to the DOM) once
+  // this host is no longer in the document.
   const observer = new MutationObserver(() => {
     if (!document.body.contains(host)) {
       document.removeEventListener('keydown', onKeydown);
+      stopAudio();
       observer.disconnect();
     }
   });

@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { db } from '../db.js';
 import { encrypt } from '../crypto.js';
 import { LLM_PROVIDERS } from '../llm.js';
+import { VOICES, DEFAULT_VOICE, DEFAULT_RATE, MIN_RATE, MAX_RATE } from '../tts.js';
 
 const router = Router();
 
@@ -32,6 +33,29 @@ router.post('/llm', async (req, res) => {
 router.delete('/llm', (req, res) => {
   db.prepare('UPDATE users SET llm_provider = NULL, llm_api_key_enc = NULL WHERE id = ?').run(req.userId);
   res.json({ configured: false });
+});
+
+// GET /api/settings/voice — the account's read-aloud voice/speed, falling
+// back to defaults if never set.
+router.get('/voice', (req, res) => {
+  const row = db.prepare('SELECT voice_id, speech_rate FROM users WHERE id = ?').get(req.userId);
+  res.json({
+    voiceId: row?.voice_id && VOICES[row.voice_id] ? row.voice_id : DEFAULT_VOICE,
+    speechRate: row?.speech_rate ?? DEFAULT_RATE,
+  });
+});
+
+router.post('/voice', (req, res) => {
+  const { voiceId, speechRate } = req.body || {};
+  if (!VOICES[voiceId]) {
+    return res.status(400).json({ error: `voiceId must be one of: ${Object.keys(VOICES).join(', ')}` });
+  }
+  const rate = Number(speechRate);
+  if (!Number.isFinite(rate) || rate < MIN_RATE || rate > MAX_RATE) {
+    return res.status(400).json({ error: `speechRate must be between ${MIN_RATE} and ${MAX_RATE}` });
+  }
+  db.prepare('UPDATE users SET voice_id = ?, speech_rate = ? WHERE id = ?').run(voiceId, rate, req.userId);
+  res.json({ voiceId, speechRate: rate });
 });
 
 export default router;
