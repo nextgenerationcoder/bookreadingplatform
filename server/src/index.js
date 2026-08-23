@@ -8,6 +8,7 @@ import { seedIfEmpty } from './seed.js';
 import { requireAuth } from './auth.js';
 import authRouter from './routes/auth.js';
 import booksRouter from './routes/books.js';
+import coursesRouter from './routes/courses.js';
 import dictionaryRouter from './routes/dictionary.js';
 import progressRouter from './routes/progress.js';
 import wordClicksRouter from './routes/wordClicks.js';
@@ -37,6 +38,7 @@ app.use('/api/auth', authRouter);
 // shared across all accounts, but only visible to people who've signed in,
 // and progress/word-clicks are scoped per-account inside their own routes.
 app.use('/api/books', requireAuth, booksRouter);
+app.use('/api/courses', requireAuth, coursesRouter);
 app.use('/api/dictionary', requireAuth, dictionaryRouter);
 app.use('/api/progress', requireAuth, progressRouter);
 app.use('/api/word-clicks', requireAuth, wordClicksRouter);

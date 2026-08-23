@@ -6,13 +6,22 @@ import { findSeparableCompounds } from '../separableVerbs.js';
 const TOKEN_RE = /[A-Za-zÀ-ÖØ-öø-ÿ'’-]+|[^A-Za-zÀ-ÖØ-öø-ÿ'’-]+/g;
 const NO_GLOSS = 'Not yet in the dictionary.';
 
-export async function renderReader(host, bookId) {
-  host.innerHTML = '<div class="loading">Loading book…</div>';
+// kind: 'book' (default) or 'course' - courses live in their own tables
+// server-side but read identically (word clicks/progress/TTS/dictionary all
+// key off the same generic content id either way).
+export async function renderReader(host, bookId, kind = 'book') {
+  const isCourse = kind === 'course';
+  const getContent = isCourse ? api.getCourse : api.getBook;
+  const backHref = isCourse ? '#/courses' : '#/';
+  const backLabel = isCourse ? '← Courses' : '← Library';
+  const editPageBase = isCourse ? `#/course/${encodeURIComponent(bookId)}` : `#/book/${encodeURIComponent(bookId)}`;
+
+  host.innerHTML = '<div class="loading">Loading…</div>';
 
   let book, dictionary, clickedWords;
   try {
     const [bookData, dict, clicksRaw] = await Promise.all([
-      api.getBook(bookId),
+      getContent(bookId),
       getDictionary(),
       api.getWordClicks().catch(() => ({})),
     ]);
@@ -22,7 +31,7 @@ export async function renderReader(host, bookId) {
       Object.entries(clicksRaw).map(([w, v]) => [normalizeWord(w), v.count])
     );
   } catch (err) {
-    host.innerHTML = `<div class="error">Failed to load the book. Make sure the server is running.<br><small>${err.message}</small></div>`;
+    host.innerHTML = `<div class="error">Failed to load. Make sure the server is running.<br><small>${err.message}</small></div>`;
     return;
   }
 
@@ -46,7 +55,7 @@ export async function renderReader(host, bookId) {
 
   host.innerHTML = `
     <div class="toolbar">
-      <a class="backLink" href="#/">← Library</a>
+      <a class="backLink" href="${backHref}">${backLabel}</a>
       <button id="prev">← Previous</button>
       <button id="next">Next →</button>
       <span id="pageIndicator"></span>
@@ -257,7 +266,7 @@ export async function renderReader(host, bookId) {
     const first = book.pages[0].page;
     const last = book.pages[book.pages.length - 1].page;
     indicator.textContent = `Page ${page.page} of ${first}–${last}`;
-    editPageLink.href = `#/book/${encodeURIComponent(bookId)}/page/${page.page}/edit`;
+    editPageLink.href = `${editPageBase}/page/${page.page}/edit`;
 
     pageHost.innerHTML = '';
     const section = document.createElement('section');

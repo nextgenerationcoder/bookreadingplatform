@@ -94,9 +94,37 @@ db.exec(`
     PRIMARY KEY (user_id, word, book_id, page)
   );
 
+  CREATE TABLE IF NOT EXISTS courses (
+    id TEXT PRIMARY KEY,
+    level TEXT NOT NULL,
+    title TEXT NOT NULL,
+    source_lang TEXT NOT NULL,
+    target_lang TEXT NOT NULL
+  );
+
+  CREATE TABLE IF NOT EXISTS course_pages (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    course_id TEXT NOT NULL REFERENCES courses(id) ON DELETE CASCADE,
+    page_number INTEGER NOT NULL,
+    chapter TEXT,
+    UNIQUE (course_id, page_number)
+  );
+
+  CREATE TABLE IF NOT EXISTS course_sentences (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    page_id INTEGER NOT NULL REFERENCES course_pages(id) ON DELETE CASCADE,
+    num INTEGER NOT NULL,
+    de TEXT NOT NULL,
+    fa TEXT NOT NULL,
+    chapter TEXT
+  );
+
   CREATE INDEX IF NOT EXISTS idx_pages_book ON pages(book_id);
   CREATE INDEX IF NOT EXISTS idx_sentences_page ON sentences(page_id);
   CREATE INDEX IF NOT EXISTS idx_sessions_user ON sessions(user_id);
+  CREATE INDEX IF NOT EXISTS idx_course_pages_course ON course_pages(course_id);
+  CREATE INDEX IF NOT EXISTS idx_course_sentences_page ON course_sentences(page_id);
+  CREATE INDEX IF NOT EXISTS idx_courses_level ON courses(level);
 `);
 
 // CREATE TABLE IF NOT EXISTS doesn't add new columns to a table that already

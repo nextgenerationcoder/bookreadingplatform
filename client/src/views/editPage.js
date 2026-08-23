@@ -10,12 +10,18 @@ function pageToText(page) {
   return lines.join('\n');
 }
 
-export async function renderEditPage(host, bookId, pageNumber) {
+export async function renderEditPage(host, bookId, pageNumber, kind = 'book') {
+  const isCourse = kind === 'course';
+  const getContent = isCourse ? api.getCourse : api.getBook;
+  const appendContent = isCourse ? api.appendToCourse : api.appendToBook;
+  const deleteContentPage = isCourse ? api.deleteCoursePage : api.deletePage;
+  const contentHref = isCourse ? `#/course/${encodeURIComponent(bookId)}` : `#/book/${encodeURIComponent(bookId)}`;
+
   host.innerHTML = '<div class="loading">Loading page…</div>';
 
   let book, page;
   try {
-    book = await api.getBook(bookId);
+    book = await getContent(bookId);
     page = book.pages.find((p) => p.page === pageNumber);
   } catch (err) {
     host.innerHTML = `<div class="error">Failed to load the page.<br><small>${err.message}</small></div>`;
@@ -28,7 +34,7 @@ export async function renderEditPage(host, bookId, pageNumber) {
 
   host.innerHTML = `
     <div class="formPage">
-      <a href="#/book/${encodeURIComponent(bookId)}">← Back to "${escapeHtml(book.title)}"</a>
+      <a href="${contentHref}">← Back to "${escapeHtml(book.title)}"</a>
       <h1>Edit page ${pageNumber}</h1>
       <p class="hint">
         Edit the text below and save to replace this page, or delete it entirely. Deleting cannot
@@ -38,7 +44,7 @@ export async function renderEditPage(host, bookId, pageNumber) {
       <div class="formActions">
         <button id="saveBtn">Save Changes</button>
         <button id="deleteBtn" class="dangerButton" type="button">Delete Page</button>
-        <a href="#/book/${encodeURIComponent(bookId)}">Cancel</a>
+        <a href="${contentHref}">Cancel</a>
       </div>
       <div id="editStatus" class="importStatus"></div>
     </div>
@@ -61,11 +67,11 @@ export async function renderEditPage(host, bookId, pageNumber) {
     status.textContent = 'Saving…';
     status.className = 'importStatus';
     try {
-      await api.appendToBook(bookId, text);
+      await appendContent(bookId, text);
       status.textContent = 'Saved.';
       status.className = 'importStatus success';
       setTimeout(() => {
-        window.location.hash = `#/book/${encodeURIComponent(bookId)}`;
+        window.location.hash = contentHref;
       }, 700);
     } catch (err) {
       status.textContent = `Error: ${err.message}`;
@@ -84,8 +90,8 @@ export async function renderEditPage(host, bookId, pageNumber) {
     status.textContent = 'Deleting…';
     status.className = 'importStatus';
     try {
-      await api.deletePage(bookId, pageNumber);
-      window.location.hash = `#/book/${encodeURIComponent(bookId)}`;
+      await deleteContentPage(bookId, pageNumber);
+      window.location.hash = contentHref;
     } catch (err) {
       status.textContent = `Error: ${err.message}`;
       status.className = 'importStatus error';

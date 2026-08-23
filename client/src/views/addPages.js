@@ -14,17 +14,24 @@ CHAPTER: Kapitel 2
 
 const MAX_PHOTOS = 10;
 
-export async function renderAddPages(host, bookId) {
-  host.innerHTML = '<div class="loading">Loading book…</div>';
+export async function renderAddPages(host, bookId, kind = 'book') {
+  const isCourse = kind === 'course';
+  const getContent = isCourse ? api.getCourse : api.getBook;
+  const appendContent = isCourse ? api.appendToCourse : api.appendToBook;
+  const backHref = isCourse ? '#/courses' : '#/';
+  const backLabel = isCourse ? '← Courses' : '← Library';
+  const contentHref = isCourse ? `#/course/${encodeURIComponent(bookId)}` : `#/book/${encodeURIComponent(bookId)}`;
+
+  host.innerHTML = '<div class="loading">Loading…</div>';
 
   let book, llmSettings;
   try {
     [book, llmSettings] = await Promise.all([
-      api.getBook(bookId),
+      getContent(bookId),
       api.getLlmSettings().catch(() => ({ configured: false })),
     ]);
   } catch (err) {
-    host.innerHTML = `<div class="error">Book not found.<br><small>${err.message}</small></div>`;
+    host.innerHTML = `<div class="error">Not found.<br><small>${err.message}</small></div>`;
     return;
   }
 
@@ -32,7 +39,7 @@ export async function renderAddPages(host, bookId) {
 
   host.innerHTML = `
     <div class="formPage">
-      <a href="#/">← Library</a>
+      <a href="${backHref}">${backLabel}</a>
       <h1>Add pages to "${escapeHtml(book.title)}"</h1>
 
       <div class="ocrBox">
@@ -63,7 +70,7 @@ export async function renderAddPages(host, bookId) {
       <textarea id="pagesText" dir="ltr" placeholder="${EXAMPLE.replace(/"/g, '&quot;')}"></textarea>
       <div class="formActions">
         <button id="appendBtn">Add Pages</button>
-        <a href="#/book/${encodeURIComponent(bookId)}">Cancel</a>
+        <a href="${contentHref}">Cancel</a>
       </div>
       <div id="appendStatus" class="importStatus"></div>
     </div>
@@ -122,11 +129,11 @@ export async function renderAddPages(host, bookId) {
     status.textContent = 'Adding…';
     status.className = 'importStatus';
     try {
-      const meta = await api.appendToBook(bookId, text);
+      const meta = await appendContent(bookId, text);
       status.textContent = `Added — "${meta.title}" now has ${meta.pageCount} pages (up to page ${meta.lastPage}).`;
       status.className = 'importStatus success';
       setTimeout(() => {
-        window.location.hash = `#/book/${encodeURIComponent(bookId)}`;
+        window.location.hash = contentHref;
       }, 900);
     } catch (err) {
       status.textContent = `Error: ${err.message}`;

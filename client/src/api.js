@@ -68,6 +68,14 @@ export const api = {
     fd.append('chapter', chapter || '');
     return postForm('/api/ocr/batch', fd);
   },
+  getCourseLevels: () => get('/api/courses/levels'),
+  listCourses: (level) => get(`/api/courses${level ? `?level=${encodeURIComponent(level)}` : ''}`),
+  getCourse: (courseId) => get(`/api/courses/${courseId}`),
+  importCourse: (text) => post('/api/courses/import', { text }),
+  appendToCourse: (courseId, text) => post(`/api/courses/${courseId}/append`, { text }),
+  renameCourse: (courseId, title) => patch(`/api/courses/${courseId}`, { title }),
+  deleteCoursePage: (courseId, pageNumber) => del(`/api/courses/${courseId}/pages/${pageNumber}`),
+
   getDictionary: () => get('/api/dictionary'),
   importDictionary: (text) => post('/api/dictionary/import', { text }),
   lookupWord: (word) => get(`/api/dictionary/lookup/${encodeURIComponent(word)}`),
