@@ -10,6 +10,9 @@ For each of the 4 mailboxes, set:
   MAILBOX{N}_FROM_NAME   (optional display name)
 
 Plus:
+  SENDER_COMPANY_NAME    (your company name, used in the generated email)
+  PRODUCT_DESCRIPTION    (one line describing what you make/sell, used to
+                          phrase the inquiry question)
   DB_PATH               (defaults to email_pipeline/pipeline.db)
   ANTHROPIC_API_KEY      (used to generate email text; falls back to a
                           plain template if unset, so the pipeline still
@@ -39,6 +42,9 @@ DB_PATH = os.environ.get(
 )
 
 ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY")
+
+SENDER_COMPANY_NAME = os.environ.get("SENDER_COMPANY_NAME", "our company")
+PRODUCT_DESCRIPTION = os.environ.get("PRODUCT_DESCRIPTION", "our product")
 
 DAILY_MIN_PER_MAILBOX = int(os.environ.get("DAILY_MIN_PER_MAILBOX", "10"))
 DAILY_MAX_PER_MAILBOX = int(os.environ.get("DAILY_MAX_PER_MAILBOX", "15"))
