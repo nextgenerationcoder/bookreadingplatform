@@ -1,3 +1,5 @@
 email_pipeline/__pycache__/
 email_pipeline/*.db
 email_pipeline/*.log
+
+email_pipeline/webapp/__pycache__/

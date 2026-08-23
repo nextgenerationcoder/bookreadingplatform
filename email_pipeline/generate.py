@@ -1,13 +1,13 @@
 """
 Generate outreach email text via the Anthropic API. Falls back to a plain
-template if ANTHROPIC_API_KEY isn't set, so the rest of the pipeline can
+template if no API key is configured, so the rest of the pipeline can
 still be tested end-to-end without it.
 """
 import sqlite3
 
 from . import config
 
-PROMPT_TEMPLATE = """Write a short, genuine business inquiry email -- NOT an
+DEFAULT_PROMPT_TEMPLATE = """Write a short, genuine business inquiry email -- NOT an
 advertisement or sales pitch. This is a question being asked to a shop we
 found, sent to a contact address they publish for business inquiries.
 
@@ -48,34 +48,47 @@ The email must:
 """
 
 
-def generate_email(contact: sqlite3.Row) -> tuple[str, str]:
-    name = contact["name"] or "there"
-    company = contact["company"] or ""
+def _fallback_text(name: str, company: str, sender_company: str, product_description: str):
+    subject = "Question about becoming a supplier"
+    body = (
+        f"Hi {name},\n\n"
+        f"I'm reaching out from {sender_company}, where we make "
+        f"{product_description}. I wanted to ask what your process is "
+        f"for reviewing new suppliers/brands at {company or 'your shop'}, and "
+        f"who the right contact person (and their email) would be if that's "
+        f"not you. If it sounds like a possible fit, would it be okay to send "
+        f"over a short catalog?\n\n"
+        f"No worries at all if now isn't a good time -- happy to not follow up "
+        f"if you'd rather I didn't.\n\n"
+        f"Thanks!"
+    )
+    return subject, body
 
-    if not config.ANTHROPIC_API_KEY:
-        subject = "Question about becoming a supplier"
-        body = (
-            f"Hi {name},\n\n"
-            f"I'm reaching out from {config.SENDER_COMPANY_NAME}, where we make "
-            f"{config.PRODUCT_DESCRIPTION}. I wanted to ask what your process is "
-            f"for reviewing new suppliers/brands at {company or 'your shop'}, and "
-            f"who the right contact person (and their email) would be if that's "
-            f"not you. If it sounds like a possible fit, would it be okay to send "
-            f"over a short catalog?\n\n"
-            f"No worries at all if now isn't a good time -- happy to not follow up "
-            f"if you'd rather I didn't.\n\n"
-            f"Thanks!"
-        )
-        return subject, body
+
+def generate_from_fields(
+    name: str,
+    company: str,
+    sender_company: str,
+    product_description: str,
+    api_key: str | None,
+    prompt_template: str | None = None,
+) -> tuple[str, str]:
+    """Core generation logic, independent of the contacts DB -- used both
+    by the real pipeline and by the UI's test/preview page."""
+    name = name or "there"
+    company = company or ""
+
+    if not api_key:
+        return _fallback_text(name, company, sender_company, product_description)
 
     import anthropic
 
-    client = anthropic.Anthropic(api_key=config.ANTHROPIC_API_KEY)
-    prompt = PROMPT_TEMPLATE.format(
+    client = anthropic.Anthropic(api_key=api_key)
+    prompt = (prompt_template or DEFAULT_PROMPT_TEMPLATE).format(
         name=name,
         company=company,
-        sender_company=config.SENDER_COMPANY_NAME,
-        product_description=config.PRODUCT_DESCRIPTION,
+        sender_company=sender_company,
+        product_description=product_description,
     )
     response = client.messages.create(
         model="claude-sonnet-5",
@@ -92,3 +105,14 @@ def generate_email(contact: sqlite3.Row) -> tuple[str, str]:
         elif line.lower().startswith("body:"):
             body = line.split(":", 1)[1].strip()
     return subject, body
+
+
+def generate_email(contact: sqlite3.Row) -> tuple[str, str]:
+    return generate_from_fields(
+        name=contact["name"],
+        company=contact["company"],
+        sender_company=config.get_sender_company_name(),
+        product_description=config.get_product_description(),
+        api_key=config.get_anthropic_api_key(),
+        prompt_template=config.get_prompt_template_override(),
+    )

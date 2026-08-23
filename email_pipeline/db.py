@@ -27,3 +27,29 @@ def connection():
         conn.commit()
     finally:
         conn.close()
+
+
+def get_setting(key: str, default=None):
+    init_db()
+    with connection() as conn:
+        row = conn.execute(
+            "SELECT value FROM settings WHERE key = ?", (key,)
+        ).fetchone()
+        return row["value"] if row else default
+
+
+def set_setting(key: str, value: str) -> None:
+    init_db()
+    with connection() as conn:
+        conn.execute(
+            "INSERT INTO settings (key, value) VALUES (?, ?) "
+            "ON CONFLICT(key) DO UPDATE SET value = excluded.value",
+            (key, value),
+        )
+
+
+def get_all_settings() -> dict:
+    init_db()
+    with connection() as conn:
+        rows = conn.execute("SELECT key, value FROM settings").fetchall()
+        return {r["key"]: r["value"] for r in rows}

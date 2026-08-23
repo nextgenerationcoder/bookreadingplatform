@@ -50,3 +50,11 @@ CREATE TABLE IF NOT EXISTS plan_log (
     plan_date TEXT PRIMARY KEY,
     created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
+
+-- key/value store for settings entered through the web UI (API keys,
+-- mailbox SMTP credentials, sender info, prompt override). Values here
+-- take priority over the equivalent environment variable, see config.py.
+CREATE TABLE IF NOT EXISTS settings (
+    key TEXT PRIMARY KEY,
+    value TEXT
+);

@@ -30,11 +30,41 @@ Plain Python + SQLite, no external workflow tool required.
 - `sender.py` — SMTP send.
 - `unsubscribe.py` — CLI to permanently opt a contact out.
 
-## Setup
+## Web UI
 
-1. Install deps: `pip install anthropic` (only needed for AI-generated
-   text; without `ANTHROPIC_API_KEY` set, a plain template is used
-   instead so the pipeline still runs).
+`webapp/` is a small Flask app to configure and test everything without
+touching env vars or the CLI:
+
+```
+pip install -r email_pipeline/requirements.txt
+python -m email_pipeline.webapp.app
+```
+
+Then open http://localhost:5000. It has:
+
+- **Settings** — enter the 4 mailboxes' SMTP credentials and the
+  Anthropic API key; saved to the DB (`settings` table) and used
+  immediately by the cron jobs and CLI too, no restart needed.
+- **AI Prompt** — view/edit the exact prompt sent to the model, with a
+  reset-to-default button.
+- **Test & Preview** — generate a sample email for a fake name/company
+  with the current prompt/settings, with nothing sent or saved, plus an
+  optional "send test email to yourself" button to verify SMTP actually
+  works before running anything live.
+- **Contacts** — import a CSV, see status per contact, manually
+  unsubscribe someone.
+- **Dashboard** — counts by status, recent queue activity, and buttons to
+  run `plan_daily` / `worker` on demand instead of waiting for cron.
+
+Settings entered in the UI override the environment variables described
+below (DB takes priority; env vars are the fallback for headless/cron use).
+
+## Setup (CLI / cron only, no UI)
+
+1. Install deps: `pip install -r email_pipeline/requirements.txt` (Flask
+   is only needed for the web UI; `anthropic` only for AI-generated text
+   — without an API key set, a plain template is used instead so the
+   pipeline still runs).
 
 2. Set environment variables for your 4 mailboxes (repeat for N=1..4):
 

@@ -28,7 +28,7 @@ def plan_today() -> None:
         total_queued = 0
         for mailbox_id in range(1, NUM_MAILBOXES + 1):
             count = random.randint(
-                config.DAILY_MIN_PER_MAILBOX, config.DAILY_MAX_PER_MAILBOX
+                config.get_daily_min_per_mailbox(), config.get_daily_max_per_mailbox()
             )
             candidates = conn.execute(
                 "SELECT id FROM contacts WHERE status = 'pending' "
@@ -56,10 +56,10 @@ def plan_today() -> None:
 def _random_time_today(today_iso: str) -> str:
     day = date.fromisoformat(today_iso)
     start = datetime.combine(day, datetime.min.time()) + timedelta(
-        hours=config.SEND_WINDOW_START_HOUR
+        hours=config.get_send_window_start_hour()
     )
     end = datetime.combine(day, datetime.min.time()) + timedelta(
-        hours=config.SEND_WINDOW_END_HOUR
+        hours=config.get_send_window_end_hour()
     )
     delta_seconds = int((end - start).total_seconds())
     offset = random.randint(0, max(delta_seconds, 0))
