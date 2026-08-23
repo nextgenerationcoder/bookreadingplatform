@@ -25,8 +25,8 @@ Plain Python + SQLite, no external workflow tool required.
 - `import_contacts.py` — load a CSV of emails into `contacts`.
 - `plan_daily.py` — daily job: builds today's send queue.
 - `worker.py` — minute-by-minute job: sends anything due, generates the
-  text via Claude first.
-- `generate.py` — calls the Anthropic API to write the subject/body.
+  text via DeepSeek first.
+- `generate.py` — calls the DeepSeek API to write the subject/body.
 - `sender.py` — SMTP send.
 - `unsubscribe.py` — CLI to permanently opt a contact out.
 
@@ -43,7 +43,7 @@ python -m email_pipeline.webapp.app
 Then open http://localhost:5000. It has:
 
 - **Settings** — enter the 4 mailboxes' SMTP credentials and the
-  Anthropic API key; saved to the DB (`settings` table) and used
+  DeepSeek API key; saved to the DB (`settings` table) and used
   immediately by the cron jobs and CLI too, no restart needed.
 - **AI Prompt** — view/edit the exact prompt sent to the model, with a
   reset-to-default button.
@@ -62,8 +62,9 @@ below (DB takes priority; env vars are the fallback for headless/cron use).
 ## Setup (CLI / cron only, no UI)
 
 1. Install deps: `pip install -r email_pipeline/requirements.txt` (Flask
-   is only needed for the web UI; `anthropic` only for AI-generated text
-   — without an API key set, a plain template is used instead so the
+   is only needed for the web UI; `openai` is used to talk to DeepSeek's
+   OpenAI-compatible API for AI-generated text — without a
+   `DEEPSEEK_API_KEY` set, a plain template is used instead so the
    pipeline still runs).
 
 2. Set environment variables for your 4 mailboxes (repeat for N=1..4):
@@ -76,7 +77,7 @@ below (DB takes priority; env vars are the fallback for headless/cron use).
    MAILBOX1_FROM_NAME="Your Name"
    ```
 
-   Plus `ANTHROPIC_API_KEY=...` (optional but recommended).
+   Plus `DEEPSEEK_API_KEY=...` (optional but recommended).
 
 3. Import contacts:
 

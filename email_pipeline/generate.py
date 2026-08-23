@@ -1,7 +1,7 @@
 """
-Generate outreach email text via the Anthropic API. Falls back to a plain
-template if no API key is configured, so the rest of the pipeline can
-still be tested end-to-end without it.
+Generate outreach email text via the DeepSeek API (OpenAI-compatible).
+Falls back to a plain template if no API key is configured, so the rest
+of the pipeline can still be tested end-to-end without it.
 """
 import sqlite3
 
@@ -81,21 +81,21 @@ def generate_from_fields(
     if not api_key:
         return _fallback_text(name, company, sender_company, product_description)
 
-    import anthropic
+    import openai
 
-    client = anthropic.Anthropic(api_key=api_key)
+    client = openai.OpenAI(api_key=api_key, base_url="https://api.deepseek.com")
     prompt = (prompt_template or DEFAULT_PROMPT_TEMPLATE).format(
         name=name,
         company=company,
         sender_company=sender_company,
         product_description=product_description,
     )
-    response = client.messages.create(
-        model="claude-sonnet-5",
+    response = client.chat.completions.create(
+        model="deepseek-chat",
         max_tokens=400,
         messages=[{"role": "user", "content": prompt}],
     )
-    text = response.content[0].text
+    text = response.choices[0].message.content
 
     subject = "Quick question"
     body = text
@@ -113,6 +113,6 @@ def generate_email(contact: sqlite3.Row) -> tuple[str, str]:
         company=contact["company"],
         sender_company=config.get_sender_company_name(),
         product_description=config.get_product_description(),
-        api_key=config.get_anthropic_api_key(),
+        api_key=config.get_deepseek_api_key(),
         prompt_template=config.get_prompt_template_override(),
     )

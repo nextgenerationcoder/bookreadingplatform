@@ -49,7 +49,7 @@ def dashboard():
         counts=counts,
         recent=recent,
         mailbox_count=len(mailboxes),
-        has_api_key=bool(config.get_anthropic_api_key()),
+        has_api_key=bool(config.get_deepseek_api_key()),
     )
 
 
@@ -135,7 +135,7 @@ def test_page():
             company=form["company"],
             sender_company=config.get_sender_company_name(),
             product_description=config.get_product_description(),
-            api_key=config.get_anthropic_api_key(),
+            api_key=config.get_deepseek_api_key(),
             prompt_template=config.get_prompt_template_override(),
         )
         result = {"subject": subject, "body": body}
@@ -177,7 +177,7 @@ def prompt_page():
 @app.route("/settings", methods=["GET", "POST"])
 def settings_page():
     if request.method == "POST":
-        db.set_setting("anthropic_api_key", request.form.get("anthropic_api_key", "").strip())
+        db.set_setting("deepseek_api_key", request.form.get("deepseek_api_key", "").strip())
         db.set_setting("sender_company_name", request.form.get("sender_company_name", "").strip())
         db.set_setting("product_description", request.form.get("product_description", "").strip())
         db.set_setting("daily_min_per_mailbox", request.form.get("daily_min_per_mailbox", "10").strip())
@@ -209,7 +209,7 @@ def settings_page():
         "settings.html",
         active="settings",
         mailboxes=mailboxes,
-        anthropic_api_key=config.get_anthropic_api_key() or "",
+        deepseek_api_key=config.get_deepseek_api_key() or "",
         sender_company_name=config.get_sender_company_name(),
         product_description=config.get_product_description(),
         daily_min=config.get_daily_min_per_mailbox(),

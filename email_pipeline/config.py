@@ -17,9 +17,9 @@ Plus:
   PRODUCT_DESCRIPTION    (one line describing what you make/sell, used to
                           phrase the inquiry question)
   DB_PATH                (defaults to email_pipeline/pipeline.db)
-  ANTHROPIC_API_KEY       (used to generate email text; falls back to a
-                          plain template if unset, so the pipeline still
-                          runs end-to-end without it)
+  DEEPSEEK_API_KEY        (used to generate email text via the DeepSeek
+                          API; falls back to a plain template if unset,
+                          so the pipeline still runs end-to-end without it)
   DAILY_MIN_PER_MAILBOX  (defaults to 10)
   DAILY_MAX_PER_MAILBOX  (defaults to 15)
   SEND_WINDOW_START_HOUR (defaults to 8)
@@ -58,8 +58,8 @@ def _setting(key: str, env_key: str, default=None):
     return os.environ.get(env_key, default)
 
 
-def get_anthropic_api_key():
-    return _setting("anthropic_api_key", "ANTHROPIC_API_KEY")
+def get_deepseek_api_key():
+    return _setting("deepseek_api_key", "DEEPSEEK_API_KEY")
 
 
 def get_sender_company_name() -> str:
