@@ -147,3 +147,14 @@ if (!userColumns.includes('voice_id')) {
 if (!userColumns.includes('speech_rate')) {
   db.exec('ALTER TABLE users ADD COLUMN speech_rate REAL');
 }
+// Separate from llm_provider/llm_api_key_enc (the text/translation key,
+// used by the PDF pipeline's translate step): a vision-capable key, used to
+// read photos/scanned pages directly (photo batch upload, and OCR for PDF
+// pages with no extractable text layer). Independent since the cheapest
+// good text model (e.g. DeepSeek) often isn't vision-capable at all.
+if (!userColumns.includes('vision_provider')) {
+  db.exec('ALTER TABLE users ADD COLUMN vision_provider TEXT');
+}
+if (!userColumns.includes('vision_api_key_enc')) {
+  db.exec('ALTER TABLE users ADD COLUMN vision_api_key_enc TEXT');
+}

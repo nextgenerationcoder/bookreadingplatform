@@ -30,10 +30,11 @@ export async function renderAddBook(host) {
 
       <div class="ocrBox">
         <p class="hint" style="padding-top:0">
-          Or upload a whole book as a PDF: it extracts the text page by page, translates and formats
-          every page automatically with your AI key, and builds the book in one go — no manual
-          copy-pasting. Pages that are scanned images (no real text in the PDF) get skipped and
-          listed, since that needs the photo-based tool in Add Pages instead.
+          Or upload a whole book as a PDF: it extracts the text page by page (for free, from the
+          PDF itself) and translates + formats every page with your Translation API key, building
+          the book in one go — no manual copy-pasting. Pages that turn out to be scanned images
+          (no real text in the PDF) are OCR'd with your Vision API key if you've set one in
+          Settings; otherwise they're just skipped and listed.
         </p>
         ${
           llmSettings.configured
@@ -45,7 +46,7 @@ export async function renderAddBook(host) {
                  <button id="pdfBtn" type="button">Import Whole PDF</button>
                </div>`
             : `<p class="hint" style="padding:0">
-                 You need an AI API key configured first — <a href="#/settings">add one in Settings</a>.
+                 You need a Translation API key configured first — <a href="#/settings">add one in Settings</a>.
                </p>`
         }
         <div id="pdfStatus" class="importStatus"></div>

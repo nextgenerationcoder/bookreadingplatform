@@ -38,11 +38,13 @@ router.post('/import', (req, res) => {
 });
 
 // POST /api/books/import-pdf (multipart: "pdf" file, + bookId, title,
-// startPage, chapter) — extracts text from the PDF page by page, translates
-// and formats each page via the account's own AI key, and saves the result
-// as a book (creating it if bookId doesn't exist yet, otherwise appending).
-// Pages with no extractable text (scanned images) are skipped and reported,
-// not guessed at - use the page-photo batch upload in Add Pages for those.
+// startPage, chapter) — extracts text from the PDF page by page. Pages with
+// a real text layer are translated+formatted via the account's Translation
+// key (Settings > AI API Key). Pages with no extractable text (scanned
+// images) are OCR'd via the account's Vision key (Settings > Vision API
+// Key) if one is configured, otherwise reported rather than guessed at.
+// Saves the result as a book, creating it if bookId doesn't exist yet,
+// otherwise appending.
 router.post('/import-pdf', upload.single('pdf'), async (req, res) => {
   if (!req.file) return res.status(400).json({ error: 'a PDF file is required' });
   const { bookId, title, chapter } = req.body || {};
@@ -52,17 +54,23 @@ router.post('/import-pdf', upload.single('pdf'), async (req, res) => {
   const startPage = Number(req.body?.startPage);
   if (!Number.isFinite(startPage)) return res.status(400).json({ error: 'startPage must be a number' });
 
-  const row = db.prepare('SELECT llm_provider, llm_api_key_enc FROM users WHERE id = ?').get(req.userId);
+  const row = db
+    .prepare('SELECT llm_provider, llm_api_key_enc, vision_provider, vision_api_key_enc FROM users WHERE id = ?')
+    .get(req.userId);
   if (!row?.llm_provider || !row?.llm_api_key_enc) {
-    return res.status(400).json({ error: 'no AI API key configured — add one in Settings first' });
+    return res.status(400).json({ error: 'no Translation API key configured — add one in Settings first' });
   }
 
   try {
-    const apiKey = await decrypt(row.llm_api_key_enc);
+    const textApiKey = await decrypt(row.llm_api_key_enc);
+    const vision =
+      row.vision_provider && row.vision_api_key_enc
+        ? { provider: row.vision_provider, apiKey: await decrypt(row.vision_api_key_enc) }
+        : null;
     const result = await importPdfAsBook({
       pdfBuffer: req.file.buffer,
-      provider: row.llm_provider,
-      apiKey,
+      text: { provider: row.llm_provider, apiKey: textApiKey },
+      vision,
       bookId: bookId.trim(),
       title: (title || '').trim(),
       startPage,

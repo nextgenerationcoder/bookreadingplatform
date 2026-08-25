@@ -97,6 +97,10 @@ export const api = {
   saveLlmSettings: (provider, apiKey) => post('/api/settings/llm', { provider, apiKey }),
   clearLlmSettings: () => del('/api/settings/llm'),
 
+  getVisionSettings: () => get('/api/settings/vision'),
+  saveVisionSettings: (provider, apiKey) => post('/api/settings/vision', { provider, apiKey }),
+  clearVisionSettings: () => del('/api/settings/vision'),
+
   getVoices: () => get('/api/tts/voices'),
   getVoiceSettings: () => get('/api/settings/voice'),
   saveVoiceSettings: (voiceId, speechRate) => post('/api/settings/voice', { voiceId, speechRate }),

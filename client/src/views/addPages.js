@@ -24,11 +24,11 @@ export async function renderAddPages(host, bookId, kind = 'book') {
 
   host.innerHTML = '<div class="loading">Loading…</div>';
 
-  let book, llmSettings;
+  let book, visionSettings;
   try {
-    [book, llmSettings] = await Promise.all([
+    [book, visionSettings] = await Promise.all([
       getContent(bookId),
-      api.getLlmSettings().catch(() => ({ configured: false })),
+      api.getVisionSettings().catch(() => ({ configured: false })),
     ]);
   } catch (err) {
     host.innerHTML = `<div class="error">Not found.<br><small>${err.message}</small></div>`;
@@ -49,7 +49,7 @@ export async function renderAddPages(host, bookId, kind = 'book') {
           and fix before adding.
         </p>
         ${
-          llmSettings.configured
+          visionSettings.configured
             ? `<div class="ocrControls">
                  <input type="file" id="batchFiles" accept="image/*" capture="environment" multiple>
                  <input type="number" id="batchStartPage" value="${lastPage + 1}" min="1" style="width:90px">
@@ -57,7 +57,7 @@ export async function renderAddPages(host, bookId, kind = 'book') {
                  <button id="batchBtn" type="button">Analyze &amp; Fill In</button>
                </div>`
             : `<p class="hint" style="padding:0">
-                 You need an AI API key configured first — <a href="#/settings">add one in Settings</a>.
+                 You need a Vision API key configured first — <a href="#/settings">add one in Settings</a>.
                </p>`
         }
         <div id="batchStatus" class="importStatus"></div>

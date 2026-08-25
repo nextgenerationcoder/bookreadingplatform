@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { db } from '../db.js';
 import { encrypt } from '../crypto.js';
-import { LLM_PROVIDERS } from '../llm.js';
+import { LLM_PROVIDERS, VISION_CAPABLE_PROVIDERS } from '../llm.js';
 import { VOICES, DEFAULT_VOICE, DEFAULT_RATE, MIN_RATE, MAX_RATE } from '../tts.js';
 
 const router = Router();
@@ -32,6 +32,34 @@ router.post('/llm', async (req, res) => {
 
 router.delete('/llm', (req, res) => {
   db.prepare('UPDATE users SET llm_provider = NULL, llm_api_key_enc = NULL WHERE id = ?').run(req.userId);
+  res.json({ configured: false });
+});
+
+// GET/POST/DELETE /api/settings/vision — a second, independent API key used
+// only for reading photos/scanned pages directly (photo batch upload, OCR
+// for PDF pages with no text layer). Kept separate from /llm (the text/
+// translation key) since a vision-capable key is often a different, pricier
+// provider than the cheapest good text model.
+router.get('/vision', (req, res) => {
+  const row = db.prepare('SELECT vision_provider FROM users WHERE id = ?').get(req.userId);
+  res.json({ provider: row?.vision_provider || null, configured: Boolean(row?.vision_provider) });
+});
+
+router.post('/vision', async (req, res) => {
+  const { provider, apiKey } = req.body || {};
+  if (!VISION_CAPABLE_PROVIDERS.includes(provider)) {
+    return res.status(400).json({ error: `provider must be one of: ${VISION_CAPABLE_PROVIDERS.join(', ')}` });
+  }
+  if (!apiKey || typeof apiKey !== 'string' || apiKey.trim().length < 8) {
+    return res.status(400).json({ error: 'a valid API key is required' });
+  }
+  const enc = await encrypt(apiKey.trim());
+  db.prepare('UPDATE users SET vision_provider = ?, vision_api_key_enc = ? WHERE id = ?').run(provider, enc, req.userId);
+  res.json({ provider, configured: true });
+});
+
+router.delete('/vision', (req, res) => {
+  db.prepare('UPDATE users SET vision_provider = NULL, vision_api_key_enc = NULL WHERE id = ?').run(req.userId);
   res.json({ configured: false });
 });
 

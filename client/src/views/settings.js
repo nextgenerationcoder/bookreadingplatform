@@ -1,15 +1,15 @@
 import { api } from '../api.js';
 
 const PROVIDER_LABELS = { anthropic: 'Anthropic (Claude)', openai: 'OpenAI (GPT)', deepseek: 'DeepSeek' };
-const VISION_CAPABLE = new Set(['anthropic', 'openai']);
 
 export async function renderSettings(host) {
   host.innerHTML = '<div class="loading">Loading settings…</div>';
 
-  let current, voiceInfo, voiceCurrent;
+  let translation, vision, voiceInfo, voiceCurrent;
   try {
-    [current, voiceInfo, voiceCurrent] = await Promise.all([
+    [translation, vision, voiceInfo, voiceCurrent] = await Promise.all([
       api.getLlmSettings(),
+      api.getVisionSettings(),
       api.getVoices(),
       api.getVoiceSettings(),
     ]);
@@ -21,21 +21,22 @@ export async function renderSettings(host) {
   function render() {
     host.innerHTML = `
       <div class="formPage">
-        <h1>Settings</h1>
+        <h1>Translation API Key</h1>
         <p class="hint">
-          Add your own AI API key. This key is personal to your account — it's stored encrypted,
-          only ever used for your own requests, and nobody else can use it.
+          Used to translate and format text — the whole-book PDF import pipeline, mainly. Any text
+          model works, including cheaper ones like DeepSeek, since this never needs to read an image.
+          Personal to your account, stored encrypted, and never used for anyone else's requests.
         </p>
 
         <div class="authCard" style="max-width:420px;margin:18px 0 0">
           ${
-            current.configured
-              ? `<p><strong>Current provider:</strong> ${PROVIDER_LABELS[current.provider] || current.provider}</p>
+            translation.configured
+              ? `<p><strong>Current provider:</strong> ${PROVIDER_LABELS[translation.provider] || translation.provider}</p>
                  <p class="hint" style="padding:0 0 14px">The key itself is never shown again once saved.</p>
-                 <button id="clearBtn" type="button">Remove API Key</button>`
+                 <button id="clearLlmBtn" type="button">Remove API Key</button>`
               : ''
           }
-          <form id="llmForm" style="margin-top:${current.configured ? '18px' : '0'}">
+          <form id="llmForm" style="margin-top:${translation.configured ? '18px' : '0'}">
             <label>Provider
               <select id="provider">
                 <option value="anthropic">Anthropic (Claude)</option>
@@ -43,17 +44,43 @@ export async function renderSettings(host) {
                 <option value="deepseek">DeepSeek</option>
               </select>
             </label>
-            <p id="visionNote" class="hint" style="padding:0" hidden>
-              DeepSeek can't read photos directly (no vision API), so it can't power the page-photo
-              batch upload in Add Pages — but it works fine for the whole-book PDF import pipeline
-              (which translates already-extracted text, not photos).
-            </p>
             <label>API Key
               <input type="password" id="apiKey" autocomplete="off" placeholder="sk-…" required>
             </label>
-            <button type="submit">${current.configured ? 'Replace Key' : 'Save Key'}</button>
+            <button type="submit">${translation.configured ? 'Replace Key' : 'Save Key'}</button>
           </form>
-          <div id="settingsStatus" class="importStatus"></div>
+          <div id="llmStatus" class="importStatus"></div>
+        </div>
+
+        <h1 style="margin-top:32px">Vision / OCR API Key</h1>
+        <p class="hint">
+          Used to read images directly — the page-photo batch upload in Add Pages, and OCR for PDF
+          pages that turn out to be scanned images rather than real text. Needs a vision-capable
+          model, so only Anthropic or OpenAI (DeepSeek has no vision API). Optional: without this,
+          scanned PDF pages are just skipped and listed instead of guessed at.
+        </p>
+
+        <div class="authCard" style="max-width:420px;margin:18px 0 0">
+          ${
+            vision.configured
+              ? `<p><strong>Current provider:</strong> ${PROVIDER_LABELS[vision.provider] || vision.provider}</p>
+                 <p class="hint" style="padding:0 0 14px">The key itself is never shown again once saved.</p>
+                 <button id="clearVisionBtn" type="button">Remove API Key</button>`
+              : ''
+          }
+          <form id="visionForm" style="margin-top:${vision.configured ? '18px' : '0'}">
+            <label>Provider
+              <select id="visionProvider">
+                <option value="anthropic">Anthropic (Claude)</option>
+                <option value="openai">OpenAI (GPT)</option>
+              </select>
+            </label>
+            <label>API Key
+              <input type="password" id="visionApiKey" autocomplete="off" placeholder="sk-…" required>
+            </label>
+            <button type="submit">${vision.configured ? 'Replace Key' : 'Save Key'}</button>
+          </form>
+          <div id="visionStatus" class="importStatus"></div>
         </div>
 
         <h1 style="margin-top:32px">Voice</h1>
@@ -81,46 +108,78 @@ export async function renderSettings(host) {
       </div>
     `;
 
-    const form = host.querySelector('#llmForm');
-    const status = host.querySelector('#settingsStatus');
-    const clearBtn = host.querySelector('#clearBtn');
+    const llmForm = host.querySelector('#llmForm');
+    const llmStatus = host.querySelector('#llmStatus');
+    const clearLlmBtn = host.querySelector('#clearLlmBtn');
     const providerSelect = host.querySelector('#provider');
-    const visionNote = host.querySelector('#visionNote');
 
-    if (current.provider) providerSelect.value = current.provider;
-    visionNote.hidden = VISION_CAPABLE.has(providerSelect.value);
-    providerSelect.onchange = () => {
-      visionNote.hidden = VISION_CAPABLE.has(providerSelect.value);
-    };
+    if (translation.provider) providerSelect.value = translation.provider;
 
-    form.onsubmit = async (e) => {
+    llmForm.onsubmit = async (e) => {
       e.preventDefault();
-      const provider = host.querySelector('#provider').value;
+      const provider = providerSelect.value;
       const apiKey = host.querySelector('#apiKey').value.trim();
-      status.textContent = 'Saving…';
-      status.className = 'importStatus';
+      llmStatus.textContent = 'Saving…';
+      llmStatus.className = 'importStatus';
       try {
-        current = await api.saveLlmSettings(provider, apiKey);
+        translation = await api.saveLlmSettings(provider, apiKey);
         render();
-        const newStatus = host.querySelector('#settingsStatus');
-        newStatus.textContent = 'Saved.';
-        newStatus.className = 'importStatus success';
+        host.querySelector('#llmStatus').textContent = 'Saved.';
+        host.querySelector('#llmStatus').className = 'importStatus success';
       } catch (err) {
-        status.textContent = `Error: ${err.message}`;
-        status.className = 'importStatus error';
+        llmStatus.textContent = `Error: ${err.message}`;
+        llmStatus.className = 'importStatus error';
       }
     };
 
-    if (clearBtn) {
-      clearBtn.onclick = async () => {
-        clearBtn.disabled = true;
+    if (clearLlmBtn) {
+      clearLlmBtn.onclick = async () => {
+        clearLlmBtn.disabled = true;
         try {
-          current = await api.clearLlmSettings();
+          translation = await api.clearLlmSettings();
           render();
         } catch (err) {
-          status.textContent = `Error: ${err.message}`;
-          status.className = 'importStatus error';
-          clearBtn.disabled = false;
+          llmStatus.textContent = `Error: ${err.message}`;
+          llmStatus.className = 'importStatus error';
+          clearLlmBtn.disabled = false;
+        }
+      };
+    }
+
+    const visionForm = host.querySelector('#visionForm');
+    const visionStatus = host.querySelector('#visionStatus');
+    const clearVisionBtn = host.querySelector('#clearVisionBtn');
+    const visionProviderSelect = host.querySelector('#visionProvider');
+
+    if (vision.provider) visionProviderSelect.value = vision.provider;
+
+    visionForm.onsubmit = async (e) => {
+      e.preventDefault();
+      const provider = visionProviderSelect.value;
+      const apiKey = host.querySelector('#visionApiKey').value.trim();
+      visionStatus.textContent = 'Saving…';
+      visionStatus.className = 'importStatus';
+      try {
+        vision = await api.saveVisionSettings(provider, apiKey);
+        render();
+        host.querySelector('#visionStatus').textContent = 'Saved.';
+        host.querySelector('#visionStatus').className = 'importStatus success';
+      } catch (err) {
+        visionStatus.textContent = `Error: ${err.message}`;
+        visionStatus.className = 'importStatus error';
+      }
+    };
+
+    if (clearVisionBtn) {
+      clearVisionBtn.onclick = async () => {
+        clearVisionBtn.disabled = true;
+        try {
+          vision = await api.clearVisionSettings();
+          render();
+        } catch (err) {
+          visionStatus.textContent = `Error: ${err.message}`;
+          visionStatus.className = 'importStatus error';
+          clearVisionBtn.disabled = false;
         }
       };
     }
