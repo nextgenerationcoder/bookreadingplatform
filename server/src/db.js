@@ -7,7 +7,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 // DB_PATH lets deployments point at a mounted volume (e.g. Docker) so data
 // survives container rebuilds; defaults to a local file for plain dev use.
-const DB_PATH = process.env.DB_PATH || path.join(__dirname, '..', 'data', 'app.db');
+export const DB_PATH = process.env.DB_PATH || path.join(__dirname, '..', 'data', 'app.db');
 
 await fs.mkdir(path.dirname(DB_PATH), { recursive: true });
 
@@ -117,6 +117,29 @@ db.exec(`
     de TEXT NOT NULL,
     fa TEXT NOT NULL,
     chapter TEXT
+  );
+
+  -- Tracks whole-book PDF import jobs so an in-progress import (which can
+  -- take a long time - one AI call per page) survives a server restart:
+  -- the uploaded PDF is saved to disk (pdf_path) and progress is persisted
+  -- here on every page, so a "running" job found at startup can be resumed
+  -- from where it left off instead of being silently lost.
+  CREATE TABLE IF NOT EXISTS pdf_import_jobs (
+    id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    book_id TEXT NOT NULL,
+    title TEXT,
+    chapter TEXT,
+    start_page INTEGER NOT NULL,
+    pdf_path TEXT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'running',
+    current_page INTEGER NOT NULL DEFAULT 0,
+    total_pages INTEGER,
+    pages_found INTEGER NOT NULL DEFAULT 0,
+    errors_json TEXT NOT NULL DEFAULT '[]',
+    error TEXT,
+    cancelled INTEGER NOT NULL DEFAULT 0,
+    created_at TEXT NOT NULL
   );
 
   CREATE INDEX IF NOT EXISTS idx_pages_book ON pages(book_id);

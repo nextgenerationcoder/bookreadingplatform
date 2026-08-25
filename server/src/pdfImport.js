@@ -47,14 +47,23 @@ function saveOnePage(bookId, title, pageText) {
 // Processes and saves the PDF one page at a time, calling onProgress after
 // each page so a caller can track/report status (see routes/books.js's job
 // tracking). Returns the final summary once every page has been attempted.
-export async function importPdfAsBook({ pdfBuffer, text: textAi, bookId, title, startPage, chapter, onProgress }) {
+//
+// resumeFromIndex/initialPagesFound/initialErrors let a caller pick back up
+// mid-book after an interruption (e.g. a server restart) instead of
+// reprocessing the whole PDF from page 1 - already-saved pages are skipped
+// entirely (replacePage() makes re-saving the same page number safe anyway,
+// but there's no need to redo AI calls for pages that already succeeded).
+export async function importPdfAsBook({
+  pdfBuffer, text: textAi, bookId, title, startPage, chapter, onProgress,
+  resumeFromIndex = 1, initialPagesFound = 0, initialErrors = [],
+}) {
   const doc = await getDocument({ data: new Uint8Array(pdfBuffer) }).promise;
   const totalPages = doc.numPages;
-  let pagesFound = 0;
-  const errors = [];
+  let pagesFound = initialPagesFound;
+  const errors = [...initialErrors];
   let meta = null;
 
-  for (let i = 1; i <= totalPages; i++) {
+  for (let i = resumeFromIndex; i <= totalPages; i++) {
     const pageNumber = startPage + i - 1;
     onProgress?.({ currentPage: i, totalPages, pagesFound, errors });
 

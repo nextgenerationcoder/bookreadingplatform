@@ -7,7 +7,7 @@ import { existsSync } from 'node:fs';
 import { seedIfEmpty } from './seed.js';
 import { requireAuth } from './auth.js';
 import authRouter from './routes/auth.js';
-import booksRouter from './routes/books.js';
+import booksRouter, { resumePendingPdfJobs } from './routes/books.js';
 import coursesRouter from './routes/courses.js';
 import dictionaryRouter from './routes/dictionary.js';
 import progressRouter from './routes/progress.js';
@@ -63,3 +63,8 @@ app.use((err, _req, res, _next) => {
 app.listen(PORT, () => {
   console.log(`Book reading platform listening on http://localhost:${PORT}`);
 });
+
+// Resume any PDF import jobs that were still running when the process last
+// stopped (redeploy, crash, restart) - after listen() so early requests
+// aren't blocked on it.
+resumePendingPdfJobs().catch((err) => console.error('Failed to resume pending PDF import jobs:', err));
