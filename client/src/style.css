@@ -72,6 +72,8 @@ button:disabled { opacity: .35 }
 .ocrControls { display: flex; flex-wrap: wrap; gap: 8px; align-items: center }
 .ocrControls input[type="text"] { flex: 1; min-width: 140px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--paper); font-size: 14px }
 .ocrControls input[type="number"] { padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--paper); font-size: 14px }
+.progressBar { margin-top: 10px; height: 8px; border-radius: 6px; background: var(--line); overflow: hidden }
+.progressFill { height: 100%; width: 0%; background: var(--accent); transition: width .3s ease }
 .formActions { display: flex; gap: 12px; align-items: center; margin-top: 12px }
 .dangerButton { border-color: #b3261e; color: #b3261e; background: var(--paper) }
 .dangerButton:hover { background: #fbeceb }

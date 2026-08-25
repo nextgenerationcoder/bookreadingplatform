@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import multer from 'multer';
+import crypto from 'node:crypto';
 import {
   parseBookText,
   saveImportedBook,
@@ -15,6 +16,29 @@ import { importPdfAsBook } from '../pdfImport.js';
 
 const router = Router();
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 40 * 1024 * 1024 } });
+
+// In-memory job tracking for the PDF import pipeline, since it can take a
+// long time (one AI call per page, occasionally an OCR pass too) - the
+// import route kicks off processing and returns immediately with a job id,
+// rather than holding the HTTP request open for a whole book. A restart
+// loses in-flight jobs, which is an acceptable trade-off for a single-
+// process personal app (pages already saved before the restart are kept -
+// only the "job status" bookkeeping is lost, not the book data itself).
+const pdfJobs = new Map();
+
+router.post('/import-pdf/:jobId/cancel', (req, res) => {
+  const job = pdfJobs.get(req.params.jobId);
+  if (!job || job.userId !== req.userId) return res.status(404).json({ error: 'job not found' });
+  job.cancelled = true;
+  res.json({ ok: true });
+});
+
+router.get('/import-pdf/:jobId/status', (req, res) => {
+  const job = pdfJobs.get(req.params.jobId);
+  if (!job || job.userId !== req.userId) return res.status(404).json({ error: 'job not found' });
+  const { userId: _userId, cancelled: _cancelled, ...publicState } = job;
+  res.json(publicState);
+});
 
 router.get('/', (_req, res) => {
   res.json(listBooks());
@@ -38,13 +62,14 @@ router.post('/import', (req, res) => {
 });
 
 // POST /api/books/import-pdf (multipart: "pdf" file, + bookId, title,
-// startPage, chapter) — extracts text from the PDF page by page. Pages with
-// a real text layer are translated+formatted via the account's Translation
-// key (Settings > AI API Key). Pages with no extractable text (scanned
-// images) are OCR'd via the account's Vision key (Settings > Vision API
-// Key) if one is configured, otherwise reported rather than guessed at.
-// Saves the result as a book, creating it if bookId doesn't exist yet,
-// otherwise appending.
+// startPage, chapter) — kicks off background processing and returns
+// immediately with a jobId; poll GET .../import-pdf/:jobId/status for
+// progress. Pages with a real text layer are translated+formatted via the
+// account's Translation key. Pages with no extractable text (scanned
+// images) are OCR'd for free with local Tesseract, then translated the
+// same way. Each page is saved to the book as soon as it's done, so the
+// book can already be opened and read while later pages are still
+// processing.
 router.post('/import-pdf', upload.single('pdf'), async (req, res) => {
   if (!req.file) return res.status(400).json({ error: 'a PDF file is required' });
   const { bookId, title, chapter } = req.body || {};
@@ -54,36 +79,59 @@ router.post('/import-pdf', upload.single('pdf'), async (req, res) => {
   const startPage = Number(req.body?.startPage);
   if (!Number.isFinite(startPage)) return res.status(400).json({ error: 'startPage must be a number' });
 
-  const row = db
-    .prepare('SELECT llm_provider, llm_api_key_enc, vision_provider, vision_api_key_enc FROM users WHERE id = ?')
-    .get(req.userId);
+  const row = db.prepare('SELECT llm_provider, llm_api_key_enc FROM users WHERE id = ?').get(req.userId);
   if (!row?.llm_provider || !row?.llm_api_key_enc) {
     return res.status(400).json({ error: 'no Translation API key configured — add one in Settings first' });
   }
 
+  const jobId = crypto.randomUUID();
+  const job = {
+    userId: req.userId,
+    status: 'running',
+    bookId: bookId.trim(),
+    currentPage: 0,
+    totalPages: null,
+    pagesFound: 0,
+    errors: [],
+    cancelled: false,
+  };
+  pdfJobs.set(jobId, job);
+  res.status(202).json({ jobId, bookId: job.bookId });
+
   try {
     const textApiKey = await decrypt(row.llm_api_key_enc);
-    const vision =
-      row.vision_provider && row.vision_api_key_enc
-        ? { provider: row.vision_provider, apiKey: await decrypt(row.vision_api_key_enc) }
-        : null;
     const result = await importPdfAsBook({
       pdfBuffer: req.file.buffer,
       text: { provider: row.llm_provider, apiKey: textApiKey },
-      vision,
-      bookId: bookId.trim(),
+      bookId: job.bookId,
       title: (title || '').trim(),
       startPage,
       chapter: (chapter || '').trim(),
+      onProgress: (p) => {
+        if (job.cancelled) throw new Error('CANCELLED');
+        job.currentPage = p.currentPage;
+        job.totalPages = p.totalPages;
+        job.pagesFound = p.pagesFound;
+        job.errors = p.errors;
+      },
     });
-    if (!result.meta) {
-      return res.status(502).json({ error: 'No pages could be translated.', errors: result.errors, totalPages: result.totalPages });
-    }
-    res.status(201).json(result);
+    job.status = 'done';
+    job.pagesFound = result.pagesFound;
+    job.totalPages = result.totalPages;
+    job.errors = result.errors;
+    job.meta = result.meta;
   } catch (err) {
-    console.error('PDF import failed:', err);
-    res.status(502).json({ error: err.message });
+    if (err.message === 'CANCELLED') {
+      job.status = 'cancelled';
+    } else {
+      console.error('PDF import failed:', err);
+      job.status = 'error';
+      job.error = err.message;
+    }
   }
+  // Keep finished job state around briefly for the client to pick up on its
+  // next poll, then free the memory - no need to keep it forever.
+  setTimeout(() => pdfJobs.delete(jobId), 10 * 60 * 1000);
 });
 
 router.get('/:bookId', (req, res) => {

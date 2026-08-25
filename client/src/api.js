@@ -68,6 +68,10 @@ export const api = {
     fd.append('chapter', chapter || '');
     return postForm('/api/ocr/batch', fd);
   },
+  // Kicks off background PDF processing and returns { jobId, bookId }
+  // immediately - poll getPdfImportStatus(jobId) for progress. Pages are
+  // saved to the book as they complete, so it can be read while still
+  // importing.
   importBookFromPdf: (file, bookId, title, startPage, chapter) => {
     const fd = new FormData();
     fd.append('pdf', file);
@@ -77,6 +81,8 @@ export const api = {
     fd.append('chapter', chapter || '');
     return postForm('/api/books/import-pdf', fd);
   },
+  getPdfImportStatus: (jobId) => get(`/api/books/import-pdf/${jobId}/status`),
+  cancelPdfImport: (jobId) => post(`/api/books/import-pdf/${jobId}/cancel`, {}),
   getCourseLevels: () => get('/api/courses/levels'),
   listCourses: (level) => get(`/api/courses${level ? `?level=${encodeURIComponent(level)}` : ''}`),
   getCourse: (courseId) => get(`/api/courses/${courseId}`),

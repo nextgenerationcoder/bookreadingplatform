@@ -33,8 +33,9 @@ export async function renderAddBook(host) {
           Or upload a whole book as a PDF: it extracts the text page by page (for free, from the
           PDF itself) and translates + formats every page with your Translation API key, building
           the book in one go — no manual copy-pasting. Pages that turn out to be scanned images
-          (no real text in the PDF) are OCR'd with your Vision API key if you've set one in
-          Settings; otherwise they're just skipped and listed.
+          (no real text in the PDF) are OCR'd for free with local OCR. Runs in the background page
+          by page — pages are added to the book as they finish, so you can go start reading while
+          the rest keeps processing.
         </p>
         ${
           llmSettings.configured
@@ -49,6 +50,10 @@ export async function renderAddBook(host) {
                  You need a Translation API key configured first — <a href="#/settings">add one in Settings</a>.
                </p>`
         }
+        <div id="pdfProgressWrap" hidden>
+          <div class="progressBar"><div id="pdfProgressFill" class="progressFill"></div></div>
+          <div id="pdfProgressLabel" class="hint" style="padding:6px 0 0"></div>
+        </div>
         <div id="pdfStatus" class="importStatus"></div>
       </div>
 
@@ -76,6 +81,9 @@ export async function renderAddBook(host) {
   const btn = host.querySelector('#importBtn');
   const pdfBtn = host.querySelector('#pdfBtn');
   const pdfStatus = host.querySelector('#pdfStatus');
+  const progressWrap = host.querySelector('#pdfProgressWrap');
+  const progressFill = host.querySelector('#pdfProgressFill');
+  const progressLabel = host.querySelector('#pdfProgressLabel');
 
   if (pdfBtn) {
     pdfBtn.onclick = async () => {
@@ -94,35 +102,68 @@ export async function renderAddBook(host) {
         return;
       }
       pdfBtn.disabled = true;
-      pdfStatus.textContent = 'Reading and translating the PDF… this can take a while for a whole book.';
+      pdfStatus.textContent = 'Starting…';
       pdfStatus.className = 'importStatus';
       try {
-        const result = await api.importBookFromPdf(file, bookId, title, startPage);
-        const failCount = result.errors?.length || 0;
-        pdfStatus.textContent = failCount
-          ? `Added — got ${result.pagesFound} of ${result.totalPages} pages (${failCount} page${failCount > 1 ? 's' : ''} skipped, see below).`
-          : `Added — "${result.meta.title}" now has ${result.meta.pageCount} pages.`;
-        pdfStatus.className = failCount ? 'importStatus error' : 'importStatus success';
-        if (failCount) {
-          const list = document.createElement('ul');
-          list.style.marginTop = '6px';
-          for (const e of result.errors) {
-            const li = document.createElement('li');
-            li.textContent = `Page ${e.pageNumber}: ${e.error}`;
-            list.appendChild(li);
-          }
-          pdfStatus.appendChild(list);
-        }
-        setTimeout(() => {
-          window.location.hash = `#/book/${encodeURIComponent(result.meta.id)}`;
-        }, failCount ? 3000 : 1200);
+        const { jobId } = await api.importBookFromPdf(file, bookId, title, startPage);
+        progressWrap.hidden = false;
+        pollPdfJob(jobId, bookId);
       } catch (err) {
         pdfStatus.textContent = `Error: ${err.message}`;
         pdfStatus.className = 'importStatus error';
-      } finally {
         pdfBtn.disabled = false;
       }
     };
+  }
+
+  async function pollPdfJob(jobId, bookId) {
+    const readLink = `<a href="#/book/${encodeURIComponent(bookId)}">→ Go read the book so far</a>`;
+    let job;
+    try {
+      job = await api.getPdfImportStatus(jobId);
+    } catch (err) {
+      pdfStatus.textContent = `Error: ${err.message}`;
+      pdfStatus.className = 'importStatus error';
+      pdfBtn.disabled = false;
+      return;
+    }
+
+    const total = job.totalPages || 0;
+    const pct = total ? Math.round((job.currentPage / total) * 100) : 0;
+    progressFill.style.width = `${pct}%`;
+    progressLabel.innerHTML = total
+      ? `Page ${job.currentPage} of ${total} — ${job.pagesFound} added so far. ${readLink}`
+      : `Reading the PDF… ${readLink}`;
+
+    if (job.status === 'running') {
+      setTimeout(() => pollPdfJob(jobId, bookId), 1500);
+      return;
+    }
+
+    pdfBtn.disabled = false;
+    const failCount = job.errors?.length || 0;
+    if (job.status === 'error') {
+      pdfStatus.textContent = `Error: ${job.error}`;
+      pdfStatus.className = 'importStatus error';
+    } else if (job.status === 'cancelled') {
+      pdfStatus.innerHTML = `Cancelled — ${job.pagesFound} page(s) were already added. ${readLink}`;
+      pdfStatus.className = 'importStatus';
+    } else {
+      pdfStatus.innerHTML = failCount
+        ? `Done — got ${job.pagesFound} of ${job.totalPages} pages (${failCount} page${failCount > 1 ? 's' : ''} skipped, see below). ${readLink}`
+        : `Done — ${job.pagesFound} pages added. ${readLink}`;
+      pdfStatus.className = failCount ? 'importStatus error' : 'importStatus success';
+      if (failCount) {
+        const list = document.createElement('ul');
+        list.style.marginTop = '6px';
+        for (const e of job.errors) {
+          const li = document.createElement('li');
+          li.textContent = `Page ${e.pageNumber}: ${e.error}`;
+          list.appendChild(li);
+        }
+        pdfStatus.appendChild(list);
+      }
+    }
   }
 
   btn.onclick = async () => {
