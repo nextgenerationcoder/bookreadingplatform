@@ -16,12 +16,43 @@ CHAPTER: Kapitel 1
 1: Noch eine Seite.
 یک صفحهٔ دیگر.`;
 
-export function renderAddBook(host) {
+export async function renderAddBook(host) {
+  let llmSettings = { configured: false };
+  try {
+    llmSettings = await api.getLlmSettings();
+  } catch {
+    // leave unconfigured - the PDF box will just show the Settings link
+  }
+
   host.innerHTML = `
     <div class="formPage">
       <h1>Add Book</h1>
+
+      <div class="ocrBox">
+        <p class="hint" style="padding-top:0">
+          Or upload a whole book as a PDF: it extracts the text page by page, translates and formats
+          every page automatically with your AI key, and builds the book in one go — no manual
+          copy-pasting. Pages that are scanned images (no real text in the PDF) get skipped and
+          listed, since that needs the photo-based tool in Add Pages instead.
+        </p>
+        ${
+          llmSettings.configured
+            ? `<div class="ocrControls">
+                 <input type="file" id="pdfFile" accept="application/pdf">
+                 <input type="text" id="pdfBookId" placeholder="book-id (e.g. my-book)">
+                 <input type="text" id="pdfTitle" placeholder="Title">
+                 <input type="number" id="pdfStartPage" value="1" min="1" style="width:80px">
+                 <button id="pdfBtn" type="button">Import Whole PDF</button>
+               </div>`
+            : `<p class="hint" style="padding:0">
+                 You need an AI API key configured first — <a href="#/settings">add one in Settings</a>.
+               </p>`
+        }
+        <div id="pdfStatus" class="importStatus"></div>
+      </div>
+
       <p class="hint">
-        Paste the book text in this format: one German line per sentence, with its Persian
+        Or paste the book text in this format: one German line per sentence, with its Persian
         translation on the line below, pages marked with <code>PAGE &lt;number&gt;</code> and
         chapters with <code>CHAPTER: &lt;name&gt;</code>.
         You don't need to translate individual words — those come from the shared dictionary automatically.
@@ -42,6 +73,56 @@ export function renderAddBook(host) {
   const textarea = host.querySelector('#bookText');
   const status = host.querySelector('#importStatus');
   const btn = host.querySelector('#importBtn');
+  const pdfBtn = host.querySelector('#pdfBtn');
+  const pdfStatus = host.querySelector('#pdfStatus');
+
+  if (pdfBtn) {
+    pdfBtn.onclick = async () => {
+      const file = host.querySelector('#pdfFile').files[0];
+      const bookId = host.querySelector('#pdfBookId').value.trim();
+      const title = host.querySelector('#pdfTitle').value.trim();
+      const startPage = Number(host.querySelector('#pdfStartPage').value) || 1;
+      if (!file) {
+        pdfStatus.textContent = 'Choose a PDF first.';
+        pdfStatus.className = 'importStatus error';
+        return;
+      }
+      if (!bookId) {
+        pdfStatus.textContent = 'Enter a book id.';
+        pdfStatus.className = 'importStatus error';
+        return;
+      }
+      pdfBtn.disabled = true;
+      pdfStatus.textContent = 'Reading and translating the PDF… this can take a while for a whole book.';
+      pdfStatus.className = 'importStatus';
+      try {
+        const result = await api.importBookFromPdf(file, bookId, title, startPage);
+        const failCount = result.errors?.length || 0;
+        pdfStatus.textContent = failCount
+          ? `Added — got ${result.pagesFound} of ${result.totalPages} pages (${failCount} page${failCount > 1 ? 's' : ''} skipped, see below).`
+          : `Added — "${result.meta.title}" now has ${result.meta.pageCount} pages.`;
+        pdfStatus.className = failCount ? 'importStatus error' : 'importStatus success';
+        if (failCount) {
+          const list = document.createElement('ul');
+          list.style.marginTop = '6px';
+          for (const e of result.errors) {
+            const li = document.createElement('li');
+            li.textContent = `Page ${e.pageNumber}: ${e.error}`;
+            list.appendChild(li);
+          }
+          pdfStatus.appendChild(list);
+        }
+        setTimeout(() => {
+          window.location.hash = `#/book/${encodeURIComponent(result.meta.id)}`;
+        }, failCount ? 3000 : 1200);
+      } catch (err) {
+        pdfStatus.textContent = `Error: ${err.message}`;
+        pdfStatus.className = 'importStatus error';
+      } finally {
+        pdfBtn.disabled = false;
+      }
+    };
+  }
 
   btn.onclick = async () => {
     const text = textarea.value.trim();

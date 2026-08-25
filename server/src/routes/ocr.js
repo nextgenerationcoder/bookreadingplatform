@@ -2,7 +2,7 @@ import { Router } from 'express';
 import multer from 'multer';
 import { db } from '../db.js';
 import { decrypt } from '../crypto.js';
-import { formatPageFromImage } from '../llm.js';
+import { formatPageFromImage, VISION_CAPABLE_PROVIDERS } from '../llm.js';
 
 const router = Router();
 const MAX_PHOTOS = 10;
@@ -31,6 +31,11 @@ router.post('/batch', upload.array('images', MAX_PHOTOS), async (req, res) => {
   const row = db.prepare('SELECT llm_provider, llm_api_key_enc FROM users WHERE id = ?').get(req.userId);
   if (!row?.llm_provider || !row?.llm_api_key_enc) {
     return res.status(400).json({ error: 'no AI API key configured — add one in Settings first' });
+  }
+  if (!VISION_CAPABLE_PROVIDERS.includes(row.llm_provider)) {
+    return res.status(400).json({
+      error: `"${row.llm_provider}" can't read photos (no vision API) — switch to Anthropic or OpenAI in Settings to use this feature.`,
+    });
   }
 
   const apiKey = await decrypt(row.llm_api_key_enc);

@@ -68,6 +68,15 @@ export const api = {
     fd.append('chapter', chapter || '');
     return postForm('/api/ocr/batch', fd);
   },
+  importBookFromPdf: (file, bookId, title, startPage, chapter) => {
+    const fd = new FormData();
+    fd.append('pdf', file);
+    fd.append('bookId', bookId);
+    fd.append('title', title || '');
+    fd.append('startPage', startPage);
+    fd.append('chapter', chapter || '');
+    return postForm('/api/books/import-pdf', fd);
+  },
   getCourseLevels: () => get('/api/courses/levels'),
   listCourses: (level) => get(`/api/courses${level ? `?level=${encodeURIComponent(level)}` : ''}`),
   getCourse: (courseId) => get(`/api/courses/${courseId}`),

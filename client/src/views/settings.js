@@ -1,6 +1,7 @@
 import { api } from '../api.js';
 
-const PROVIDER_LABELS = { anthropic: 'Anthropic (Claude)', openai: 'OpenAI (GPT)' };
+const PROVIDER_LABELS = { anthropic: 'Anthropic (Claude)', openai: 'OpenAI (GPT)', deepseek: 'DeepSeek' };
+const VISION_CAPABLE = new Set(['anthropic', 'openai']);
 
 export async function renderSettings(host) {
   host.innerHTML = '<div class="loading">Loading settings…</div>';
@@ -39,8 +40,14 @@ export async function renderSettings(host) {
               <select id="provider">
                 <option value="anthropic">Anthropic (Claude)</option>
                 <option value="openai">OpenAI (GPT)</option>
+                <option value="deepseek">DeepSeek</option>
               </select>
             </label>
+            <p id="visionNote" class="hint" style="padding:0" hidden>
+              DeepSeek can't read photos directly (no vision API), so it can't power the page-photo
+              batch upload in Add Pages — but it works fine for the whole-book PDF import pipeline
+              (which translates already-extracted text, not photos).
+            </p>
             <label>API Key
               <input type="password" id="apiKey" autocomplete="off" placeholder="sk-…" required>
             </label>
@@ -77,6 +84,14 @@ export async function renderSettings(host) {
     const form = host.querySelector('#llmForm');
     const status = host.querySelector('#settingsStatus');
     const clearBtn = host.querySelector('#clearBtn');
+    const providerSelect = host.querySelector('#provider');
+    const visionNote = host.querySelector('#visionNote');
+
+    if (current.provider) providerSelect.value = current.provider;
+    visionNote.hidden = VISION_CAPABLE.has(providerSelect.value);
+    providerSelect.onchange = () => {
+      visionNote.hidden = VISION_CAPABLE.has(providerSelect.value);
+    };
 
     form.onsubmit = async (e) => {
       e.preventDefault();
