@@ -67,10 +67,12 @@ export async function importPdfAsBook({ pdfBuffer, text: textAi, bookId, title, 
         const png = await renderPageToPngBuffer(doc, i);
         rawText = (await ocrImageBuffer(png)).trim();
       } catch (err) {
+        console.error(`PDF import: OCR failed on page ${pageNumber}:`, err.message);
         errors.push({ index: i - 1, pageNumber, error: `OCR failed: ${err.message}` });
         continue;
       }
       if (rawText.length < MIN_EXTRACTABLE_CHARS) {
+        console.error(`PDF import: OCR came up empty on page ${pageNumber}`);
         errors.push({ index: i - 1, pageNumber, error: 'No readable text found on this scanned page (OCR came up empty)' });
         continue;
       }
@@ -79,12 +81,14 @@ export async function importPdfAsBook({ pdfBuffer, text: textAi, bookId, title, 
     try {
       const formatted = await formatPageFromText({ provider: textAi.provider, apiKey: textAi.apiKey, rawText, pageNumber, chapter });
       if (!formatted || formatted.trim() === 'NO_TEXT_FOUND') {
+        console.error(`PDF import: no translatable content on page ${pageNumber}${usedOcr ? ' (after OCR)' : ''}`);
         errors.push({ index: i - 1, pageNumber, error: `No translatable content found on this page${usedOcr ? ' (after OCR)' : ''}` });
         continue;
       }
       meta = saveOnePage(bookId, title, formatted);
       pagesFound += 1;
     } catch (err) {
+      console.error(`PDF import: translation/formatting failed on page ${pageNumber}:`, err.message);
       errors.push({ index: i - 1, pageNumber, error: err.message });
     }
   }

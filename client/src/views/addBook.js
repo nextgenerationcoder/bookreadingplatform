@@ -53,6 +53,7 @@ export async function renderAddBook(host) {
         <div id="pdfProgressWrap" hidden>
           <div class="progressBar"><div id="pdfProgressFill" class="progressFill"></div></div>
           <div id="pdfProgressLabel" class="hint" style="padding:6px 0 0"></div>
+          <button id="pdfCancelBtn" type="button" class="dangerButton" style="margin-top:8px">Cancel import</button>
         </div>
         <div id="pdfStatus" class="importStatus"></div>
       </div>
@@ -84,6 +85,21 @@ export async function renderAddBook(host) {
   const progressWrap = host.querySelector('#pdfProgressWrap');
   const progressFill = host.querySelector('#pdfProgressFill');
   const progressLabel = host.querySelector('#pdfProgressLabel');
+  const cancelBtn = host.querySelector('#pdfCancelBtn');
+  let currentJobId = null;
+
+  if (cancelBtn) {
+    cancelBtn.onclick = async () => {
+      if (!currentJobId) return;
+      cancelBtn.disabled = true;
+      cancelBtn.textContent = 'Cancelling…';
+      try {
+        await api.cancelPdfImport(currentJobId);
+      } catch {
+        // The next poll will surface the real status either way.
+      }
+    };
+  }
 
   if (pdfBtn) {
     pdfBtn.onclick = async () => {
@@ -106,7 +122,11 @@ export async function renderAddBook(host) {
       pdfStatus.className = 'importStatus';
       try {
         const { jobId } = await api.importBookFromPdf(file, bookId, title, startPage);
+        currentJobId = jobId;
         progressWrap.hidden = false;
+        cancelBtn.hidden = false;
+        cancelBtn.disabled = false;
+        cancelBtn.textContent = 'Cancel import';
         pollPdfJob(jobId, bookId);
       } catch (err) {
         pdfStatus.textContent = `Error: ${err.message}`;
@@ -116,13 +136,25 @@ export async function renderAddBook(host) {
     };
   }
 
-  async function pollPdfJob(jobId, bookId) {
+  const MAX_POLL_FAILURES = 8;
+
+  async function pollPdfJob(jobId, bookId, failStreak = 0) {
     const readLink = `<a href="#/book/${encodeURIComponent(bookId)}">→ Go read the book so far</a>`;
     let job;
     try {
       job = await api.getPdfImportStatus(jobId);
     } catch (err) {
-      pdfStatus.textContent = `Error: ${err.message}`;
+      // A poll request can fail for a plain network reason (weak signal,
+      // tab backgrounded, etc.) even though the import job keeps running
+      // fine on the server. Retry a few times before giving up so a one-off
+      // blip doesn't make a 300-page job look like it died.
+      const nextStreak = failStreak + 1;
+      if (nextStreak <= MAX_POLL_FAILURES) {
+        progressLabel.innerHTML = `Connection hiccup, retrying… (${err.message}) ${readLink}`;
+        setTimeout(() => pollPdfJob(jobId, bookId, nextStreak), 3000);
+        return;
+      }
+      pdfStatus.innerHTML = `Lost connection to the server while checking progress: ${err.message}. The import may still be running in the background — ${readLink} or reload this page to check.`;
       pdfStatus.className = 'importStatus error';
       pdfBtn.disabled = false;
       return;
@@ -136,11 +168,13 @@ export async function renderAddBook(host) {
       : `Reading the PDF… ${readLink}`;
 
     if (job.status === 'running') {
-      setTimeout(() => pollPdfJob(jobId, bookId), 1500);
+      setTimeout(() => pollPdfJob(jobId, bookId, 0), 1500);
       return;
     }
 
     pdfBtn.disabled = false;
+    cancelBtn.hidden = true;
+    currentJobId = null;
     const failCount = job.errors?.length || 0;
     if (job.status === 'error') {
       pdfStatus.textContent = `Error: ${job.error}`;
