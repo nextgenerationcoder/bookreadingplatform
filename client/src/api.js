@@ -60,6 +60,7 @@ export const api = {
   importBook: (text) => post('/api/books/import', { text }),
   appendToBook: (bookId, text) => post(`/api/books/${bookId}/append`, { text }),
   renameBook: (bookId, title) => patch(`/api/books/${bookId}`, { title }),
+  deleteBook: (bookId) => del(`/api/books/${bookId}`),
   deletePage: (bookId, pageNumber) => del(`/api/books/${bookId}/pages/${pageNumber}`),
   analyzePages: (files, startPage, chapter) => {
     const fd = new FormData();
@@ -83,6 +84,7 @@ export const api = {
   },
   getPdfImportStatus: (jobId) => get(`/api/books/import-pdf/${jobId}/status`),
   cancelPdfImport: (jobId) => post(`/api/books/import-pdf/${jobId}/cancel`, {}),
+  getActivePdfImports: () => get('/api/books/import-pdf/active'),
   getCourseLevels: () => get('/api/courses/levels'),
   listCourses: (level) => get(`/api/courses${level ? `?level=${encodeURIComponent(level)}` : ''}`),
   getCourse: (courseId) => get(`/api/courses/${courseId}`),

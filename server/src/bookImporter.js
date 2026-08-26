@@ -197,6 +197,22 @@ export function renameBook(bookId, title) {
   return bookMeta(bookId);
 }
 
+// Deletes the book (pages/sentences cascade via FK) and the per-account
+// data scoped to it that has no FK to clean itself up (reading progress,
+// word-click stats broken down by book/page) so nothing orphaned is left
+// behind for an id that could later be reused.
+export function deleteBook(bookId) {
+  const existing = bookMeta(bookId);
+  if (!existing) throw new Error(`Book "${bookId}" not found`);
+  const tx = db.transaction(() => {
+    db.prepare('DELETE FROM books WHERE id = ?').run(bookId);
+    db.prepare('DELETE FROM progress WHERE book_id = ?').run(bookId);
+    db.prepare('DELETE FROM word_click_books WHERE book_id = ?').run(bookId);
+    db.prepare('DELETE FROM word_click_pages WHERE book_id = ?').run(bookId);
+  });
+  tx();
+}
+
 export function listBooks() {
   const ids = db.prepare('SELECT id FROM books ORDER BY id').all();
   return ids.map((row) => bookMeta(row.id));

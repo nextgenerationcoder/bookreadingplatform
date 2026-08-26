@@ -48,6 +48,7 @@ function renderBookCard(book) {
     <div class="bookCardActions">
       <button class="linkButton" data-action="rename">✏️ Edit name</button>
       <a class="linkButton" href="#/book/${encodeURIComponent(book.id)}/add-pages">+ Add Pages</a>
+      <button class="linkButton" data-action="delete" style="color:#b3261e">🗑️ Delete</button>
     </div>
     <div class="renameBox" hidden>
       <input type="text" class="renameInput" value="${escapeAttr(book.title)}">
@@ -56,6 +57,14 @@ function renderBookCard(book) {
         <button data-action="cancel">Cancel</button>
       </div>
       <div class="renameStatus"></div>
+    </div>
+    <div class="renameBox" data-role="deleteBox" hidden>
+      <p class="renameStatus" style="margin:0 0 8px">Delete "${escapeHtml(book.title)}" and all its pages? This can't be undone.</p>
+      <div class="renameActions">
+        <button class="dangerButton" data-action="confirmDelete">Delete permanently</button>
+        <button data-action="cancelDelete">Cancel</button>
+      </div>
+      <div class="renameStatus" data-role="deleteStatus"></div>
     </div>
   `;
 
@@ -66,6 +75,34 @@ function renderBookCard(book) {
   const saveBtn = card.querySelector('[data-action="save"]');
   const cancelBtn = card.querySelector('[data-action="cancel"]');
   const status = card.querySelector('.renameStatus');
+  const deleteBtn = card.querySelector('[data-action="delete"]');
+  const deleteBox = card.querySelector('[data-role="deleteBox"]');
+  const confirmDeleteBtn = card.querySelector('[data-action="confirmDelete"]');
+  const cancelDeleteBtn = card.querySelector('[data-action="cancelDelete"]');
+  const deleteStatus = card.querySelector('[data-role="deleteStatus"]');
+
+  deleteBtn.onclick = () => {
+    deleteBox.hidden = false;
+    deleteBtn.parentElement.hidden = true;
+  };
+
+  cancelDeleteBtn.onclick = () => {
+    deleteBox.hidden = true;
+    deleteBtn.parentElement.hidden = false;
+    deleteStatus.textContent = '';
+  };
+
+  confirmDeleteBtn.onclick = async () => {
+    confirmDeleteBtn.disabled = true;
+    try {
+      await api.deleteBook(book.id);
+      card.remove();
+    } catch (err) {
+      deleteStatus.textContent = `Error: ${err.message}`;
+      deleteStatus.className = 'renameStatus error';
+      confirmDeleteBtn.disabled = false;
+    }
+  };
 
   renameBtn.onclick = () => {
     renameBox.hidden = false;

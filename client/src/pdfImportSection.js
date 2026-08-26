@@ -149,4 +149,30 @@ export function wirePdfImportSection(host, { fixedBookId, defaultTitle = '' } = 
       }
     }
   }
+
+  // The import itself keeps running on the server regardless of what the
+  // browser does - navigating away, closing the tab, even a server restart
+  // (see resumePendingPdfJobs on the backend). But without this, leaving
+  // this page and coming back showed no progress bar at all, since nothing
+  // here knew a job was still going - it looked like the import had
+  // stopped even though it hadn't. Check for one on load and reattach.
+  (async () => {
+    let active;
+    try {
+      active = await api.getActivePdfImports();
+    } catch {
+      return;
+    }
+    const match = fixedBookId ? active.find((j) => j.bookId === fixedBookId) : active[0];
+    if (!match) return;
+    currentJobId = match.jobId;
+    pdfBtn.disabled = true;
+    progressWrap.hidden = false;
+    cancelBtn.hidden = false;
+    cancelBtn.disabled = false;
+    cancelBtn.textContent = 'Cancel import';
+    pdfStatus.textContent = 'Reattached to an import already running in the background…';
+    pdfStatus.className = 'importStatus';
+    pollPdfJob(match.jobId, match.bookId);
+  })();
 }

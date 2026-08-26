@@ -8,6 +8,7 @@ import {
   saveImportedBook,
   appendToBook,
   renameBook,
+  deleteBook,
   deletePage,
   listBooks,
   getBook,
@@ -166,6 +167,24 @@ router.post('/import-pdf/:jobId/cancel', (req, res) => {
   if (!row || row.user_id !== req.userId) return res.status(404).json({ error: 'job not found' });
   db.prepare('UPDATE pdf_import_jobs SET cancelled = 1 WHERE id = ?').run(req.params.jobId);
   res.json({ ok: true });
+});
+
+// GET /api/books/import-pdf/active — lists this account's currently
+// running PDF imports (jobId + progress for each). The import itself keeps
+// going server-side regardless of what the browser does (navigating away,
+// closing the tab, even a server restart - see resumePendingPdfJobs), but
+// there was previously no way for a fresh page load to discover an already-
+// running job and reattach to it, so leaving the Add Book/Add Pages page
+// and coming back looked like the import had stopped even though it
+// hadn't. The client polls this on load to resume showing progress.
+router.get('/import-pdf/active', (req, res) => {
+  const rows = db.prepare("SELECT * FROM pdf_import_jobs WHERE user_id = ? AND status = 'running'").all(req.userId);
+  res.json(
+    rows.map((row) => {
+      const { userId: _userId, cancelled: _cancelled, ...publicState } = jobFromRow(row);
+      return { jobId: row.id, ...publicState };
+    })
+  );
 });
 
 router.get('/import-pdf/:jobId/status', (req, res) => {
@@ -332,6 +351,27 @@ router.patch('/:bookId', (req, res) => {
   try {
     const meta = renameBook(req.params.bookId, title.trim());
     res.json(meta);
+  } catch (err) {
+    const status = err.message.includes('not found') ? 404 : 400;
+    res.status(status).json({ error: err.message });
+  }
+});
+
+// DELETE /api/books/:bookId — removes the whole book (pages/sentences,
+// reading progress, and word-click stats for it). Cancels any PDF import
+// still running for it first, so that job's background loop stops instead
+// of trying to save pages into a book that no longer exists.
+router.delete('/:bookId', (req, res) => {
+  const bookId = req.params.bookId;
+  const runningJobs = db.prepare("SELECT id FROM pdf_import_jobs WHERE book_id = ? AND status = 'running'").all(bookId);
+  for (const { id: jobId } of runningJobs) {
+    const liveJob = pdfJobs.get(jobId);
+    if (liveJob) liveJob.cancelled = true;
+    db.prepare('UPDATE pdf_import_jobs SET cancelled = 1 WHERE id = ?').run(jobId);
+  }
+  try {
+    deleteBook(bookId);
+    res.json({ ok: true });
   } catch (err) {
     const status = err.message.includes('not found') ? 404 : 400;
     res.status(status).json({ error: err.message });
