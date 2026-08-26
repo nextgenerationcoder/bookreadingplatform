@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Contact Us — Lick Luck</title>
+<meta name="description" content="Get in touch with the Lick Luck team.">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<header class="site-header">
+  <nav class="nav">
+    <a href="index.html" class="brand">LICK <span class="accent">LUCK</span></a>
+    <button class="nav-toggle" aria-label="Toggle menu">&#9776;</button>
+    <ul class="nav-links">
+      <li><a href="index.html">Home</a></li>
+      <li><a href="shop.html">Shop</a></li>
+      <li><a href="contact.html" class="active">Contact</a></li>
+      <li><a href="impressum.html">Impressum</a></li>
+      <li>
+        <a href="shop.html" class="cart-link">
+          Cart <span class="cart-count" data-cart-count>0</span>
+        </a>
+      </li>
+    </ul>
+  </nav>
+</header>
+
+<main>
+  <section style="padding-bottom: 24px;">
+    <div class="container">
+      <div class="section-title">
+        <h2>Get in <span class="accent">Touch</span></h2>
+        <p>Questions about an order, a product, or a partnership? We'd love to hear from you.</p>
+        <div class="divider"></div>
+      </div>
+
+      <div class="contact-info">
+        <div class="contact-card">
+          <div class="icon">&#9993;</div>
+          <h4>Email</h4>
+          <p>hello@lickluck.com</p>
+        </div>
+        <div class="contact-card">
+          <div class="icon">&#9742;</div>
+          <h4>Phone</h4>
+          <p>+1 (555) 010-2024</p>
+        </div>
+        <div class="contact-card">
+          <div class="icon">&#128205;</div>
+          <h4>Studio</h4>
+          <p>Vienna, Austria</p>
+        </div>
+      </div>
+
+      <form class="form-wrap" id="contact-form">
+        <div class="form-row">
+          <label for="name">Name</label>
+          <input type="text" id="name" name="name" required placeholder="Your name">
+        </div>
+        <div class="form-row">
+          <label for="email">Email</label>
+          <input type="email" id="email" name="email" required placeholder="you@example.com">
+        </div>
+        <div class="form-row">
+          <label for="subject">Subject</label>
+          <input type="text" id="subject" name="subject" placeholder="What's this about?">
+        </div>
+        <div class="form-row">
+          <label for="message">Message</label>
+          <textarea id="message" name="message" required placeholder="Tell us more..."></textarea>
+        </div>
+        <button type="submit" class="btn btn-primary btn-block">Send Message</button>
+        <p class="form-note" id="contact-note">Thank you! Your message has been received.</p>
+      </form>
+    </div>
+  </section>
+</main>
+
+<footer class="site-footer">
+  <div class="container">
+    <div class="footer-grid">
+      <div>
+        <div class="footer-brand">LICK LUCK</div>
+        <p>Bold lip cosmetics in black and gold. Crafted for confidence, made for luck.</p>
+      </div>
+      <div class="footer-col">
+        <h5>Explore</h5>
+        <ul>
+          <li><a href="index.html">Home</a></li>
+          <li><a href="shop.html">Shop</a></li>
+          <li><a href="contact.html">Contact Us</a></li>
+          <li><a href="impressum.html">Impressum</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h5>Get in Touch</h5>
+        <ul>
+          <li><a href="mailto:hello@lickluck.com">hello@lickluck.com</a></li>
+          <li><a href="contact.html">Send a Message</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      &copy; <span id="year"></span> <span class="gold">Lick Luck</span>. All rights reserved.
+    </div>
+  </div>
+</footer>
+
+<script src="js/products.js"></script>
+<script src="js/cart.js"></script>
+<script>
+  document.getElementById("year").textContent = new Date().getFullYear();
+
+  document.getElementById("contact-form").addEventListener("submit", (e) => {
+    e.preventDefault();
+    const note = document.getElementById("contact-note");
+    note.style.display = "block";
+    e.target.reset();
+    setTimeout(() => (note.style.display = "none"), 4000);
+  });
+</script>
+</body>
+</html>

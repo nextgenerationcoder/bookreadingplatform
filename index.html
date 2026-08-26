@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lick Luck — Luxury Lip Cosmetics</title>
+<meta name="description" content="Lick Luck — bold, golden lip cosmetics. Shop lip gloss, lipstick and lip oil.">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<header class="site-header">
+  <nav class="nav">
+    <a href="index.html" class="brand">LICK <span class="accent">LUCK</span></a>
+    <button class="nav-toggle" aria-label="Toggle menu">&#9776;</button>
+    <ul class="nav-links">
+      <li><a href="index.html" class="active">Home</a></li>
+      <li><a href="shop.html">Shop</a></li>
+      <li><a href="contact.html">Contact</a></li>
+      <li><a href="impressum.html">Impressum</a></li>
+      <li>
+        <a href="shop.html" class="cart-link">
+          Cart <span class="cart-count" data-cart-count>0</span>
+        </a>
+      </li>
+    </ul>
+  </nav>
+</header>
+
+<main>
+  <section class="hero">
+    <div class="container">
+      <div class="hero-eyebrow">New Collection</div>
+      <h1>Feel the <span>Luck</span> on Your Lips</h1>
+      <p>Lick Luck crafts bold, high-shine lip cosmetics for those who lead with confidence. Black elegance, golden shine.</p>
+      <a href="shop.html" class="btn btn-primary">Shop the Collection</a>
+    </div>
+  </section>
+
+  <section id="featured">
+    <div class="container">
+      <div class="section-title">
+        <h2>Featured <span class="accent">Products</span></h2>
+        <p>A first look at our best-loved lip essentials.</p>
+        <div class="divider"></div>
+      </div>
+      <div class="product-grid" id="featured-grid"></div>
+      <div style="text-align:center; margin-top:40px;">
+        <a href="shop.html" class="btn btn-outline">View Full Shop</a>
+      </div>
+    </div>
+  </section>
+
+  <section class="features">
+    <div class="container">
+      <div class="features-grid">
+        <div class="feature">
+          <div class="icon">&#10022;</div>
+          <h3>Premium Formulas</h3>
+          <p>Long-wear, skin-loving ingredients in every product we make.</p>
+        </div>
+        <div class="feature">
+          <div class="icon">&#128666;</div>
+          <h3>Fast Shipping</h3>
+          <p>Orders processed quickly and packaged with care.</p>
+        </div>
+        <div class="feature">
+          <div class="icon">&#9829;</div>
+          <h3>Cruelty Free</h3>
+          <p>Never tested on animals — luxury with a conscience.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="about">
+    <div class="container">
+      <div class="section-title">
+        <h2>About <span class="accent">Lick Luck</span></h2>
+        <p>
+          Lick Luck was born from a simple idea: your lips deserve to shine as bold as your ambition.
+          Every shade, gloss, and balm is designed in black and gold — a nod to elegance, confidence, and a little bit of luck.
+        </p>
+        <div class="divider"></div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="site-footer">
+  <div class="container">
+    <div class="footer-grid">
+      <div>
+        <div class="footer-brand">LICK LUCK</div>
+        <p>Bold lip cosmetics in black and gold. Crafted for confidence, made for luck.</p>
+      </div>
+      <div class="footer-col">
+        <h5>Explore</h5>
+        <ul>
+          <li><a href="index.html">Home</a></li>
+          <li><a href="shop.html">Shop</a></li>
+          <li><a href="contact.html">Contact Us</a></li>
+          <li><a href="impressum.html">Impressum</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h5>Get in Touch</h5>
+        <ul>
+          <li><a href="mailto:hello@lickluck.com">hello@lickluck.com</a></li>
+          <li><a href="contact.html">Send a Message</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      &copy; <span id="year"></span> <span class="gold">Lick Luck</span>. All rights reserved.
+    </div>
+  </div>
+</footer>
+
+<script src="js/products.js"></script>
+<script src="js/cart.js"></script>
+<script>
+  document.getElementById("year").textContent = new Date().getFullYear();
+
+  const featuredGrid = document.getElementById("featured-grid");
+  PRODUCTS.slice(0, 3).forEach((p) => {
+    const card = document.createElement("div");
+    card.className = "product-card";
+    card.innerHTML = `
+      <div class="product-image">${p.image ? `<img src="${p.image}" alt="${p.name}">` : "Lick Luck"}</div>
+      <div class="product-body">
+        <div class="product-name">${p.name}</div>
+        <div class="product-desc">${p.description}</div>
+        <div class="product-price">${formatPrice(p.price)}</div>
+        <div class="product-actions">
+          <button class="btn btn-primary btn-small btn-block" data-add="${p.id}">Add to Cart</button>
+        </div>
+      </div>`;
+    featuredGrid.appendChild(card);
+  });
+
+  featuredGrid.addEventListener("click", (e) => {
+    const btn = e.target.closest("[data-add]");
+    if (btn) addToCart(btn.dataset.add);
+  });
+</script>
+</body>
+</html>

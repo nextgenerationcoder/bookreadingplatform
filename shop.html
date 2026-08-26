@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Shop &amp; Cart — Lick Luck</title>
+<meta name="description" content="Shop Lick Luck lip cosmetics and view your shopping cart.">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<header class="site-header">
+  <nav class="nav">
+    <a href="index.html" class="brand">LICK <span class="accent">LUCK</span></a>
+    <button class="nav-toggle" aria-label="Toggle menu">&#9776;</button>
+    <ul class="nav-links">
+      <li><a href="index.html">Home</a></li>
+      <li><a href="shop.html" class="active">Shop</a></li>
+      <li><a href="contact.html">Contact</a></li>
+      <li><a href="impressum.html">Impressum</a></li>
+      <li>
+        <a href="#cart" class="cart-link">
+          Cart <span class="cart-count" data-cart-count>0</span>
+        </a>
+      </li>
+    </ul>
+  </nav>
+</header>
+
+<main>
+  <section style="padding-bottom: 24px;">
+    <div class="container">
+      <div class="section-title">
+        <h2>Shop the <span class="accent">Collection</span></h2>
+        <p>Every product, in one place. Add your favorites to the cart below.</p>
+        <div class="divider"></div>
+      </div>
+      <div class="product-grid" id="shop-grid"></div>
+    </div>
+  </section>
+
+  <section id="cart">
+    <div class="container">
+      <div class="section-title">
+        <h2>Your <span class="accent">Cart</span></h2>
+        <div class="divider"></div>
+      </div>
+
+      <div id="cart-empty" class="empty-cart" style="display:none;">
+        <p>Your cart is empty.</p>
+        <a href="#shop-grid" class="btn btn-outline">Browse Products</a>
+      </div>
+
+      <div class="cart-layout" id="cart-layout">
+        <table class="cart-table">
+          <thead>
+            <tr>
+              <th>Product</th>
+              <th>Price</th>
+              <th>Qty</th>
+              <th>Subtotal</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="cart-body"></tbody>
+        </table>
+
+        <div class="cart-summary">
+          <h3>Order Summary</h3>
+          <div class="summary-row">
+            <span>Items</span>
+            <span id="summary-items">0</span>
+          </div>
+          <div class="summary-row">
+            <span>Subtotal</span>
+            <span id="summary-subtotal">$0.00</span>
+          </div>
+          <div class="summary-row total">
+            <span>Total</span>
+            <span class="amount" id="summary-total">$0.00</span>
+          </div>
+          <button class="btn btn-primary btn-block" style="margin-top:18px;" id="checkout-btn">Checkout</button>
+          <p class="form-note" id="checkout-note">Thanks! This is a demo checkout — we'll be in touch to confirm your order.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="site-footer">
+  <div class="container">
+    <div class="footer-grid">
+      <div>
+        <div class="footer-brand">LICK LUCK</div>
+        <p>Bold lip cosmetics in black and gold. Crafted for confidence, made for luck.</p>
+      </div>
+      <div class="footer-col">
+        <h5>Explore</h5>
+        <ul>
+          <li><a href="index.html">Home</a></li>
+          <li><a href="shop.html">Shop</a></li>
+          <li><a href="contact.html">Contact Us</a></li>
+          <li><a href="impressum.html">Impressum</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h5>Get in Touch</h5>
+        <ul>
+          <li><a href="mailto:hello@lickluck.com">hello@lickluck.com</a></li>
+          <li><a href="contact.html">Send a Message</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      &copy; <span id="year"></span> <span class="gold">Lick Luck</span>. All rights reserved.
+    </div>
+  </div>
+</footer>
+
+<script src="js/products.js"></script>
+<script src="js/cart.js"></script>
+<script>
+  document.getElementById("year").textContent = new Date().getFullYear();
+
+  const shopGrid = document.getElementById("shop-grid");
+  PRODUCTS.forEach((p) => {
+    const card = document.createElement("div");
+    card.className = "product-card";
+    card.innerHTML = `
+      <div class="product-image">${p.image ? `<img src="${p.image}" alt="${p.name}">` : "Lick Luck"}</div>
+      <div class="product-body">
+        <div class="product-name">${p.name}</div>
+        <div class="product-desc">${p.description}</div>
+        <div class="product-price">${formatPrice(p.price)}</div>
+        <div class="product-actions">
+          <button class="btn btn-primary btn-small btn-block" data-add="${p.id}">Add to Cart</button>
+        </div>
+      </div>`;
+    shopGrid.appendChild(card);
+  });
+
+  shopGrid.addEventListener("click", (e) => {
+    const btn = e.target.closest("[data-add]");
+    if (btn) {
+      addToCart(btn.dataset.add);
+      renderCart();
+    }
+  });
+
+  function productById(id) {
+    return PRODUCTS.find((p) => p.id === id);
+  }
+
+  function renderCart() {
+    const cart = getCart();
+    const ids = Object.keys(cart);
+    const body = document.getElementById("cart-body");
+    const layout = document.getElementById("cart-layout");
+    const empty = document.getElementById("cart-empty");
+    body.innerHTML = "";
+
+    if (ids.length === 0) {
+      layout.style.display = "none";
+      empty.style.display = "block";
+      return;
+    }
+    layout.style.display = "grid";
+    empty.style.display = "none";
+
+    let itemCount = 0;
+    let subtotal = 0;
+
+    ids.forEach((id) => {
+      const product = productById(id);
+      if (!product) return;
+      const qty = cart[id];
+      const lineTotal = product.price * qty;
+      itemCount += qty;
+      subtotal += lineTotal;
+
+      const row = document.createElement("tr");
+      row.innerHTML = `
+        <td class="cart-item-name">
+          <div class="cart-item-thumb">${product.image ? `<img src="${product.image}" alt="${product.name}">` : "LL"}</div>
+          <span>${product.name}</span>
+        </td>
+        <td>${formatPrice(product.price)}</td>
+        <td>
+          <div class="qty-control">
+            <button data-decrease="${id}" aria-label="Decrease quantity">-</button>
+            <input type="text" value="${qty}" data-qty-input="${id}" readonly>
+            <button data-increase="${id}" aria-label="Increase quantity">+</button>
+          </div>
+        </td>
+        <td>${formatPrice(lineTotal)}</td>
+        <td><button class="remove-link" data-remove="${id}">Remove</button></td>
+      `;
+      body.appendChild(row);
+    });
+
+    document.getElementById("summary-items").textContent = itemCount;
+    document.getElementById("summary-subtotal").textContent = formatPrice(subtotal);
+    document.getElementById("summary-total").textContent = formatPrice(subtotal);
+  }
+
+  document.getElementById("cart-body").addEventListener("click", (e) => {
+    const inc = e.target.closest("[data-increase]");
+    const dec = e.target.closest("[data-decrease]");
+    const rem = e.target.closest("[data-remove]");
+    const cart = getCart();
+
+    if (inc) {
+      const id = inc.dataset.increase;
+      setQty(id, (cart[id] || 0) + 1);
+      renderCart();
+    } else if (dec) {
+      const id = dec.dataset.decrease;
+      setQty(id, (cart[id] || 0) - 1);
+      renderCart();
+    } else if (rem) {
+      removeFromCart(rem.dataset.remove);
+      renderCart();
+    }
+  });
+
+  document.getElementById("checkout-btn").addEventListener("click", () => {
+    const cart = getCart();
+    if (Object.keys(cart).length === 0) return;
+    const note = document.getElementById("checkout-note");
+    note.style.display = "block";
+    setTimeout(() => {
+      localStorage.removeItem(CART_KEY);
+      updateCartCount();
+      renderCart();
+      note.style.display = "none";
+    }, 2500);
+  });
+
+  renderCart();
+</script>
+</body>
+</html>
