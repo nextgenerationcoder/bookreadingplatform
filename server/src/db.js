@@ -140,7 +140,8 @@ db.exec(`
     errors_json TEXT NOT NULL DEFAULT '[]',
     error TEXT,
     cancelled INTEGER NOT NULL DEFAULT 0,
-    created_at TEXT NOT NULL
+    created_at TEXT NOT NULL,
+    finished_at TEXT
   );
 
   CREATE INDEX IF NOT EXISTS idx_pages_book ON pages(book_id);
@@ -156,6 +157,11 @@ db.exec(`
 const dictionaryColumns = db.prepare('PRAGMA table_info(dictionary)').all().map((c) => c.name);
 if (!dictionaryColumns.includes('source')) {
   db.exec("ALTER TABLE dictionary ADD COLUMN source TEXT NOT NULL DEFAULT 'manual'");
+}
+
+const pdfImportJobColumns = db.prepare('PRAGMA table_info(pdf_import_jobs)').all().map((c) => c.name);
+if (!pdfImportJobColumns.includes('finished_at')) {
+  db.exec('ALTER TABLE pdf_import_jobs ADD COLUMN finished_at TEXT');
 }
 
 const userColumns = db.prepare('PRAGMA table_info(users)').all().map((c) => c.name);

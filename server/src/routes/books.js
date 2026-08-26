@@ -55,11 +55,26 @@ function jobFromRow(row) {
 }
 
 function persistJob(jobId, job) {
+  const finishedAt = job.status === 'running' ? null : job.finishedAt || new Date().toISOString();
+  job.finishedAt = finishedAt;
   db.prepare(`
     UPDATE pdf_import_jobs
-    SET status = ?, current_page = ?, total_pages = ?, pages_found = ?, errors_json = ?, error = ?, cancelled = ?
+    SET status = ?, current_page = ?, total_pages = ?, pages_found = ?, errors_json = ?, error = ?, cancelled = ?, finished_at = ?
     WHERE id = ?
-  `).run(job.status, job.currentPage, job.totalPages, job.pagesFound, JSON.stringify(job.errors), job.error || null, job.cancelled ? 1 : 0, jobId);
+  `).run(job.status, job.currentPage, job.totalPages, job.pagesFound, JSON.stringify(job.errors), job.error || null, job.cancelled ? 1 : 0, finishedAt, jobId);
+}
+
+// Keeps a per-account import history from growing without bound - only the
+// most recent `keep` finished jobs are kept; a job still "running" is never
+// pruned regardless of age.
+function pruneOldJobs(userId, keep = 50) {
+  const rows = db
+    .prepare("SELECT id FROM pdf_import_jobs WHERE user_id = ? AND status != 'running' ORDER BY COALESCE(finished_at, created_at) DESC")
+    .all(userId);
+  if (rows.length <= keep) return;
+  const staleIds = rows.slice(keep).map((r) => r.id);
+  const placeholders = staleIds.map(() => '?').join(',');
+  db.prepare(`DELETE FROM pdf_import_jobs WHERE id IN (${placeholders})`).run(...staleIds);
 }
 
 // Runs (or resumes) one PDF import job to completion, keeping the in-memory
@@ -104,12 +119,11 @@ async function runPdfImportJob(jobId, job, { chunkDir, totalPages, text, bookId,
   }
   persistJob(jobId, job);
   await fs.rm(chunkDir, { recursive: true, force: true });
-  // Keep finished job state around briefly for the client to pick up on its
-  // next poll, then free it up - no need to keep it forever.
-  setTimeout(() => {
-    pdfJobs.delete(jobId);
-    db.prepare('DELETE FROM pdf_import_jobs WHERE id = ?').run(jobId);
-  }, 10 * 60 * 1000);
+  // Free the live in-memory tracking, but keep the DB row - it's this
+  // account's import history now (see GET /import-pdf/history), pruned to
+  // the most recent 50 finished jobs rather than deleted outright.
+  pdfJobs.delete(jobId);
+  pruneOldJobs(job.userId);
 }
 
 // Called once at server startup (see index.js). Any job still marked
@@ -183,6 +197,30 @@ router.get('/import-pdf/active', (req, res) => {
     rows.map((row) => {
       const { userId: _userId, cancelled: _cancelled, ...publicState } = jobFromRow(row);
       return { jobId: row.id, ...publicState };
+    })
+  );
+});
+
+// GET /api/books/import-pdf/history — this account's PDF import history
+// (running and finished), most recent first, capped to the 50 kept by
+// pruneOldJobs(). Includes the title/start page/timestamps that /active and
+// /:jobId/status don't bother with, since those are only ever polled right
+// after the client itself already knows that context.
+router.get('/import-pdf/history', (req, res) => {
+  const rows = db
+    .prepare('SELECT * FROM pdf_import_jobs WHERE user_id = ? ORDER BY COALESCE(finished_at, created_at) DESC LIMIT 50')
+    .all(req.userId);
+  res.json(
+    rows.map((row) => {
+      const { userId: _userId, cancelled: _cancelled, ...publicState } = jobFromRow(row);
+      return {
+        jobId: row.id,
+        title: row.title,
+        startPage: row.start_page,
+        createdAt: row.created_at,
+        finishedAt: row.finished_at,
+        ...publicState,
+      };
     })
   );
 });

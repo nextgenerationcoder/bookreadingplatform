@@ -85,6 +85,7 @@ export const api = {
   getPdfImportStatus: (jobId) => get(`/api/books/import-pdf/${jobId}/status`),
   cancelPdfImport: (jobId) => post(`/api/books/import-pdf/${jobId}/cancel`, {}),
   getActivePdfImports: () => get('/api/books/import-pdf/active'),
+  getPdfImportHistory: () => get('/api/books/import-pdf/history'),
   getCourseLevels: () => get('/api/courses/levels'),
   listCourses: (level) => get(`/api/courses${level ? `?level=${encodeURIComponent(level)}` : ''}`),
   getCourse: (courseId) => get(`/api/courses/${courseId}`),

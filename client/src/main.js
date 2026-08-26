@@ -12,6 +12,7 @@ import { renderEditPage } from './views/editPage.js';
 import { renderAddWords } from './views/addWords.js';
 import { renderMyWords } from './views/myWords.js';
 import { renderSettings } from './views/settings.js';
+import { renderImportHistory } from './views/importHistory.js';
 
 const app = document.getElementById('app');
 let currentUser = null;
@@ -51,6 +52,7 @@ function parseRoute() {
   if (hash === '/add-words') return { view: 'addWords' };
   if (hash === '/words') return { view: 'words' };
   if (hash === '/settings') return { view: 'settings' };
+  if (hash === '/import-history') return { view: 'importHistory' };
   return { view: 'library' };
 }
 
@@ -76,6 +78,7 @@ function buildShell() {
         <div class="drawerEmail">${currentUser.email}</div>
       </div>
       <a href="#/settings" id="settingsLink" class="drawerItem">Settings</a>
+      <a href="#/import-history" id="importHistoryLink" class="drawerItem">Import History</a>
       <div class="drawerSpacer"></div>
       <button id="logoutBtn" class="drawerItem drawerLogout" type="button">Log out</button>
     </aside>
@@ -98,6 +101,7 @@ function buildShell() {
   menuBtn.onclick = openDrawer;
   overlay.onclick = closeDrawer;
   document.getElementById('settingsLink').onclick = closeDrawer;
+  document.getElementById('importHistoryLink').onclick = closeDrawer;
 
   document.getElementById('logoutBtn').onclick = async () => {
     await api.logout().catch(() => {});
@@ -147,6 +151,8 @@ async function route() {
     await renderMyWords(host);
   } else if (view === 'settings') {
     await renderSettings(host);
+  } else if (view === 'importHistory') {
+    await renderImportHistory(host);
   } else {
     await renderLibrary(host);
   }
