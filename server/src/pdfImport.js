@@ -43,6 +43,28 @@ async function renderPageToPngBuffer(doc, pageIndex) {
   return canvas.toBuffer('image/png');
 }
 
+// The model is asked to start its reply with "PAGE <n>" (and a CHAPTER
+// line, if given), but doesn't always comply - short pages (a title page
+// with just an author's name, a copyright page) especially tend to get a
+// reply that's just the sentence lines with no header at all, which the
+// parser then rejects outright ("Sentence ... appears before any PAGE
+// marker"). Since the real page number is already known here, don't trust
+// the model's echo of it: strip whatever header lines (if any) it produced
+// and always prepend our own canonical ones.
+function ensurePageHeader(formatted, pageNumber, chapter) {
+  const lines = formatted.split(/\r?\n/);
+  let i = 0;
+  while (
+    i < lines.length &&
+    (lines[i].trim() === '' || /^PAGE\s+\d+$/i.test(lines[i].trim()) || /^CHAPTER:/i.test(lines[i].trim()))
+  ) {
+    i++;
+  }
+  const body = lines.slice(i).join('\n').trim();
+  const chapterLine = chapter ? `CHAPTER: ${chapter}\n` : '';
+  return `PAGE ${pageNumber}\n${chapterLine}${body}`;
+}
+
 function saveOnePage(bookId, title, pageText) {
   try {
     return appendToBook(bookId, pageText);
@@ -123,7 +145,7 @@ export async function importPdfAsBook({
         errors.push({ index: i - 1, pageNumber, error: `No translatable content found on this page${usedOcr ? ' (after OCR)' : ''}` });
         continue;
       }
-      meta = saveOnePage(bookId, title, formatted);
+      meta = saveOnePage(bookId, title, ensurePageHeader(formatted, pageNumber, chapter));
       pagesFound += 1;
     } catch (err) {
       console.error(`PDF import: translation/formatting failed on page ${pageNumber}:`, err.message);
