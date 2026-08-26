@@ -1,4 +1,5 @@
 import { api } from '../api.js';
+import { renderPdfImportHtml, wirePdfImportSection } from '../pdfImportSection.js';
 
 const EXAMPLE = `PAGE 16
 CHAPTER: Kapitel 2
@@ -24,11 +25,12 @@ export async function renderAddPages(host, bookId, kind = 'book') {
 
   host.innerHTML = '<div class="loading">Loading…</div>';
 
-  let book, visionSettings;
+  let book, visionSettings, llmSettings;
   try {
-    [book, visionSettings] = await Promise.all([
+    [book, visionSettings, llmSettings] = await Promise.all([
       getContent(bookId),
       api.getVisionSettings().catch(() => ({ configured: false })),
+      isCourse ? Promise.resolve({ configured: false }) : api.getLlmSettings().catch(() => ({ configured: false })),
     ]);
   } catch (err) {
     host.innerHTML = `<div class="error">Not found.<br><small>${err.message}</small></div>`;
@@ -63,6 +65,25 @@ export async function renderAddPages(host, bookId, kind = 'book') {
         <div id="batchStatus" class="importStatus"></div>
       </div>
 
+      ${
+        isCourse
+          ? ''
+          : llmSettings.configured
+            ? renderPdfImportHtml({
+                fixedBookId: bookId,
+                defaultStartPage: lastPage + 1,
+                hint: `Or upload a PDF of the next pages: it extracts the text (for free, from the PDF
+                  itself, OCR'd locally for any scanned pages) and translates + formats it with your
+                  Translation API key, adding pages straight to this book in the background.`,
+              })
+            : `<div class="ocrBox">
+                 <p class="hint" style="padding:0">
+                   You can also upload a PDF of the next pages, but you need a Translation API key
+                   configured first — <a href="#/settings">add one in Settings</a>.
+                 </p>
+               </div>`
+      }
+
       <details class="exampleBox">
         <summary>Example format</summary>
         <pre>${EXAMPLE}</pre>
@@ -81,6 +102,10 @@ export async function renderAddPages(host, bookId, kind = 'book') {
   const btn = host.querySelector('#appendBtn');
   const batchBtn = host.querySelector('#batchBtn');
   const batchStatus = host.querySelector('#batchStatus');
+
+  if (!isCourse) {
+    wirePdfImportSection(host, { fixedBookId: bookId, defaultTitle: book.title });
+  }
 
   if (batchBtn) {
     batchBtn.onclick = async () => {
