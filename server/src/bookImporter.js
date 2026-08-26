@@ -101,6 +101,22 @@ export function parseBookText(text) {
   };
 }
 
+// Inverse of parseBookText's PAGE block: builds one deterministically from
+// already-structured {de, fa} sentence data (e.g. the AI's structured-output
+// response - see llm.js), rather than parsing free text the model wrote
+// itself. Used by both the PDF import pipeline and the photo/OCR batch
+// upload so a page is never rejected for the model getting the layout of
+// its own reply slightly wrong.
+export function buildPageBlock(pageNumber, chapter, sentences) {
+  const lines = [`PAGE ${pageNumber}`];
+  if (chapter) lines.push(`CHAPTER: ${chapter}`);
+  for (let i = 0; i < sentences.length; i++) {
+    lines.push(`${i + 1}: ${sentences[i].de}`);
+    lines.push(sentences[i].fa);
+  }
+  return lines.join('\n');
+}
+
 function bookMeta(bookId) {
   const book = db.prepare('SELECT id, title, source_lang, target_lang FROM books WHERE id = ?').get(bookId);
   if (!book) return null;

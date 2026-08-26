@@ -3,6 +3,7 @@ import multer from 'multer';
 import { db } from '../db.js';
 import { decrypt } from '../crypto.js';
 import { formatPageFromImage } from '../llm.js';
+import { buildPageBlock } from '../bookImporter.js';
 
 const router = Router();
 const MAX_PHOTOS = 10;
@@ -43,19 +44,18 @@ router.post('/batch', upload.array('images', MAX_PHOTOS), async (req, res) => {
   for (let i = 0; i < files.length; i++) {
     const pageNumber = startPage + i;
     try {
-      const text = await formatPageFromImage({
+      const { sentences } = await formatPageFromImage({
         provider: row.vision_provider,
         apiKey,
         imageBase64: files[i].buffer.toString('base64'),
         mimeType: files[i].mimetype,
-        pageNumber,
         chapter,
       });
-      if (!text || text.trim() === 'NO_TEXT_FOUND') {
+      if (!sentences.length) {
         errors.push({ index: i, pageNumber, error: 'No readable text found in this photo' });
         continue;
       }
-      results.push(text);
+      results.push(buildPageBlock(pageNumber, chapter, sentences));
     } catch (err) {
       console.error(`AI page analysis failed for photo ${i + 1}:`, err);
       errors.push({ index: i, pageNumber, error: err.message });
