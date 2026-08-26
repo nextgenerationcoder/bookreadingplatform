@@ -18,6 +18,20 @@ import ttsRouter from './routes/tts.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
+// A safety net, not a fix for any specific bug: without this, an error
+// thrown inside a background job (like PDF import processing, which runs
+// detached from any HTTP request) or any other unhandled rejection just
+// vanishes - nothing crashes, nothing shows up anywhere, and whatever was
+// running silently stops making progress. This at least guarantees it hits
+// the logs (`docker compose logs -f app`) so a "nothing happened and I
+// don't know why" report always has a paper trail.
+process.on('unhandledRejection', (err) => {
+  console.error('Unhandled promise rejection:', err);
+});
+process.on('uncaughtException', (err) => {
+  console.error('Uncaught exception:', err);
+});
+
 await seedIfEmpty();
 
 const app = express();

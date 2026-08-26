@@ -230,8 +230,20 @@ router.post('/import-pdf', upload.single('pdf'), async (req, res) => {
   // Split into 10-page chunk files up front, rather than working with the
   // whole book as one in-memory PDF for the entire import - each chunk is
   // small and self-contained, so a resume only has to re-load the ~10 pages
-  // it was on.
-  const totalPages = await splitPdfIntoChunks(req.file.buffer, chunkDir);
+  // it was on. pdf-lib (used for splitting) is much stricter than pdfjs-dist
+  // (used everywhere else in this pipeline for parsing/rendering) and can
+  // throw on real-world scanned/malformed PDFs that pdfjs tolerates fine -
+  // this MUST be caught and reported, since it happens before any job
+  // exists to report progress/errors through, and would otherwise just
+  // hang the request with no feedback at all.
+  let totalPages;
+  try {
+    totalPages = await splitPdfIntoChunks(req.file.buffer, chunkDir);
+  } catch (err) {
+    console.error('PDF import: failed to split the uploaded PDF into chunks:', err);
+    await fs.rm(chunkDir, { recursive: true, force: true });
+    return res.status(400).json({ error: `Couldn't read this PDF (it may be corrupted, encrypted, or in an unsupported format): ${err.message}` });
+  }
   const totalChunks = Math.ceil(totalPages / CHUNK_SIZE);
 
   const trimmedBookId = bookId.trim();
@@ -255,9 +267,22 @@ router.post('/import-pdf', upload.single('pdf'), async (req, res) => {
     errors: [],
     cancelled: false,
   };
+
+  // Decrypt before responding, not after: if this throws once the response
+  // has already gone out, the job would just sit at "running" forever with
+  // no error anywhere for the client to see.
+  let textApiKey;
+  try {
+    textApiKey = await decrypt(row.llm_api_key_enc);
+  } catch (err) {
+    console.error('PDF import: failed to decrypt the Translation API key:', err);
+    db.prepare('DELETE FROM pdf_import_jobs WHERE id = ?').run(jobId);
+    await fs.rm(chunkDir, { recursive: true, force: true });
+    return res.status(500).json({ error: `Couldn't read your saved Translation API key: ${err.message}. Try re-saving it in Settings.` });
+  }
+
   res.status(202).json({ jobId, bookId: job.bookId, totalPages, totalChunks });
 
-  const textApiKey = await decrypt(row.llm_api_key_enc);
   // Runs in the background - saved to disk and to the DB above, so it
   // survives this request ending, the client disconnecting or logging out,
   // and even a server restart (resumePendingPdfJobs() picks it back up).

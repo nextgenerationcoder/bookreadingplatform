@@ -24,7 +24,10 @@ export function chunkNumberForPage(pageIndex, chunkSize = CHUNK_SIZE) {
 // Splits pdfBuffer into chunkSize-page files written to dir/chunk-0001.pdf,
 // chunk-0002.pdf, etc. Returns the book's total page count.
 export async function splitPdfIntoChunks(pdfBuffer, dir, chunkSize = CHUNK_SIZE) {
-  const src = await PDFDocument.load(pdfBuffer);
+  // ignoreEncryption: many scanned/downloaded PDFs have an owner password
+  // restricting printing/editing but no open password - pdf-lib otherwise
+  // refuses to touch them at all.
+  const src = await PDFDocument.load(pdfBuffer, { ignoreEncryption: true });
   const totalPages = src.getPageCount();
   await fs.mkdir(dir, { recursive: true });
 
