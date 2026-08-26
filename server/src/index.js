@@ -15,6 +15,7 @@ import wordClicksRouter from './routes/wordClicks.js';
 import settingsRouter from './routes/settings.js';
 import ocrRouter from './routes/ocr.js';
 import ttsRouter from './routes/tts.js';
+import learningRouter from './routes/learning.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -59,6 +60,7 @@ app.use('/api/word-clicks', requireAuth, wordClicksRouter);
 app.use('/api/settings', requireAuth, settingsRouter);
 app.use('/api/ocr', requireAuth, ocrRouter);
 app.use('/api/tts', requireAuth, ttsRouter);
+app.use('/api/learning', requireAuth, learningRouter);
 
 // In production the client is built to client/dist and served by this same
 // process, so the whole app is one container behind one port. In local dev

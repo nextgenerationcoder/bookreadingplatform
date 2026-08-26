@@ -144,6 +144,40 @@ db.exec(`
     finished_at TEXT
   );
 
+  -- Interactive lesson courses (e.g. TÜV NORD interview prep) - a different
+  -- shape from the books/courses tables above (which are static bilingual
+  -- reading text): this is a stepped lesson player with per-account learner
+  -- state that evolves according to the lesson-generator spec's promotion
+  -- rules (see server/src/learningEngine/). One row per account+course.
+  CREATE TABLE IF NOT EXISTS learner_course_state (
+    user_id TEXT NOT NULL,
+    course_id TEXT NOT NULL,
+    state_json TEXT NOT NULL,
+    phase INTEGER NOT NULL DEFAULT 1,
+    updated_at TEXT NOT NULL,
+    PRIMARY KEY (user_id, course_id)
+  );
+
+  -- One row per account+course+lesson: current step, saved step responses,
+  -- exit-check and retrieval-challenge results. status is 'in_progress' or
+  -- 'completed' - a lesson is only 'completed' once its exit check has been
+  -- attempted (see routes/learning.js), matching the spec's rule that a
+  -- lesson's moves only promote to supported after real production, not
+  -- just clicking through the steps.
+  CREATE TABLE IF NOT EXISTS lesson_progress (
+    user_id TEXT NOT NULL,
+    course_id TEXT NOT NULL,
+    lesson_id TEXT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'in_progress',
+    current_step_index INTEGER NOT NULL DEFAULT 0,
+    step_responses_json TEXT NOT NULL DEFAULT '{}',
+    exit_check_json TEXT,
+    retrieval_challenge_json TEXT,
+    completed_at TEXT,
+    updated_at TEXT NOT NULL,
+    PRIMARY KEY (user_id, course_id, lesson_id)
+  );
+
   CREATE INDEX IF NOT EXISTS idx_pages_book ON pages(book_id);
   CREATE INDEX IF NOT EXISTS idx_sentences_page ON sentences(page_id);
   CREATE INDEX IF NOT EXISTS idx_sessions_user ON sessions(user_id);

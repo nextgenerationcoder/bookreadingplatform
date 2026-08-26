@@ -13,6 +13,9 @@ import { renderAddWords } from './views/addWords.js';
 import { renderMyWords } from './views/myWords.js';
 import { renderSettings } from './views/settings.js';
 import { renderImportHistory } from './views/importHistory.js';
+import { renderLearningHome } from './views/learning/learningHome.js';
+import { renderCourseOverview } from './views/learning/courseOverview.js';
+import { renderLessonPlayer } from './views/learning/lessonPlayer.js';
 
 const app = document.getElementById('app');
 let currentUser = null;
@@ -39,6 +42,12 @@ function parseRoute() {
   const courseMatch = hash.match(/^\/course\/([^/]+)$/);
   if (courseMatch) return { view: 'reader', kind: 'course', bookId: decodeURIComponent(courseMatch[1]) };
 
+  const lessonMatch = hash.match(/^\/learning\/([^/]+)\/([^/]+)$/);
+  if (lessonMatch) return { view: 'lessonPlayer', courseId: decodeURIComponent(lessonMatch[1]), lessonId: decodeURIComponent(lessonMatch[2]) };
+  const learningCourseMatch = hash.match(/^\/learning\/([^/]+)$/);
+  if (learningCourseMatch) return { view: 'courseOverview', courseId: decodeURIComponent(learningCourseMatch[1]) };
+  if (hash === '/learning') return { view: 'learningHome' };
+
   const courseLevelMatch = hash.match(/^\/courses\/(A1|A2|B1|B2|C1|C2)$/);
   if (courseLevelMatch) return { view: 'courseLevel', level: courseLevelMatch[1] };
   if (hash === '/courses') return { view: 'courses' };
@@ -64,6 +73,7 @@ function buildShell() {
       <div class="navLinks">
         <a href="#/">Books</a>
         <a href="#/courses">Courses</a>
+        <a href="#/learning">Learning</a>
         <a href="#/practice">Practice</a>
         <a href="#/words">My Words</a>
       </div>
@@ -115,17 +125,19 @@ function setActiveNav(view) {
   links.forEach((a) => a.classList.remove('active'));
   const bookViews = ['library', 'reader:book', 'addPages:book', 'editPage:book', 'add'];
   const courseViews = ['courses', 'courseLevel', 'reader:course', 'addPages:course', 'editPage:course', 'addCourse'];
-  const map = { books: 0, courses: 1, practice: 2, words: 3 };
+  const learningViews = ['learningHome', 'courseOverview', 'lessonPlayer'];
+  const map = { books: 0, courses: 1, learning: 2, practice: 3, words: 4 };
   let group = null;
   if (bookViews.includes(view)) group = 'books';
   else if (courseViews.includes(view)) group = 'courses';
+  else if (learningViews.includes(view)) group = 'learning';
   else if (view === 'practice') group = 'practice';
   else if (view === 'words') group = 'words';
   if (group) links[map[group]]?.classList.add('active');
 }
 
 async function route() {
-  const { view, kind, bookId, pageNumber, level } = parseRoute();
+  const { view, kind, bookId, pageNumber, level, courseId, lessonId } = parseRoute();
   const navKey = kind ? `${view}:${kind}` : view;
   setActiveNav(navKey);
   const host = document.getElementById('viewHost');
@@ -153,6 +165,12 @@ async function route() {
     await renderSettings(host);
   } else if (view === 'importHistory') {
     await renderImportHistory(host);
+  } else if (view === 'learningHome') {
+    await renderLearningHome(host);
+  } else if (view === 'courseOverview') {
+    await renderCourseOverview(host, courseId);
+  } else if (view === 'lessonPlayer') {
+    await renderLessonPlayer(host, courseId, lessonId);
   } else {
     await renderLibrary(host);
   }

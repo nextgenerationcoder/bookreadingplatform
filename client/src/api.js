@@ -114,4 +114,20 @@ export const api = {
   getVoiceSettings: () => get('/api/settings/voice'),
   saveVoiceSettings: (voiceId, speechRate) => post('/api/settings/voice', { voiceId, speechRate }),
   synthesize: (text) => post('/api/tts/synthesize', { text }),
+
+  listLearningCourses: () => get('/api/learning/courses'),
+  getLearningCourse: (courseId) => get(`/api/learning/courses/${courseId}`),
+  getLearningLesson: (courseId, lessonId) => get(`/api/learning/courses/${courseId}/lessons/${lessonId}`),
+  saveLearningStep: (courseId, lessonId, body) =>
+    post(`/api/learning/courses/${courseId}/lessons/${lessonId}/progress`, body),
+  submitExitCheck: (courseId, lessonId, responses) =>
+    post(`/api/learning/courses/${courseId}/lessons/${lessonId}/exit-check`, { responses }),
+  submitRetrievalChallenge: (courseId, lessonId, responses) =>
+    post(`/api/learning/courses/${courseId}/lessons/${lessonId}/retrieval`, { responses }),
+  uploadRecording: (blob) => {
+    const fd = new FormData();
+    fd.append('audio', blob, `recording.${blob.type.includes('mp4') ? 'mp4' : blob.type.includes('wav') ? 'wav' : 'webm'}`);
+    return postForm('/api/learning/recordings', fd);
+  },
+  recordingUrl: (recordingId) => `/api/learning/recordings/${recordingId}`,
 };

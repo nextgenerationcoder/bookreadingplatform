@@ -69,6 +69,56 @@ button:disabled { opacity: .35 }
 .historyBadge-error { background: #fbeceb; color: #b3261e }
 .historyBadge-cancelled { background: #f0ede4; color: var(--muted) }
 
+/* --- Learning / lesson player --- */
+.phaseGroups { display: flex; flex-direction: column; gap: 22px; margin-top: 18px }
+.phaseHeader { font-size: 16px; margin: 0 0 10px }
+.lessonRow { display: flex; justify-content: space-between; align-items: center; gap: 12px; background: var(--paper); border: 1px solid var(--line); border-radius: 12px; padding: 12px 16px; margin-bottom: 8px; color: var(--ink) }
+.lessonRow-locked { opacity: .55; cursor: default }
+.lessonRow-completed { border-color: #bfe3cc }
+.lessonRowTitle { font-weight: 600; font-size: 15px }
+.lessonRowStatus { font-size: 13px; color: var(--muted); white-space: nowrap }
+
+.lessonPlayer { max-width: 640px; margin: 0 auto }
+.lessonTopBar { position: sticky; top: 0; z-index: 5; background: rgba(245,241,232,.96); backdrop-filter: blur(8px); padding: 12px 0; margin-bottom: 16px }
+.lessonTopMeta { font-size: 13px; color: var(--muted); margin: 4px 0 8px }
+.microStep { background: var(--paper); border: 1px solid var(--line); border-radius: 16px; padding: 20px 18px }
+.newElementBox { background: #fdf3e0; border: 1px solid #f0d9a8; border-radius: 12px; padding: 12px 14px; margin-bottom: 14px }
+.newElementLabel { font-size: 11px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: #8a5f10; margin-bottom: 4px }
+.newElementText { font-family: Georgia, "Times New Roman", serif; font-size: 20px }
+.modelBox, .seededBox, .frameBox { font-family: Georgia, "Times New Roman", serif; font-size: 18px; padding: 10px 0; color: #3a3a3a }
+.seededBox { opacity: .75; font-style: italic }
+.frameBox { color: var(--muted) }
+.wordBankChips { display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 0 4px }
+.chip { background: #eef3f8; border-radius: 999px; padding: 4px 12px; font-size: 14px }
+.stepInstruction { color: var(--muted); font-size: 14px; margin: 10px 0 16px }
+.productionList { display: flex; flex-direction: column; gap: 14px }
+.speakingTask { border-top: 1px solid #eee8dc; padding-top: 12px }
+.speakingPrompt { font-family: Georgia, "Times New Roman", serif; font-size: 17px; margin-bottom: 6px }
+.speakingControls { display: flex; align-items: center; gap: 10px; flex-wrap: wrap }
+.speakingControls button { min-height: 40px }
+.speakingMicStatus { padding: 6px 0 0 }
+.speakingTextLabel { display: flex; flex-direction: column; gap: 4px; margin-top: 10px }
+.speakingTextLabel input { padding: 9px 11px; border: 1px solid var(--line); border-radius: 8px; font-size: 15px }
+.speakingDone { margin-top: 10px; width: 100% }
+.speakingDoneActive { border-color: #1a7a3d; background: #e5f4ea; color: #1a7a3d }
+.lessonNav { justify-content: space-between }
+.lessonNav button { min-width: 110px; min-height: 44px }
+.lessonSummary { text-align: center; padding: 40px 10px }
+
+.exitCheckCard { background: var(--paper); border: 1px solid var(--line); border-radius: 14px; padding: 16px; margin-bottom: 14px }
+.ratingButtons { display: flex; gap: 8px; flex-wrap: wrap }
+.ratingButtons button { font-size: 13px; padding: 8px 12px }
+.ratingActive { border-color: var(--accent); background: #e8f0f8; color: #173e64 }
+
+.retrievalTimer { font-size: 18px; font-weight: 700; text-align: center; margin: 10px 0 18px }
+.retrievalCard { background: var(--paper); border: 1px solid var(--line); border-radius: 16px; padding: 24px 18px; text-align: center }
+.retrievalCard .speakingPrompt { font-size: 19px; margin: 14px 0 20px }
+
+@media (max-width: 600px) {
+  .microStep { padding: 16px 14px; border-radius: 14px }
+  .newElementText { font-size: 18px }
+}
+
 .formPage { margin-top: 20px }
 .formPage h1 { font-size: 20px; margin: 0 0 10px }
 .exampleBox { margin: 12px 0; background: var(--paper); border: 1px solid var(--line); border-radius: 10px; padding: 10px 14px }

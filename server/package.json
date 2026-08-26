@@ -7,7 +7,8 @@
   "scripts": {
     "dev": "node --watch src/index.js",
     "start": "node src/index.js",
-    "import-book": "node scripts/import-book.js"
+    "import-book": "node scripts/import-book.js",
+    "test": "node --test src/**/__tests__/*.test.js"
   },
   "dependencies": {
     "@napi-rs/canvas": "^1.0.8",
