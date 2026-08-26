@@ -121,9 +121,10 @@ db.exec(`
 
   -- Tracks whole-book PDF import jobs so an in-progress import (which can
   -- take a long time - one AI call per page) survives a server restart:
-  -- the uploaded PDF is saved to disk (pdf_path) and progress is persisted
-  -- here on every page, so a "running" job found at startup can be resumed
-  -- from where it left off instead of being silently lost.
+  -- the uploaded PDF is split into 10-page chunk files on disk (pdf_path
+  -- holds that chunk directory, not a single file - see pdfSplit.js) and
+  -- progress is persisted here on every page, so a "running" job found at
+  -- startup can be resumed from where it left off instead of being lost.
   CREATE TABLE IF NOT EXISTS pdf_import_jobs (
     id TEXT PRIMARY KEY,
     user_id TEXT NOT NULL,

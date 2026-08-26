@@ -15,6 +15,7 @@ import {
 import { db, DB_PATH } from '../db.js';
 import { decrypt } from '../crypto.js';
 import { importPdfAsBook } from '../pdfImport.js';
+import { CHUNK_SIZE, splitPdfIntoChunks } from '../pdfSplit.js';
 
 const router = Router();
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 40 * 1024 * 1024 } });
@@ -24,20 +25,27 @@ const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 40 
 // pdf_import_jobs DB table is the durable copy - progress is written there
 // on every page - so a job survives a server restart: resumePendingPdfJobs()
 // (called once at server boot, from index.js) picks up any row still marked
-// "running" and continues it from the last saved page, using the PDF file
-// that was written to disk when the import started.
+// "running" and continues it from the last saved page.
+//
+// The book itself is worked through in 10-page chunk files rather than one
+// big PDF for the whole thing (see pdfSplit.js) - easier on memory for a
+// long scanned book, and a resume only needs to reload the small chunk it
+// was on instead of the whole book.
 const pdfJobs = new Map();
 
 const PDF_STORE_DIR = path.join(path.dirname(DB_PATH), 'pdf-imports');
 await fs.mkdir(PDF_STORE_DIR, { recursive: true });
 
 function jobFromRow(row) {
+  const totalChunks = row.total_pages ? Math.ceil(row.total_pages / CHUNK_SIZE) : null;
   return {
     userId: row.user_id,
     status: row.status,
     bookId: row.book_id,
     currentPage: row.current_page,
     totalPages: row.total_pages,
+    currentChunk: row.total_pages ? Math.min(totalChunks, Math.max(1, Math.ceil(row.current_page / CHUNK_SIZE))) : null,
+    totalChunks,
     pagesFound: row.pages_found,
     errors: JSON.parse(row.errors_json),
     error: row.error || undefined,
@@ -55,12 +63,12 @@ function persistJob(jobId, job) {
 
 // Runs (or resumes) one PDF import job to completion, keeping the in-memory
 // and DB copies of its state in sync throughout, then cleans up.
-async function runPdfImportJob(jobId, job, { pdfPath, text, bookId, title, startPage, chapter, resumeFromIndex, initialPagesFound, initialErrors }) {
+async function runPdfImportJob(jobId, job, { chunkDir, totalPages, text, bookId, title, startPage, chapter, resumeFromIndex, initialPagesFound, initialErrors }) {
   pdfJobs.set(jobId, job);
   try {
-    const pdfBuffer = await fs.readFile(pdfPath);
     const result = await importPdfAsBook({
-      pdfBuffer,
+      chunkDir,
+      totalPages,
       text,
       bookId,
       title,
@@ -73,6 +81,8 @@ async function runPdfImportJob(jobId, job, { pdfPath, text, bookId, title, start
         if (job.cancelled) throw new Error('CANCELLED');
         job.currentPage = p.currentPage;
         job.totalPages = p.totalPages;
+        job.currentChunk = p.currentChunk;
+        job.totalChunks = p.totalChunks;
         job.pagesFound = p.pagesFound;
         job.errors = p.errors;
         persistJob(jobId, job);
@@ -92,7 +102,7 @@ async function runPdfImportJob(jobId, job, { pdfPath, text, bookId, title, start
     }
   }
   persistJob(jobId, job);
-  await fs.rm(pdfPath, { force: true });
+  await fs.rm(chunkDir, { recursive: true, force: true });
   // Keep finished job state around briefly for the client to pick up on its
   // next poll, then free it up - no need to keep it forever.
   setTimeout(() => {
@@ -103,16 +113,16 @@ async function runPdfImportJob(jobId, job, { pdfPath, text, bookId, title, start
 
 // Called once at server startup (see index.js). Any job still marked
 // "running" in the DB means the process died mid-import (redeploy, crash,
-// OOM, etc.) - resume each from its last saved page using the PDF that was
-// written to disk when it started. Pages already saved to the book are
-// safe to redo (appendToBook replaces by page number), but resuming from
-// the last recorded page instead of page 1 avoids redoing an entire book's
-// worth of AI calls.
+// OOM, etc.) - resume each from its last saved page using the chunk files
+// that were written to disk when it started. Pages already saved to the
+// book are safe to redo (appendToBook replaces by page number), but
+// resuming from the last recorded page instead of page 1 avoids redoing an
+// entire book's worth of AI calls.
 export async function resumePendingPdfJobs() {
   const rows = db.prepare("SELECT * FROM pdf_import_jobs WHERE status = 'running'").all();
   for (const row of rows) {
-    const pdfExists = await fs.access(row.pdf_path).then(() => true).catch(() => false);
-    if (!pdfExists) {
+    const chunkDirExists = await fs.access(row.pdf_path).then(() => true).catch(() => false);
+    if (!chunkDirExists) {
       db.prepare('UPDATE pdf_import_jobs SET status = ?, error = ? WHERE id = ?')
         .run('error', 'Import was interrupted and the uploaded PDF is no longer available - please re-upload.', row.id);
       continue;
@@ -128,7 +138,8 @@ export async function resumePendingPdfJobs() {
     job.status = 'running';
     const textApiKey = await decrypt(userRow.llm_api_key_enc);
     runPdfImportJob(row.id, job, {
-      pdfPath: row.pdf_path,
+      chunkDir: row.pdf_path,
+      totalPages: row.total_pages,
       text: { provider: userRow.llm_provider, apiKey: textApiKey },
       bookId: row.book_id,
       title: row.title || '',
@@ -215,36 +226,44 @@ router.post('/import-pdf', upload.single('pdf'), async (req, res) => {
   }
 
   const jobId = crypto.randomUUID();
-  const pdfPath = path.join(PDF_STORE_DIR, `${jobId}.pdf`);
-  await fs.writeFile(pdfPath, req.file.buffer);
+  const chunkDir = path.join(PDF_STORE_DIR, jobId);
+  // Split into 10-page chunk files up front, rather than working with the
+  // whole book as one in-memory PDF for the entire import - each chunk is
+  // small and self-contained, so a resume only has to re-load the ~10 pages
+  // it was on.
+  const totalPages = await splitPdfIntoChunks(req.file.buffer, chunkDir);
+  const totalChunks = Math.ceil(totalPages / CHUNK_SIZE);
 
   const trimmedBookId = bookId.trim();
   const trimmedTitle = (title || '').trim();
   const trimmedChapter = (chapter || '').trim();
 
   db.prepare(`
-    INSERT INTO pdf_import_jobs (id, user_id, book_id, title, chapter, start_page, pdf_path, status, created_at)
-    VALUES (?, ?, ?, ?, ?, ?, ?, 'running', ?)
-  `).run(jobId, req.userId, trimmedBookId, trimmedTitle, trimmedChapter, startPage, pdfPath, new Date().toISOString());
+    INSERT INTO pdf_import_jobs (id, user_id, book_id, title, chapter, start_page, pdf_path, total_pages, status, created_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'running', ?)
+  `).run(jobId, req.userId, trimmedBookId, trimmedTitle, trimmedChapter, startPage, chunkDir, totalPages, new Date().toISOString());
 
   const job = {
     userId: req.userId,
     status: 'running',
     bookId: trimmedBookId,
     currentPage: 0,
-    totalPages: null,
+    totalPages,
+    currentChunk: 1,
+    totalChunks,
     pagesFound: 0,
     errors: [],
     cancelled: false,
   };
-  res.status(202).json({ jobId, bookId: job.bookId });
+  res.status(202).json({ jobId, bookId: job.bookId, totalPages, totalChunks });
 
   const textApiKey = await decrypt(row.llm_api_key_enc);
   // Runs in the background - saved to disk and to the DB above, so it
   // survives this request ending, the client disconnecting or logging out,
   // and even a server restart (resumePendingPdfJobs() picks it back up).
   runPdfImportJob(jobId, job, {
-    pdfPath,
+    chunkDir,
+    totalPages,
     text: { provider: row.llm_provider, apiKey: textApiKey },
     bookId: job.bookId,
     title: trimmedTitle,

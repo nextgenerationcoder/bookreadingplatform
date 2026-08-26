@@ -163,8 +163,9 @@ export async function renderAddBook(host) {
     const total = job.totalPages || 0;
     const pct = total ? Math.round((job.currentPage / total) * 100) : 0;
     progressFill.style.width = `${pct}%`;
+    const chunkLabel = job.totalChunks ? `Part ${job.currentChunk} of ${job.totalChunks} — ` : '';
     progressLabel.innerHTML = total
-      ? `Page ${job.currentPage} of ${total} — ${job.pagesFound} added so far. ${readLink}`
+      ? `${chunkLabel}Page ${job.currentPage} of ${total} — ${job.pagesFound} added so far. ${readLink}`
       : `Reading the PDF… ${readLink}`;
 
     if (job.status === 'running') {
