@@ -11,14 +11,15 @@ const router = Router();
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
 
 // POST /api/asr/transcribe (multipart "audio", a WAV file) — returns the
-// transcribed text. No fallback/local ASR exists in this app; this always
-// calls the account's own configured Z.AI key.
+// transcribed text, via the account's configured provider ('self-hosted',
+// no key required, or 'zai', which needs its own saved key).
 router.post('/transcribe', upload.single('audio'), async (req, res) => {
   if (!req.file) return res.status(400).json({ error: 'an audio file is required' });
 
   const row = db.prepare('SELECT asr_provider, asr_api_key_enc FROM users WHERE id = ?').get(req.userId);
-  if (!row?.asr_provider || !row?.asr_api_key_enc) {
-    return res.status(400).json({ error: 'no speech-to-text API key configured — add one in Settings first' });
+  const needsKey = row?.asr_provider && row.asr_provider !== 'self-hosted';
+  if (!row?.asr_provider || (needsKey && !row?.asr_api_key_enc)) {
+    return res.status(400).json({ error: 'no speech-to-text provider configured — set one in Settings first' });
   }
 
   // hotwords may arrive as one string or several same-named fields
@@ -30,7 +31,7 @@ router.post('/transcribe', upload.single('audio'), async (req, res) => {
       : undefined;
 
   try {
-    const apiKey = await decrypt(row.asr_api_key_enc);
+    const apiKey = row.asr_api_key_enc ? await decrypt(row.asr_api_key_enc) : null;
     const text = await transcribeAudio({
       provider: row.asr_provider,
       apiKey,
