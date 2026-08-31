@@ -222,13 +222,3 @@ if (!userColumns.includes('vision_provider')) {
 if (!userColumns.includes('vision_api_key_enc')) {
   db.exec('ALTER TABLE users ADD COLUMN vision_api_key_enc TEXT');
 }
-// A third, independent key for speech-to-text (Z.AI's GLM-ASR) - used by
-// the LessonPlayer's spoken-answer input. Kept separate from llm/vision for
-// the same reason those are separate: a different provider/account than
-// whatever's used for translation or photo-reading.
-if (!userColumns.includes('asr_provider')) {
-  db.exec('ALTER TABLE users ADD COLUMN asr_provider TEXT');
-}
-if (!userColumns.includes('asr_api_key_enc')) {
-  db.exec('ALTER TABLE users ADD COLUMN asr_api_key_enc TEXT');
-}

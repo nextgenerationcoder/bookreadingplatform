@@ -17,11 +17,6 @@ export const lesson1 = {
   backHref: '#/courses/A1',
   backLabel: '← Courses',
   storageKey: 'lesson-progress-1-v1',
-  // This lesson only ever uses formal "Sie" - never "ihr" - across all 65
-  // steps (confirmed: "Sie" appears in 32/56 answerable steps, "ihr" in
-  // none). Passed as an always-on ASR hotword alongside each step's own
-  // new words - see components/LessonPlayer.js.
-  registerHotwords: ['Sie'],
   steps: [
     { id: 1, software: [{ german: 'es ist', persian: 'آن است' }, { german: 'gut', persian: 'خوب' }], promptFa: 'آن خوب است.', expectedAnswer: 'Es ist gut.' },
     { id: 2, software: [{ german: 'was', persian: 'چه چیزی' }, { german: 'trinken', persian: 'نوشیدن' }, { german: 'wollen Sie', persian: 'شما می‌خواهید' }], promptFa: 'چه چیزی می‌خواهید شما بنوشید؟', expectedAnswer: 'Was wollen Sie trinken?' },
