@@ -37,7 +37,6 @@ router.post('/transcribe', upload.single('audio'), async (req, res) => {
       audioBuffer: req.file.buffer,
       mimeType: req.file.mimetype || 'audio/wav',
       filename: req.file.originalname || 'audio.wav',
-      prompt: typeof req.body?.prompt === 'string' ? req.body.prompt : undefined,
       hotwords,
     });
     res.json({ text });

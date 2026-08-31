@@ -121,12 +121,12 @@ export async function renderLessonPlayer(host, lesson) {
     };
 
     if (micBtn) {
-      // Every German word/phrase taught up to and including this step -
-      // never the expectedAnswer itself - passed as ASR hotwords so
-      // recognition is biased toward this lesson's known vocabulary
-      // without being biased toward the literal correct sentence.
-      const knownVocabulary = [...new Set(steps.slice(0, currentStepIndex + 1).flatMap((s) => s.software.map((w) => w.german)))];
-      wireMicButton(micBtn, input, feedback, () => correct, knownVocabulary);
+      // Only this step's newly-taught words - never the expectedAnswer
+      // itself, and not the whole lesson's vocabulary either, which would
+      // dilute the "hot" signal a short, specific hotword list is meant to
+      // give the recognizer.
+      const hotwords = step.software.map((w) => w.german);
+      wireMicButton(micBtn, input, feedback, () => correct, hotwords);
     }
 
     form.onsubmit = (e) => {

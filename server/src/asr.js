@@ -6,24 +6,29 @@
 // valid WAV buffer.
 //
 // The API has no explicit "language" parameter to lock recognition to
-// German, so accuracy is steered with the two fields it does document:
-// `prompt` (free-text context) and `hotwords` (a vocabulary list). Callers
-// should only ever pass hotwords the learner has already been shown (e.g.
-// a step's newly-taught words) - never the full expected answer, or the
-// model would just be nudged toward recognizing that answer regardless of
-// what was actually said, defeating the point of an active-recall check.
-
-const GERMAN_CONTEXT_PROMPT =
-  'Dies ist ein kurzer, einfacher deutscher Übungssatz aus einem Deutschkurs für Anfänger (Niveau A1). Die Aufnahme ist auf Deutsch.';
+// German. `prompt` is NOT a free-text instruction field despite how that
+// might read - Z.AI's own docs describe it as "previous transcription
+// results" carried forward for continuity in long, multi-chunk audio. Each
+// answer here is one standalone short recording with no prior chunk, so
+// there is nothing genuine to put there - sending an unrelated German
+// paragraph as if it were "prior transcript" risks biasing the model
+// toward continuing/echoing that text rather than helping it. Left unset.
+//
+// `hotwords` is the one legitimate accuracy lever this endpoint documents.
+// Callers should only ever pass hotwords the learner has already been
+// shown (e.g. a step's newly-taught words) - never the full expected
+// answer, or the model would just be nudged toward recognizing that answer
+// regardless of what was actually said, defeating the point of an active-
+// recall check. Kept short and specific (the current step's new words, not
+// the whole lesson's vocabulary) - a long list dilutes the "hot" signal.
 
 const ASR_PROVIDERS = {
   zai: {
     model: 'glm-asr-2512',
-    async call(apiKey, audioBuffer, mimeType, filename, { prompt, hotwords } = {}) {
+    async call(apiKey, audioBuffer, mimeType, filename, { hotwords } = {}) {
       const form = new FormData();
       form.append('model', ASR_PROVIDERS.zai.model);
       form.append('stream', 'false');
-      form.append('prompt', prompt || GERMAN_CONTEXT_PROMPT);
       // hotwords is documented as an array field on a multipart request -
       // encoded the standard multipart way (repeated fields, same name),
       // not as a single JSON-stringified value.
@@ -44,8 +49,8 @@ const ASR_PROVIDERS = {
 
 export const ASR_PROVIDERS_LIST = Object.keys(ASR_PROVIDERS);
 
-export async function transcribeAudio({ provider, apiKey, audioBuffer, mimeType, filename = 'audio.wav', prompt, hotwords }) {
+export async function transcribeAudio({ provider, apiKey, audioBuffer, mimeType, filename = 'audio.wav', hotwords }) {
   const impl = ASR_PROVIDERS[provider];
   if (!impl) throw new Error(`Unsupported ASR provider: ${provider}`);
-  return (await impl.call(apiKey, audioBuffer, mimeType, filename, { prompt, hotwords })).trim();
+  return (await impl.call(apiKey, audioBuffer, mimeType, filename, { hotwords })).trim();
 }
