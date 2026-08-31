@@ -7,13 +7,19 @@ import { blobToWav } from '../lessonEngine/audioToWav.js';
 // step at a time - never the whole lesson at once, and never the
 // expectedAnswer before the learner produces it themselves.
 //
-// lesson: { id, title, backHref, backLabel, storageKey, steps }
+// lesson: { id, title, backHref, backLabel, storageKey, steps, registerHotwords? }
 // steps[i]: { id, software: [{german, persian}], promptFa, expectedAnswer }
 //   - software.length && promptFa && expectedAnswer  -> teach + practice
 //   - !software.length && promptFa && expectedAnswer  -> practice only (recall)
 //   - promptFa === null && expectedAnswer === null    -> teach only (no input)
+//
+// registerHotwords (optional): words/forms fixed across the WHOLE lesson
+// (e.g. this lesson only ever uses formal "Sie", never "ihr") - unlike a
+// step's own new words, these aren't specific to any one exercise's
+// answer, so including them as ASR hotwords doesn't leak anything; they
+// just tell the recognizer which register/forms this speaker will use.
 export async function renderLessonPlayer(host, lesson) {
-  const { steps, storageKey, title, backHref, backLabel } = lesson;
+  const { steps, storageKey, title, backHref, backLabel, registerHotwords = [] } = lesson;
   const { currentStepIndex: startIndex } = loadLessonProgress(storageKey, steps.length);
   let currentStepIndex = startIndex;
 
@@ -125,7 +131,7 @@ export async function renderLessonPlayer(host, lesson) {
       // itself, and not the whole lesson's vocabulary either, which would
       // dilute the "hot" signal a short, specific hotword list is meant to
       // give the recognizer.
-      const hotwords = step.software.map((w) => w.german);
+      const hotwords = [...registerHotwords, ...step.software.map((w) => w.german)];
       wireMicButton(micBtn, input, feedback, () => correct, hotwords);
     }
 
