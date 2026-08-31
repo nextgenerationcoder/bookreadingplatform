@@ -21,6 +21,14 @@ router.post('/transcribe', upload.single('audio'), async (req, res) => {
     return res.status(400).json({ error: 'no speech-to-text API key configured — add one in Settings first' });
   }
 
+  // hotwords may arrive as one string or several same-named fields
+  // (multer/busboy gives an array for repeated multipart field names).
+  const hotwords = Array.isArray(req.body?.hotwords)
+    ? req.body.hotwords
+    : req.body?.hotwords
+      ? [req.body.hotwords]
+      : undefined;
+
   try {
     const apiKey = await decrypt(row.asr_api_key_enc);
     const text = await transcribeAudio({
@@ -29,6 +37,8 @@ router.post('/transcribe', upload.single('audio'), async (req, res) => {
       audioBuffer: req.file.buffer,
       mimeType: req.file.mimetype || 'audio/wav',
       filename: req.file.originalname || 'audio.wav',
+      prompt: typeof req.body?.prompt === 'string' ? req.body.prompt : undefined,
+      hotwords,
     });
     res.json({ text });
   } catch (err) {

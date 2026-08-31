@@ -113,9 +113,10 @@ export const api = {
   getAsrSettings: () => get('/api/settings/asr'),
   saveAsrSettings: (provider, apiKey) => post('/api/settings/asr', { provider, apiKey }),
   clearAsrSettings: () => del('/api/settings/asr'),
-  transcribeAudio: (wavBlob) => {
+  transcribeAudio: (wavBlob, { hotwords } = {}) => {
     const fd = new FormData();
     fd.append('audio', wavBlob, 'audio.wav');
+    for (const word of hotwords || []) fd.append('hotwords', word);
     return postForm('/api/asr/transcribe', fd);
   },
 

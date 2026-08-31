@@ -120,7 +120,14 @@ export async function renderLessonPlayer(host, lesson) {
       hintEl.textContent = hintLevel >= expectedWords.length ? shown : `${shown} …`;
     };
 
-    if (micBtn) wireMicButton(micBtn, input, feedback, () => correct);
+    if (micBtn) {
+      // Every German word/phrase taught up to and including this step -
+      // never the expectedAnswer itself - passed as ASR hotwords so
+      // recognition is biased toward this lesson's known vocabulary
+      // without being biased toward the literal correct sentence.
+      const knownVocabulary = [...new Set(steps.slice(0, currentStepIndex + 1).flatMap((s) => s.software.map((w) => w.german)))];
+      wireMicButton(micBtn, input, feedback, () => correct, knownVocabulary);
+    }
 
     form.onsubmit = (e) => {
       e.preventDefault();
@@ -149,7 +156,7 @@ export async function renderLessonPlayer(host, lesson) {
   // The learner still reviews/edits before submitting; this never
   // auto-submits on their behalf. Falls back silently to typing if the mic
   // is unavailable or denied.
-  function wireMicButton(micBtn, input, feedback, isAlreadyCorrect) {
+  function wireMicButton(micBtn, input, feedback, isAlreadyCorrect, hotwords) {
     let mediaRecorder = null;
     let chunks = [];
 
@@ -177,7 +184,7 @@ export async function renderLessonPlayer(host, lesson) {
           try {
             const rawBlob = new Blob(chunks, { type: mediaRecorder.mimeType || 'audio/webm' });
             const wavBlob = await blobToWav(rawBlob);
-            const { text } = await api.transcribeAudio(wavBlob);
+            const { text } = await api.transcribeAudio(wavBlob, { hotwords });
             input.value = text;
             feedback.textContent = '';
             input.focus();
