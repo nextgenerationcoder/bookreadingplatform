@@ -114,9 +114,25 @@ button:disabled { opacity: .35 }
 .retrievalCard { background: var(--paper); border: 1px solid var(--line); border-radius: 16px; padding: 24px 18px; text-align: center }
 .retrievalCard .speakingPrompt { font-size: 19px; margin: 14px 0 20px }
 
+/* --- LessonPlayer (active-recall typed exercises) --- */
+.wordPairList { display: flex; flex-direction: column; gap: 10px }
+.wordPair { display: flex; flex-direction: column; gap: 2px }
+.wordPair .de { font-size: 19px }
+.wordPair .fa { font-size: 15px; margin: 0 }
+.lessonPromptFa { font-size: 19px; line-height: 1.8; margin: 4px 0 2px; text-align: right }
+.answerInput { width: 100%; padding: 12px 14px; border: 1px solid var(--line); border-radius: 10px; font-size: 17px; font-family: Georgia, "Times New Roman", serif; background: var(--paper) }
+.answerInput:read-only { background: #f4f1e9; color: var(--muted) }
+.lessonFeedback { min-height: 20px; margin-top: 8px; font-size: 14px; font-weight: 600 }
+.lessonFeedback-correct { color: #1a7a3d }
+.lessonFeedback-wrong { color: #b3261e }
+.lessonHint { margin-top: 6px; font-size: 15px; color: var(--muted); text-align: left }
+.lessonSummary { text-align: center; padding: 60px 10px }
+.lessonSummary h2 { font-size: 22px; margin: 0 0 8px }
+
 @media (max-width: 600px) {
   .microStep { padding: 16px 14px; border-radius: 14px }
   .newElementText { font-size: 18px }
+  .lessonPromptFa { font-size: 18px }
 }
 
 .formPage { margin-top: 20px }

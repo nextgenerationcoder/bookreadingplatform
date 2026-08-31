@@ -16,6 +16,13 @@ import { renderImportHistory } from './views/importHistory.js';
 import { renderLearningHome } from './views/learning/learningHome.js';
 import { renderCourseOverview } from './views/learning/courseOverview.js';
 import { renderLessonPlayer } from './views/learning/lessonPlayer.js';
+import { renderLessonPlayer as renderInteractiveLessonPlayer } from './components/LessonPlayer.js';
+import { lesson1 } from './lessons/lesson1.js';
+
+// Courses with an active-recall LessonPlayer instead of the plain reading
+// view - keyed by course id, so Lesson 2-10 can be added here later without
+// touching the router again.
+const INTERACTIVE_LESSONS = { [lesson1.courseId]: lesson1 };
 
 const app = document.getElementById('app');
 let currentUser = null;
@@ -141,7 +148,9 @@ async function route() {
   const navKey = kind ? `${view}:${kind}` : view;
   setActiveNav(navKey);
   const host = document.getElementById('viewHost');
-  if (view === 'reader') {
+  if (view === 'reader' && kind === 'course' && INTERACTIVE_LESSONS[bookId]) {
+    renderInteractiveLessonPlayer(host, INTERACTIVE_LESSONS[bookId]);
+  } else if (view === 'reader') {
     await renderReader(host, bookId, kind);
   } else if (view === 'addPages') {
     await renderAddPages(host, bookId, kind);
