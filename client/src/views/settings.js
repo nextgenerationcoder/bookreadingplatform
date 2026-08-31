@@ -1,7 +1,6 @@
 import { api } from '../api.js';
 
 const PROVIDER_LABELS = { anthropic: 'Anthropic (Claude)', openai: 'OpenAI (GPT)', deepseek: 'DeepSeek' };
-const ASR_PROVIDER_LABELS = { 'self-hosted': 'Self-hosted (Whisper, German)', zai: 'Z.AI' };
 
 export async function renderSettings(host) {
   host.innerHTML = '<div class="loading">Loading settings…</div>';
@@ -85,33 +84,26 @@ export async function renderSettings(host) {
           <div id="visionStatus" class="importStatus"></div>
         </div>
 
-        <h1 style="margin-top:32px">Speech Input</h1>
+        <h1 style="margin-top:32px">Speech Input (Z.AI) API Key</h1>
         <p class="hint">
-          Used by Lesson 1's "speak your answer" microphone button — transcribes what you say into
-          text, which fills the answer field the same as typing. Self-hosted runs a German-tuned
-          Whisper large-v3 model on the server itself, no API key needed. Optional: without either
-          configured, the mic button is hidden and you just type your answers.
+          Used by Lesson 1's "speak your answer" microphone button — Z.AI's GLM-ASR model
+          transcribes what you say into text, which fills the answer field the same as typing.
+          Optional: without this, the mic button is hidden and you just type your answers.
         </p>
 
         <div class="authCard" style="max-width:420px;margin:18px 0 0">
           ${
             asr.configured
-              ? `<p><strong>Current provider:</strong> ${ASR_PROVIDER_LABELS[asr.provider] || asr.provider}</p>
+              ? `<p><strong>Configured.</strong></p>
                  <p class="hint" style="padding:0 0 14px">The key itself is never shown again once saved.</p>
-                 <button id="clearAsrBtn" type="button">Remove</button>`
+                 <button id="clearAsrBtn" type="button">Remove API Key</button>`
               : ''
           }
           <form id="asrForm" style="margin-top:${asr.configured ? '18px' : '0'}">
-            <label>Provider
-              <select id="asrProvider">
-                <option value="self-hosted">Self-hosted (Whisper, German)</option>
-                <option value="zai">Z.AI</option>
-              </select>
+            <label>Z.AI API Key
+              <input type="password" id="asrApiKey" autocomplete="off" placeholder="sk-…" required>
             </label>
-            <label id="asrApiKeyLabel">Z.AI API Key
-              <input type="password" id="asrApiKey" autocomplete="off" placeholder="sk-…">
-            </label>
-            <button type="submit">${asr.configured ? 'Replace' : 'Save'}</button>
+            <button type="submit">${asr.configured ? 'Replace Key' : 'Save Key'}</button>
           </form>
           <div id="asrStatus" class="importStatus"></div>
         </div>
@@ -220,28 +212,14 @@ export async function renderSettings(host) {
     const asrForm = host.querySelector('#asrForm');
     const asrStatus = host.querySelector('#asrStatus');
     const clearAsrBtn = host.querySelector('#clearAsrBtn');
-    const asrProviderSelect = host.querySelector('#asrProvider');
-    const asrApiKeyLabel = host.querySelector('#asrApiKeyLabel');
-    const asrApiKeyInput = host.querySelector('#asrApiKey');
-
-    if (asr.provider) asrProviderSelect.value = asr.provider;
-
-    function syncAsrKeyField() {
-      const needsKey = asrProviderSelect.value !== 'self-hosted';
-      asrApiKeyLabel.hidden = !needsKey;
-      asrApiKeyInput.required = needsKey;
-    }
-    syncAsrKeyField();
-    asrProviderSelect.onchange = syncAsrKeyField;
 
     asrForm.onsubmit = async (e) => {
       e.preventDefault();
-      const provider = asrProviderSelect.value;
-      const apiKey = asrApiKeyInput.value.trim();
+      const apiKey = host.querySelector('#asrApiKey').value.trim();
       asrStatus.textContent = 'Saving…';
       asrStatus.className = 'importStatus';
       try {
-        asr = await api.saveAsrSettings(provider, apiKey);
+        asr = await api.saveAsrSettings('zai', apiKey);
         render();
         host.querySelector('#asrStatus').textContent = 'Saved.';
         host.querySelector('#asrStatus').className = 'importStatus success';

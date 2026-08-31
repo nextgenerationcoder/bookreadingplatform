@@ -12,13 +12,10 @@ services:
     environment:
       - PORT=4000
       - DB_PATH=/data/app.db
-      - WHISPER_URL=http://whisper:9000
     volumes:
       - app_data:/data
     networks:
       - n8n-compose_default
-    depends_on:
-      - whisper
     labels:
       - traefik.enable=true
       - traefik.http.routers.bookapp.rule=Host(`book.amirseyti.de`)
@@ -27,35 +24,9 @@ services:
       - traefik.http.routers.bookapp.tls.certresolver=mytlschallenge
       - traefik.http.services.bookapp.loadbalancer.server.port=4000
 
-  # Self-hosted speech-to-text for the LessonPlayer mic button - a German
-  # fine-tune of Whisper large-v3 (WER ~2.6% on German test sets, vs. the
-  # generic Z.AI model this replaces as the default). Internal only: no
-  # Traefik labels, no published port - reachable solely by `app` at
-  # http://whisper:9000 over the shared Docker network. Model weights
-  # (~3GB) download once on first request and persist in whisper_models, so
-  # only the very first transcription after a fresh deploy is slow.
-  #
-  # CPU inference: fine for the short (few-second) answers this app records,
-  # but this container needs real RAM - watch `docker stats` after deploy
-  # and drop to a smaller German Whisper fine-tune if the VPS can't hold it.
-  whisper:
-    image: onerahmet/openai-whisper-asr-webservice:latest
-    restart: always
-    environment:
-      - ASR_ENGINE=faster_whisper
-      - ASR_MODEL=Reality-Interface/whisper-large-v3-german-faster-whisper
-      - ASR_MODEL_PATH=/data/whisper-models
-      - ASR_DEVICE=cpu
-      - ASR_QUANTIZATION=int8
-    volumes:
-      - whisper_models:/data/whisper-models
-    networks:
-      - n8n-compose_default
-
 networks:
   n8n-compose_default:
     external: true
 
 volumes:
   app_data:
-  whisper_models:
