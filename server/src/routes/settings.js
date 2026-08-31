@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { db } from '../db.js';
 import { encrypt } from '../crypto.js';
 import { LLM_PROVIDERS, VISION_CAPABLE_PROVIDERS } from '../llm.js';
+import { ASR_PROVIDERS_LIST } from '../asr.js';
 import { VOICES, DEFAULT_VOICE, DEFAULT_RATE, MIN_RATE, MAX_RATE } from '../tts.js';
 
 const router = Router();
@@ -60,6 +61,32 @@ router.post('/vision', async (req, res) => {
 
 router.delete('/vision', (req, res) => {
   db.prepare('UPDATE users SET vision_provider = NULL, vision_api_key_enc = NULL WHERE id = ?').run(req.userId);
+  res.json({ configured: false });
+});
+
+// GET/POST/DELETE /api/settings/asr — a speech-to-text key (Z.AI GLM-ASR),
+// used by the LessonPlayer's spoken-answer input. Independent of llm/vision
+// for the same reason those are independent of each other.
+router.get('/asr', (req, res) => {
+  const row = db.prepare('SELECT asr_provider FROM users WHERE id = ?').get(req.userId);
+  res.json({ provider: row?.asr_provider || null, configured: Boolean(row?.asr_provider) });
+});
+
+router.post('/asr', async (req, res) => {
+  const { provider, apiKey } = req.body || {};
+  if (!ASR_PROVIDERS_LIST.includes(provider)) {
+    return res.status(400).json({ error: `provider must be one of: ${ASR_PROVIDERS_LIST.join(', ')}` });
+  }
+  if (!apiKey || typeof apiKey !== 'string' || apiKey.trim().length < 8) {
+    return res.status(400).json({ error: 'a valid API key is required' });
+  }
+  const enc = await encrypt(apiKey.trim());
+  db.prepare('UPDATE users SET asr_provider = ?, asr_api_key_enc = ? WHERE id = ?').run(provider, enc, req.userId);
+  res.json({ provider, configured: true });
+});
+
+router.delete('/asr', (req, res) => {
+  db.prepare('UPDATE users SET asr_provider = NULL, asr_api_key_enc = NULL WHERE id = ?').run(req.userId);
   res.json({ configured: false });
 });
 

@@ -110,6 +110,15 @@ export const api = {
   saveVisionSettings: (provider, apiKey) => post('/api/settings/vision', { provider, apiKey }),
   clearVisionSettings: () => del('/api/settings/vision'),
 
+  getAsrSettings: () => get('/api/settings/asr'),
+  saveAsrSettings: (provider, apiKey) => post('/api/settings/asr', { provider, apiKey }),
+  clearAsrSettings: () => del('/api/settings/asr'),
+  transcribeAudio: (wavBlob) => {
+    const fd = new FormData();
+    fd.append('audio', wavBlob, 'audio.wav');
+    return postForm('/api/asr/transcribe', fd);
+  },
+
   getVoices: () => get('/api/tts/voices'),
   getVoiceSettings: () => get('/api/settings/voice'),
   saveVoiceSettings: (voiceId, speechRate) => post('/api/settings/voice', { voiceId, speechRate }),

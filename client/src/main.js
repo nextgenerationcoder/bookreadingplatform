@@ -149,7 +149,7 @@ async function route() {
   setActiveNav(navKey);
   const host = document.getElementById('viewHost');
   if (view === 'reader' && kind === 'course' && INTERACTIVE_LESSONS[bookId]) {
-    renderInteractiveLessonPlayer(host, INTERACTIVE_LESSONS[bookId]);
+    await renderInteractiveLessonPlayer(host, INTERACTIVE_LESSONS[bookId]);
   } else if (view === 'reader') {
     await renderReader(host, bookId, kind);
   } else if (view === 'addPages') {

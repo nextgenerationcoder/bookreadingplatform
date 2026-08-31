@@ -5,11 +5,12 @@ const PROVIDER_LABELS = { anthropic: 'Anthropic (Claude)', openai: 'OpenAI (GPT)
 export async function renderSettings(host) {
   host.innerHTML = '<div class="loading">Loading settings…</div>';
 
-  let translation, vision, voiceInfo, voiceCurrent;
+  let translation, vision, asr, voiceInfo, voiceCurrent;
   try {
-    [translation, vision, voiceInfo, voiceCurrent] = await Promise.all([
+    [translation, vision, asr, voiceInfo, voiceCurrent] = await Promise.all([
       api.getLlmSettings(),
       api.getVisionSettings(),
+      api.getAsrSettings(),
       api.getVoices(),
       api.getVoiceSettings(),
     ]);
@@ -81,6 +82,30 @@ export async function renderSettings(host) {
             <button type="submit">${vision.configured ? 'Replace Key' : 'Save Key'}</button>
           </form>
           <div id="visionStatus" class="importStatus"></div>
+        </div>
+
+        <h1 style="margin-top:32px">Speech Input (Z.AI) API Key</h1>
+        <p class="hint">
+          Used by Lesson 1's "speak your answer" microphone button — Z.AI's GLM-ASR model
+          transcribes what you say into text, which fills the answer field the same as typing.
+          Optional: without this, the mic button is hidden and you just type your answers.
+        </p>
+
+        <div class="authCard" style="max-width:420px;margin:18px 0 0">
+          ${
+            asr.configured
+              ? `<p><strong>Configured.</strong></p>
+                 <p class="hint" style="padding:0 0 14px">The key itself is never shown again once saved.</p>
+                 <button id="clearAsrBtn" type="button">Remove API Key</button>`
+              : ''
+          }
+          <form id="asrForm" style="margin-top:${asr.configured ? '18px' : '0'}">
+            <label>Z.AI API Key
+              <input type="password" id="asrApiKey" autocomplete="off" placeholder="sk-…" required>
+            </label>
+            <button type="submit">${asr.configured ? 'Replace Key' : 'Save Key'}</button>
+          </form>
+          <div id="asrStatus" class="importStatus"></div>
         </div>
 
         <h1 style="margin-top:32px">Voice</h1>
@@ -180,6 +205,40 @@ export async function renderSettings(host) {
           visionStatus.textContent = `Error: ${err.message}`;
           visionStatus.className = 'importStatus error';
           clearVisionBtn.disabled = false;
+        }
+      };
+    }
+
+    const asrForm = host.querySelector('#asrForm');
+    const asrStatus = host.querySelector('#asrStatus');
+    const clearAsrBtn = host.querySelector('#clearAsrBtn');
+
+    asrForm.onsubmit = async (e) => {
+      e.preventDefault();
+      const apiKey = host.querySelector('#asrApiKey').value.trim();
+      asrStatus.textContent = 'Saving…';
+      asrStatus.className = 'importStatus';
+      try {
+        asr = await api.saveAsrSettings('zai', apiKey);
+        render();
+        host.querySelector('#asrStatus').textContent = 'Saved.';
+        host.querySelector('#asrStatus').className = 'importStatus success';
+      } catch (err) {
+        asrStatus.textContent = `Error: ${err.message}`;
+        asrStatus.className = 'importStatus error';
+      }
+    };
+
+    if (clearAsrBtn) {
+      clearAsrBtn.onclick = async () => {
+        clearAsrBtn.disabled = true;
+        try {
+          asr = await api.clearAsrSettings();
+          render();
+        } catch (err) {
+          asrStatus.textContent = `Error: ${err.message}`;
+          asrStatus.className = 'importStatus error';
+          clearAsrBtn.disabled = false;
         }
       };
     }

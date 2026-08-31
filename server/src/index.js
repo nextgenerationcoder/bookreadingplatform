@@ -16,6 +16,7 @@ import settingsRouter from './routes/settings.js';
 import ocrRouter from './routes/ocr.js';
 import ttsRouter from './routes/tts.js';
 import learningRouter from './routes/learning.js';
+import asrRouter from './routes/asr.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -61,6 +62,7 @@ app.use('/api/settings', requireAuth, settingsRouter);
 app.use('/api/ocr', requireAuth, ocrRouter);
 app.use('/api/tts', requireAuth, ttsRouter);
 app.use('/api/learning', requireAuth, learningRouter);
+app.use('/api/asr', requireAuth, asrRouter);
 
 // In production the client is built to client/dist and served by this same
 // process, so the whole app is one container behind one port. In local dev
