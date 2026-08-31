@@ -12,10 +12,13 @@ services:
     environment:
       - PORT=4000
       - DB_PATH=/data/app.db
+      - WHISPER_URL=http://whisper:9000
     volumes:
       - app_data:/data
     networks:
       - n8n-compose_default
+    depends_on:
+      - whisper
     labels:
       - traefik.enable=true
       - traefik.http.routers.bookapp.rule=Host(`book.amirseyti.de`)
@@ -24,9 +27,35 @@ services:
       - traefik.http.routers.bookapp.tls.certresolver=mytlschallenge
       - traefik.http.services.bookapp.loadbalancer.server.port=4000
 
+  # Self-hosted speech-to-text for Lesson 1's mic button - Primeline's
+  # German-tuned Whisper large-v3 TURBO (4 decoder layers instead of 32, so
+  # noticeably faster on CPU than full large-v3, at a small accuracy cost -
+  # a good trade for short single-sentence answers). Served via
+  # faster-whisper/CTranslate2 from a community CT2 conversion of
+  # primeline/whisper-large-v3-turbo-german (the original HF checkpoint,
+  # https://huggingface.co/primeline/whisper-large-v3-turbo-german, is
+  # PyTorch/transformers format - faster-whisper needs the CT2 conversion).
+  # Internal only: no Traefik labels, no published port - reachable solely
+  # by `app` at http://whisper:9000. Model weights download once on first
+  # request and persist in whisper_models.
+  whisper:
+    image: onerahmet/openai-whisper-asr-webservice:latest
+    restart: always
+    environment:
+      - ASR_ENGINE=faster_whisper
+      - ASR_MODEL=jimmymeister/whisper-large-v3-turbo-german-ct2
+      - ASR_MODEL_PATH=/data/whisper-models
+      - ASR_DEVICE=cpu
+      - ASR_QUANTIZATION=int8
+    volumes:
+      - whisper_models:/data/whisper-models
+    networks:
+      - n8n-compose_default
+
 networks:
   n8n-compose_default:
     external: true
 
 volumes:
   app_data:
+  whisper_models:

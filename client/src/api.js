@@ -130,4 +130,13 @@ export const api = {
     return postForm('/api/learning/recordings', fd);
   },
   recordingUrl: (recordingId) => `/api/learning/recordings/${recordingId}`,
+
+  // wavBlob: a Blob already converted to WAV (see lessonEngine/audioToWav.js).
+  // hotwords: already-taught words to bias recognition toward - see asr.js.
+  transcribeAudio: (wavBlob, { hotwords } = {}) => {
+    const fd = new FormData();
+    fd.append('audio', wavBlob, 'audio.wav');
+    for (const word of hotwords || []) fd.append('hotwords', word);
+    return postForm('/api/asr/transcribe', fd);
+  },
 };
