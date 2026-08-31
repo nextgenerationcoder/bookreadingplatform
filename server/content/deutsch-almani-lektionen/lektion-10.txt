@@ -1,0 +1,409 @@
+COURSE: deutsch-almani-lektion-10
+TITLE: Lektion 10
+LEVEL: A1
+LANG: de -> fa
+
+PAGE 1
+CHAPTER: Lektion 10
+1: Sie müssen es sehen
+شما باید آن را ببینید
+2: Sie brauchen nicht es zu sehen
+شما نیاز ندارید آن را ببینید
+3: er musste hier bleiben, weil er arbeiten musste
+او باید اینجا می ماند، چون او باید کار می کرد
+4: vorbereiten
+آماده کردن
+5: bereit
+آماده
+6: ich sollte es gestern vorbereiten
+من باید آن را دیروز آماده می کردم
+7: ich wollte
+من می خواستم
+8: ich habe gewollt
+من می خواستم
+9: ich war da
+من آنجا بودم
+10: nie
+هرگز
+11: niemand
+هیچ کس
+12: niemand war da
+هیچ کس آنجا نبود
+13: wer war da mit Ihnen gestern Abend?
+چه کسی بود آنجا با شما دیروز عصر؟
+14: es war nicht möglich, es zu tun.
+آن ممکن نبود، انجام دادنش
+15: lassen Sie mich versuchen
+بگذارید تالش کنم
+16: lassen Sie mich arbeiten
+بگذارید کار کنم
+17: lassen Sie mich in Ruhe
+بگذارید آرام باشم ، راحتم بگذارید
+18: lass mich in Ruhe
+ولم کن، راحتم بگذار، دست از سرم بردار
+19: die Ruhe
+آرامش
+20: ich bin müde
+من خسته هستم
+21: ich werde müde
+من خسته می شوم
+22: ich werde müde sein
+من خسته خواهم بود
+23: ich werde müde werden
+من خسته خواهم شد
+24: Sie werden zu müde sein
+شما خیلی خسته خواهید بود
+25: Sie werden bald müde werden
+شما به زودی خسته خواهید شد
+26: es ist spät
+دیر است
+27: es wird spät
+دیر می شود
+28: dunkel
+تاریک
+29: die Dunkelheit
+تاریکی
+30: es ist sehr dunkel
+خیلی تاریک است
+31: es ist zu dunkel
+خیلی تاریک است
+32: es wird dunkel
+تاریک می شود
+33: es wird sehr dunkel sein
+خیلی تاریک خواهد بود
+34: es wird sehr dunkel werden
+خیلی تاریک خواهد شد
+35: es wurde dunkel
+تاریک شد
+36: plötzlich
+ناگهان
+37: es wurde plötzlich sehr dunkel
+ناگهان خیلی تاریک شد
+38: es würde zu dunkel sein
+خیلی تاریک بُوَد
+39: wir wurden müde
+ما خسته شدیم
+40: ich wusste
+من دانستم
+41: ich habe gewusst
+من دانستم
+42: ich bin gegangen
+من رفتم
+43: ich war gegangen
+من رفته بودم
+44: ich bin dorthin gegangen
+من به آنجا رفتم
+45: wir sind gegangen
+ما رفتیم
+46: wir sind gestern Abend dorthin gegangen
+ما دیروز عصر به آنجا رفتیم
+47: wann sind Sie dorthin gegangen?
+چه زمانی شما به آنجا رفتید ؟
+48: ich war
+من بودم
+49: ich bin gewesen
+من بودم
+50: wir sind gestern Abend dort gewesen?
+ما دیروز عصر آنجا بودیم
+51: wie lange sind Sie dort gewesen?
+چه مدت شما آنجا بودید؟
+52: ich habe es gehabt
+من آن را داشتم
+53: ich hatte es gehabt
+من آن را داشته بودم
+54: ich habe gewartet
+من منتظر بودم
+55: ich habe auf Sie gewartet
+من منتظر شما بودم
+56: er hat auf mich gewartet
+او منتظر من بود
+57: ich habe auf dich gewartet
+من منتظر تو بودم
+58: wie lange haben Sie gewartet?
+چه مدت منتظر بودید شما؟
+59: er ist heute angekommen
+او امروز رسید
+60: ich habe Sie nicht gesehen, weil ich nicht da war/ denn ich war nicht da
+من شما را ندیدم چون من آنجا نبودم
+61: wir sind geblieben
+ما ماندیم
+62: wir sind nach Berlin gefahren
+ما به سمت برلین رفتیم
+63: wann sind Sie nach Wien gefahren?
+کی شما به وین رفتید؟
+64: wie lange sind Sie in Wien geblieben?
+چه مدت شما در وین ماندید؟
+65: Wann sind Sie angekommen?
+کی شما رسیدید؟
+66: ich bin nach Berlin gefahren
+من به برلین رفتم
+67: wir sind letzte Woche nach Wien gefahren, aber wir sind nicht lange geblieben, wir sind nur ein paar Tage geblieben und wir sind nach London zurückgekommen
+ما هفته پیش به وین رفتیم، اما ما خیلی نماندیم، ما فقط یه چند روزی ماندیم و ما به لندن برگشتیم
+68: sich beeilen
+عجله داشتن
+69: ich beeile mich
+من عجله دارم
+70: ich habe mich beeilt
+من عجله کردم
+71: beeilen Sie sich
+عجله کنید
+72: wir haben uns beeilt
+ما عجله داشتیم
+73: aufstehen
+ایستادن / بیدار شدن
+74: ich bin aufgestanden
+من ایستادم /من بیدار شدم
+75: wir sind aufgestanden
+ما بیدار شدیم
+76: Um wie viel Uhr sind Sie aufgestanden_
+در چه ساعتی شما بیدار شدید؟
+77: die Ruhe
+آرامش
+78: Ruhe bitte
+آرام لطفأ
+79: es ist sehr ruhig
+آن خیلی آرام است
+80: sich ausruhen
+استراحت کردن
+81: ich werde mich ausruhen
+من استراحت خواهم کرد
+82: Sie müssen sich ausruhen
+شما باید استراحت کنید
+83: ich habe mich sehr gut ausgeruht
+من خیلی خوب استراحت کردم
+84: Sie sollen sich ausruhen
+شما باید استراحت کنید
+85: Man muss
+آدم باید
+86: Man muss sich ausruhen
+آدم باید استراحت کند
+87: Man muss sich manchmal ausruhen
+آدم باید بعضی وقت ها استراحت کند
+88: Manchmal muss man sich ausruhen
+بعضی وقت ها آدم باید استراحت کند
+89: shlafen
+خوابیدن
+90: haben Sie gut geschlafen?
+شما خوب خوابیدید ؟
+91: ich habe sehr gut geschlafen
+من خیلی خوب خوابیدم
+92: Man kann es manchmal verstehen
+آدم میتواند بعضی وقت ه ا آن را بفهمد
+93: Manchmal kann man es nicht verstehen
+بعضی وقت ها آدم نمی تواند آن را بفهمد
+94: ich habe nicht verstanden, was Sie gesagt haben
+من نفهمیدم شما چه چیزی گفتید
+95: ich verstehe nicht, was Sie sagen?
+من نمی فهمم چه چیزی شما می گویید
+96: meinen
+نظر داشتن / منظور داشتن
+97: ich verstehe nicht, was Sie meinen?
+من نمی فهمم، چه چیزی شما منظور دارید
+98: was meinen Sie?
+منظور شما چیست ؟ / نظر شما چیست؟
+99: was meint er?
+نظر او چیست ؟
+100: senden / schicken
+فرستادن / ارسال کردن
+101: ich werde es Ihnen schicken
+من آن را به شما ارسال خواهم کرد
+102: ich werde es dir schicken
+من آن را به تو ارسال خواهم کرد
+103: er hat es mir geschickt
+او آن را به من فرستاد
+104: erhalten / bekommen
+دریافت کردن
+105: ich habe es noch nicht erhalten
+من آن را هنوز دریافت نکرده ام
+106: behalten
+نگه داشتن
+107: Sie können es behalten
+شما می توانید آن را نگه دارید
+108: hören
+شنیدن
+109: ich kann es nicht hören
+من نمی توانم آن را بشنوم
+110: gehören
+متعلق بودن
+111: es gehört mir
+آن متعلق به من است
+112: es gehört mir nicht
+آن متعلق به من نیست
+113: es gehört Ihnen
+آن متعلق به شما است
+114: gehört es Ihnen?
+آن متعلق به شماست؟
+115: antworten
+جواب دادن
+116: das Wort
+کلمه
+117: die Antwort
+پاسخ
+118: er hat noch nicht geantwortet
+او هنوز جواب نداده است
+119: rufen
+صدا زدن
+120: Er hat gerufen
+او صدا زد
+121: anrufen
+تماس گرفتن
+122: er hat mich angerufen
+او من را تماس گرفت
+123: bei
+نزد، هنگام
+124: bei Ihnen
+نزد شما
+125: ich habe Sie heute früh angerufen, um Ihnen zu sagen, dass ich heute Abend ankommen werde und um 10 Uhr bei Ihnen sein werde
+من امروز صبح زود با شما تماس گرفتم به منظور اینکه به شما بگویم که من امروز عصر خواهم رسید و ساعت 10 نزد شما خواهم بود
+126: sich erinnern
+به یاد آوردن
+127: ich erinnere mich
+من به یاد می آورم
+128: ich kann mich nicht erinnern
+من نمی توانم به یاد بیاورم
+129: sich an etwas erinnern
+بر چیزی به یاد آوردن
+130: meine Kindheit
+کودکی من
+131: ich erinnere mich nicht an meine Kindheit
+من کودکی ام را به یاد نمی آورم
+132: die Wohnung
+آپارتمان / خانه
+133: mieten
+اجاره کردن
+134: ich werde die Wohnung mieten
+من آپارتمان را اجاره خواهم کرد
+135: ich werde das Haus mieten
+من خانه را اجاره خواهم کرد
+136: wohnen
+زندگی کردن
+137: ich tue es seit langer Zeit
+من آ ن را از مدت زیادی پیش انجام می دهم
+138: ich tue das schon seit langer Zeit
+من آن را از مدت زیادی پیش انجام می دهم
+139: wie lange wohnen Sie hier?
+چه مدت شما اینجا زندگی میکنید ؟
+140: Zum Beispiel
+برای مثال
+141: spielen
+بازی کردن / نواختن
+142: Klavier spielen
+پیانو نواختن
+143: Wie lange sind Sie schon hier?
+چه مدت شما اینجا هستید ؟
+144: Wo sind Sie gewesen?
+کجا بودید شما؟
+145: Wo waren Sie?
+کجا بودید شما ؟
+146: ich habe es gesucht
+من آن را جست و جو کردم
+147: ich habe es gesucht, aber ich konnte es nicht finden
+من به دنبال آن گشتم اما نتوانستم آن را پیدا کنم
+148: Ihr sagt
+شما می گویید
+149: Ihr könnt
+شما می توانید
+150: könnt ihr mir sagen
+می توانید شما به من بگویید؟
+151: ich weiß nicht, ob ihr mir helfen könnt
+من نمی دانم که آیا شما به من می توانید کمک کنید یا نه
+152: ich kann euch nicht sagen
+من نمی توانم به شما بگویم
+153: ich will euch helfen
+من می خواهم به شما کمک کنم
+154: wenn ihr mit mir kommen wollt, müsst ihr am Abend hier sein.
+اگر شما بخواهید با من بیایید، باید عصر اینجا باشید
+155: ich muss ihn anrufen
+من باید او را (مذکر) تماس بگیرم
+156: ich habe ihn gestern angerufen
+من دیروز او را تماس گرفتم
+157: er ist hierher gekommen, aber ich konnte ihn nicht treffen
+او به اینجا آمد، اما من نتوانستم او را مالقات کنم
+158: ich musste ihm sagen, dass ich keine Zeit hatte.
+من باید به او می گفتم که من وقت نداشتم
+159: ich habe ihm gesagt
+من به او (مذکر) گفتم
+160: ich habe ihr gesagt
+من به او (مونث) گفتم
+161: warum hast du ihm nicht geholfen
+چرا تو به او کمک نکردی؟
+162: warum hast du ihr nicht geholfen
+چرا تو به او (مونث) کمک نکردی؟
+163: Sie wusste nicht, dass ich auf sie warte
+او (مونث) نمی دانست که من منتظر او هستم
+164: auswandern
+مهاجرت کردن
+165: Sie wusste nicht, dass ich mit ihr auswandern möchte.
+او نمی دانست که من می خواهم با او مهاجرت کنم
+166: ich will auswandern
+من می خواهم مهاجرت کنم
+167: ich wandere dieses Jahr aus
+من امسال مهاجرت می کنم
+168: die Auswanderung
+مهاجرت
+169: alle wissen, dass die Auswanderung eine gute Gelegenheit sein kann.
+همه می دانند که مهاجرت یک فرصت خوب می تواند باشد
+170: heißen
+نامیده شدن
+171: wie heißt du?
+اسمت چیه؟
+172: ich heiße ...
+اسم من ... است
+173: wo wohnen Sie?
+کجا زندگی می کنید شما؟
+174: wo wohnst du?
+کجا زندگی می کنی تو؟
+175: ich wohne in Deutschland
+من در آلمان زندگی می کنم
+176: woher kommen Sie?
+از کجا می آیید؟ (اهل کجا هستید؟)
+177: ich komme aus dem Iran
+من از ایران می آیم
+178: wie alt bist du?
+چند سالتونه؟ / چند سالته؟
+179: ich bin ... Jahre alt
+من ... ساله هستم
+180: was sind Sie von Beruf?
+شغل تون چیه؟
+181: was bist du von Beruf?
+شغلت چیه؟
+182: Krankenschwester
+پرستار
+183: ich bin Krankenschwester von Beruf
+من پرستار هستم
+184: Sprache
+زبان
+185: Muttersprache
+زبان مادری
+186: welche Sprachen sprechen Sie?
+چه زبان هایی را صحبت می کنید شما؟
+187: ich spreche Persisch.
+من فارسی صحبت می کنم
+188: meine Muttersprache ist Persisch
+زبان مادری من فارسی است
+189: abschließen
+تمام کردن
+190: wo haben Sie Ihr S tudium ab ge schl oß en?
+تحصیالتتان را کجا تمام کردید؟
+191: ich habe mein Studium in Tehran- Universität abgeschloßen
+من تحصیالتم را در دانشگاه تهران تمام کردم
+192: ich muss Deutsch lernen, um nach Deutschland auszuwandern
+من باید آلمانی یاد بگیرم، به منظور اینکه به آلمان مهاجرت کنم
+193: um nach Deutschland auszuwandern, muss ich Deutsch lernen
+به منظور مهاجرت به سمت آلمان، باید من آلمانی یاد بگیرم
+194: ich habe angefangen, Deutsch zu lernen
+من شروع کردم آلمانی یاد بگیرم
+195: sicher
+مطمئن
+196: schnell
+سریع
+197: diese
+این
+198: ich bin sicher, dass ich diese Sprache sehr schnell lernen werde
+من مطمئن هستم که من خیلی سریع این زبان را یاد خواهم گرفت
+199: Jetzt kann ich sagen, dass Deutsch einfach ist.
+اکنون می توانم بگویم که آلمانی ساده است
+200: fließend
+روان
+201: ich bin sicher, dass ich diese Sprache sehr flißend sprechen werde
+من مطمئن هستم که من این زبان را خیلی روان صحبت خواهم کرد
