@@ -11,6 +11,16 @@ spaCy's nlp.pipe() in batches - never all loaded into memory at once - so
 memory stays bounded regardless of corpus size (important on this VPS,
 which has no swap - see run_nightly.sh).
 
+Boilerplate paragraphs (cookie/privacy notices, "click to show external
+content" placeholders, related-article widgets) repeat nearly word-for-
+word across many different articles on the same site - confirmed live,
+where they dominated the top results ("Datenschutzerklärung",
+"Drittplattformen", "extern ... anzeigen" were among the most frequent
+"words" in a first run). A paragraph that appears in many different
+documents isn't page content, it's chrome, so paragraphs seen in more
+than BOILERPLATE_MIN_DOCS documents are dropped before counting -
+generic across sites, unlike hardcoding each site's specific class names.
+
 German separable-prefix verbs ("ausstellen" -> "Wir stellen ... aus")
 split apart in normal sentences - without handling this, "stellen" and
 "ausstellen" (different meanings: "to put" vs. "to exhibit/issue") would
@@ -44,9 +54,14 @@ OUT_CSV = DATA_DIR / "word_frequency.csv"
 
 KEEP_POS = {"NOUN", "PROPN", "VERB", "ADJ"}
 BATCH_SIZE = 50
+# A paragraph seen in at least this many distinct documents (or this
+# fraction of all documents, whichever is larger) is treated as
+# boilerplate rather than real content.
+BOILERPLATE_MIN_DOCS = 5
+BOILERPLATE_MIN_FRACTION = 0.01
 
 
-def iter_texts():
+def iter_raw_texts():
     for path, field in ((JOBS_FILE, "description"), (ARTICLES_FILE, "text")):
         if not path.exists():
             continue
@@ -64,6 +79,29 @@ def iter_texts():
                 yield text
 
 
+def find_boilerplate_paragraphs() -> set[str]:
+    doc_count = 0
+    para_doc_counts: Counter[str] = Counter()
+    for text in iter_raw_texts():
+        doc_count += 1
+        # A set, not a list - a paragraph repeated twice within the SAME
+        # document (a pull-quote, say) shouldn't count double toward
+        # "how many different documents" it appears in.
+        for para in {p.strip() for p in text.split("\n") if p.strip()}:
+            para_doc_counts[para] += 1
+    if doc_count == 0:
+        return set()
+    threshold = max(BOILERPLATE_MIN_DOCS, int(doc_count * BOILERPLATE_MIN_FRACTION))
+    return {para for para, count in para_doc_counts.items() if count >= threshold}
+
+
+def iter_texts(boilerplate: set[str]):
+    for text in iter_raw_texts():
+        kept = [p.strip() for p in text.split("\n") if p.strip() and p.strip() not in boilerplate]
+        if kept:
+            yield "\n".join(kept)
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--top", type=int, default=300)
@@ -77,11 +115,16 @@ def main() -> None:
     # common German sentence pattern to avoid it.
     nlp = spacy.load("de_core_news_sm", disable=["ner"])
 
+    boilerplate = find_boilerplate_paragraphs()
+    if boilerplate:
+        print(f"Filtered {len(boilerplate)} boilerplate paragraph(s) repeated across many documents "
+              "(cookie notices, related-article widgets, etc.) before counting.")
+
     counts: Counter[str] = Counter()
     doc_count = 0
     token_count = 0
 
-    for doc in nlp.pipe(iter_texts(), batch_size=BATCH_SIZE):
+    for doc in nlp.pipe(iter_texts(boilerplate), batch_size=BATCH_SIZE):
         doc_count += 1
         # Map each verb (by token index) to its detached prefix's text, so
         # the verb can be counted under its real combined form below
