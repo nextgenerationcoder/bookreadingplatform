@@ -61,6 +61,10 @@ def main() -> None:
         for token in doc:
             if token.pos_ not in KEEP_POS or not token.is_alpha or token.is_stop:
                 continue
+            # Single letters (e.g. "m/w/d" tokenizing into "m", "w", "d")
+            # pass is_alpha but aren't real words - drop them.
+            if len(token.text) < 2:
+                continue
             counts[token.lemma_] += 1
             token_count += 1
 
