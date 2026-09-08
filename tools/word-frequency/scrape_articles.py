@@ -92,7 +92,17 @@ def main() -> None:
                 break
             log.info("Reading feed: %s (have %d/%d words)", feed_url, total_words, args.target_words)
             try:
-                feed = feedparser.parse(feed_url)
+                # feedparser.parse(url) has no timeout of its own and can
+                # hang indefinitely against a slow/unresponsive server
+                # (confirmed live - a run got stuck on this exact line).
+                # Fetching with requests first (which does have a timeout)
+                # and handing feedparser the bytes avoids that.
+                feed_resp = requests.get(feed_url, headers=REQUEST_HEADERS, timeout=REQUEST_TIMEOUT)
+                feed_resp.raise_for_status()
+                feed = feedparser.parse(feed_resp.content)
+            except requests.RequestException:
+                log.warning("Failed to fetch feed %s - skipping.", feed_url)
+                continue
             except Exception:
                 log.exception("Failed to parse feed %s - skipping.", feed_url)
                 continue
