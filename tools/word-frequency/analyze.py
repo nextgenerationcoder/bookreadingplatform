@@ -51,7 +51,15 @@ def iter_texts():
         if not path.exists():
             continue
         for line in path.read_text(encoding="utf-8").splitlines():
-            text = json.loads(line).get(field)
+            if not line.strip():
+                continue
+            # A prior scrape run killed mid-write can leave a truncated
+            # last line - skip it rather than crash the whole analysis.
+            try:
+                row = json.loads(line)
+            except json.JSONDecodeError:
+                continue
+            text = row.get(field)
             if text:
                 yield text
 

@@ -77,9 +77,23 @@ def main() -> None:
     DATA_DIR.mkdir(exist_ok=True)
     seen = load_seen()
     total_words = 0
+    skipped = 0
     if OUT_FILE.exists():
         for line in OUT_FILE.read_text(encoding="utf-8").splitlines():
-            total_words += word_count(json.loads(line).get("text", ""))
+            if not line.strip():
+                continue
+            # A prior run killed mid-write (Ctrl+C, OOM, crash) can leave a
+            # truncated last line - confirmed live. Skip it rather than
+            # crash; the article it belongs to just gets re-fetched since
+            # its URL was written to SEEN_FILE but never made it into
+            # OUT_FILE with a matching flush, or wasn't seen at all.
+            try:
+                total_words += word_count(json.loads(line).get("text", ""))
+            except json.JSONDecodeError:
+                skipped += 1
+    if skipped:
+        log.warning("Skipped %d malformed line(s) in %s (likely truncated by an earlier interrupted run).",
+                    skipped, OUT_FILE)
     log.info("Starting with %d words already collected (%d articles seen).", total_words, len(seen))
 
     if total_words >= args.target_words:
