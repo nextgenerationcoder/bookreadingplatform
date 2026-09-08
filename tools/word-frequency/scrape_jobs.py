@@ -19,10 +19,23 @@ import logging
 import time
 from pathlib import Path
 
+import jobspy.linkedin
 from jobspy import scrape_jobs
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(message)s")
 log = logging.getLogger("scrape_jobs")
+
+# Work around a real bug in python-jobspy (still present as of 1.1.82, the
+# latest release - confirmed against upstream source): LinkedIn's
+# _process_job does `job_details.get("job_level", "").lower()`, but that
+# default only applies when the key is *missing*, not when it's present
+# and None - and parse_job_level(soup) returns None for any posting with
+# no "Seniority level" field, which is common. That crashes the entire
+# scrape_jobs() call (not just that one posting), confirmed live on this
+# VPS. Patched here instead of pinning to a fixed upstream release, since
+# the bug is unfixed on main as of this writing.
+_original_parse_job_level = jobspy.linkedin.parse_job_level
+jobspy.linkedin.parse_job_level = lambda soup: _original_parse_job_level(soup) or ""
 
 DATA_DIR = Path(__file__).parent / "data"
 OUT_FILE = DATA_DIR / "jobs.jsonl"
