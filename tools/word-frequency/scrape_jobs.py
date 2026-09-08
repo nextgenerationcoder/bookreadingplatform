@@ -8,7 +8,10 @@ this needs, so this loops over several German cities and search-term
 variants, deduplicating by job URL, until the word target is hit or the
 search space is exhausted.
 
-Usage: python scrape_jobs.py [--target-words 700000]
+Usage: python scrape_jobs.py [--target-words 700000] [--max-postings N]
+--max-postings caps by posting count instead of word count - useful for a
+quick smoke test (e.g. --max-postings 500) before committing to a full
+overnight run.
 """
 import argparse
 import json
@@ -49,9 +52,21 @@ def load_seen() -> set[str]:
     return set(SEEN_FILE.read_text(encoding="utf-8").splitlines())
 
 
+def reached_target(total_words: int, posting_count: int, args) -> bool:
+    if total_words >= args.target_words:
+        return True
+    if args.max_postings is not None and posting_count >= args.max_postings:
+        return True
+    return False
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--target-words", type=int, default=700_000)
+    parser.add_argument(
+        "--max-postings", type=int, default=None,
+        help="Stop after this many postings, regardless of word count - for a quick smoke test.",
+    )
     args = parser.parse_args()
 
     DATA_DIR.mkdir(exist_ok=True)
@@ -62,14 +77,14 @@ def main() -> None:
             total_words += word_count(json.loads(line).get("description", ""))
     log.info("Starting with %d words already collected (%d postings seen).", total_words, len(seen))
 
-    if total_words >= args.target_words:
+    if reached_target(total_words, len(seen), args):
         log.info("Target already reached - nothing to do.")
         return
 
     with OUT_FILE.open("a", encoding="utf-8") as out, SEEN_FILE.open("a", encoding="utf-8") as seen_out:
         for term in SEARCH_TERMS:
             for location in LOCATIONS:
-                if total_words >= args.target_words:
+                if reached_target(total_words, len(seen), args):
                     break
                 log.info("Searching LinkedIn: term=%r location=%r (have %d/%d words)",
                           term, location, total_words, args.target_words)
@@ -108,7 +123,7 @@ def main() -> None:
                 out.flush()
                 seen_out.flush()
                 time.sleep(SLEEP_BETWEEN_CALLS)
-            if total_words >= args.target_words:
+            if reached_target(total_words, len(seen), args):
                 break
 
     log.info("Done. Collected %d words total across %d postings.", total_words, len(seen))
