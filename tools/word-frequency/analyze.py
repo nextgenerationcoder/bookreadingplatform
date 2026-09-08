@@ -11,6 +11,19 @@ spaCy's nlp.pipe() in batches - never all loaded into memory at once - so
 memory stays bounded regardless of corpus size (important on this VPS,
 which has no swap - see run_nightly.sh).
 
+German separable-prefix verbs ("ausstellen" -> "Wir stellen ... aus")
+split apart in normal sentences - without handling this, "stellen" and
+"ausstellen" (different meanings: "to put" vs. "to exhibit/issue") would
+get silently merged into one bare "stellen" count, and the detached "aus"
+would either get dropped or miscounted as its own word. The parser is
+kept enabled specifically for this: it tags a detached prefix with
+dep_ == "svp" ("separable verb prefix") pointing at its verb, so the two
+can be recombined into the real word ("aus" + "stellen" -> "ausstellen")
+before counting. (Confirmed empirically - de_core_news_sm's lemmatizer is
+still imperfect on compound verbs even when NOT separated, e.g.
+"ausbaut" -> lemma "ausbaut" instead of "ausbauen" - a known small-model
+limitation with no clean fix short of a bigger model.)
+
 Usage: python analyze.py [--top 300]
 Requires: python -m spacy download de_core_news_sm  (~15MB, no word vectors -
 the small model is the right call here: this only needs lemmatization/POS
@@ -48,9 +61,13 @@ def main() -> None:
     parser.add_argument("--top", type=int, default=300)
     args = parser.parse_args()
 
-    # Disable the parser/NER pipes - this only needs tagger+lemmatizer, and
-    # skipping the rest is both faster and lighter on memory.
-    nlp = spacy.load("de_core_news_sm", disable=["parser", "ner"])
+    # NER is disabled (not needed here), but the parser is kept enabled -
+    # it's the only pipe that exposes the svp (separable verb prefix)
+    # dependency relation used to reunite split verbs below. Costs a bit
+    # more time/memory than tagger+lemmatizer alone, but de_core_news_sm's
+    # parser is still small - not worth losing correctness on such a
+    # common German sentence pattern to avoid it.
+    nlp = spacy.load("de_core_news_sm", disable=["ner"])
 
     counts: Counter[str] = Counter()
     doc_count = 0
@@ -58,14 +75,25 @@ def main() -> None:
 
     for doc in nlp.pipe(iter_texts(), batch_size=BATCH_SIZE):
         doc_count += 1
+        # Map each verb (by token index) to its detached prefix's text, so
+        # the verb can be counted under its real combined form below
+        # instead of the bare stem.
+        svp_prefix = {token.head.i: token.text.lower() for token in doc if token.dep_ == "svp"}
+
         for token in doc:
+            if token.dep_ == "svp":
+                continue  # merged into its head verb below - not a word of its own
             if token.pos_ not in KEEP_POS or not token.is_alpha or token.is_stop:
                 continue
             # Single letters (e.g. "m/w/d" tokenizing into "m", "w", "d")
             # pass is_alpha but aren't real words - drop them.
             if len(token.text) < 2:
                 continue
-            counts[token.lemma_] += 1
+            lemma = token.lemma_
+            prefix = svp_prefix.get(token.i)
+            if prefix:
+                lemma = prefix + lemma
+            counts[lemma] += 1
             token_count += 1
 
     if doc_count == 0:
