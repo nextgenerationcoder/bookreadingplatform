@@ -34,6 +34,14 @@ still imperfect on compound verbs even when NOT separated, e.g.
 "ausbaut" -> lemma "ausbaut" instead of "ausbauen" - a known small-model
 limitation with no clean fix short of a bigger model.)
 
+Searching LinkedIn by German city (see scrape_jobs.py's LOCATIONS) only
+filters by where the job is based, not what language it's posted in -
+confirmed live, where English postings from international/startup
+companies dominated a run's top words ("and", "Product", "Team", "with",
+"The", ...). Every document is language-detected and non-German ones are
+dropped before counting, rather than trying to catch this at scrape time
+per-source.
+
 Usage: python analyze.py [--top 300]
 Requires: python -m spacy download de_core_news_sm  (~15MB, no word vectors -
 the small model is the right call here: this only needs lemmatization/POS
@@ -45,6 +53,11 @@ from collections import Counter
 from pathlib import Path
 
 import spacy
+from langdetect import DetectorFactory, LangDetectException, detect
+
+# Otherwise langdetect's detection is non-deterministic run to run (it
+# samples internally) - fixed seed makes results reproducible.
+DetectorFactory.seed = 0
 
 DATA_DIR = Path(__file__).parent / "data"
 JOBS_FILE = DATA_DIR / "jobs.jsonl"
@@ -61,7 +74,17 @@ BOILERPLATE_MIN_DOCS = 5
 BOILERPLATE_MIN_FRACTION = 0.01
 
 
+def is_german(text: str) -> bool:
+    try:
+        return detect(text) == "de"
+    except LangDetectException:
+        # Too short/ambiguous to classify confidently - treat as not
+        # confirmed German rather than risk letting non-German text in.
+        return False
+
+
 def iter_raw_texts():
+    skipped_non_german = 0
     for path, field in ((JOBS_FILE, "description"), (ARTICLES_FILE, "text")):
         if not path.exists():
             continue
@@ -75,8 +98,14 @@ def iter_raw_texts():
             except json.JSONDecodeError:
                 continue
             text = row.get(field)
-            if text:
-                yield text
+            if not text:
+                continue
+            if not is_german(text):
+                skipped_non_german += 1
+                continue
+            yield text
+    if skipped_non_german:
+        print(f"Skipped {skipped_non_german} non-German document(s).")
 
 
 def find_boilerplate_paragraphs() -> set[str]:
