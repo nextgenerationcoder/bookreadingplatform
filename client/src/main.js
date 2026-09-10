@@ -13,16 +13,18 @@ import { renderAddWords } from './views/addWords.js';
 import { renderMyWords } from './views/myWords.js';
 import { renderSettings } from './views/settings.js';
 import { renderImportHistory } from './views/importHistory.js';
-import { renderLearningHome } from './views/learning/learningHome.js';
-import { renderCourseOverview } from './views/learning/courseOverview.js';
-import { renderLessonPlayer } from './views/learning/lessonPlayer.js';
 import { renderLessonPlayer as renderInteractiveLessonPlayer } from './components/LessonPlayer.js';
 import { lesson1 } from './lessons/lesson1.js';
+import { tuvNordFoodGpt } from './lessons/tuvNordFoodGpt.js';
 
 // Courses with an active-recall LessonPlayer instead of the plain reading
-// view - keyed by course id, so Lesson 2-10 can be added here later without
-// touching the router again.
-const INTERACTIVE_LESSONS = { [lesson1.courseId]: lesson1 };
+// view - keyed by course id, so more lessons can be added here later
+// without touching the router again.
+const INTERACTIVE_LESSONS = { [lesson1.courseId]: lesson1, [tuvNordFoodGpt.courseId]: tuvNordFoodGpt };
+// "Learning" nav shortcut - takes you straight to the one interactive
+// lesson there, replacing the old stateful multi-lesson "Learning" section
+// (learningEngine/*, views/learning/*) with this simpler format instead.
+const LEARNING_SHORTCUT_COURSE_ID = tuvNordFoodGpt.courseId;
 
 const app = document.getElementById('app');
 let currentUser = null;
@@ -49,11 +51,11 @@ function parseRoute() {
   const courseMatch = hash.match(/^\/course\/([^/]+)$/);
   if (courseMatch) return { view: 'reader', kind: 'course', bookId: decodeURIComponent(courseMatch[1]) };
 
-  const lessonMatch = hash.match(/^\/learning\/([^/]+)\/([^/]+)$/);
-  if (lessonMatch) return { view: 'lessonPlayer', courseId: decodeURIComponent(lessonMatch[1]), lessonId: decodeURIComponent(lessonMatch[2]) };
-  const learningCourseMatch = hash.match(/^\/learning\/([^/]+)$/);
-  if (learningCourseMatch) return { view: 'courseOverview', courseId: decodeURIComponent(learningCourseMatch[1]) };
-  if (hash === '/learning') return { view: 'learningHome' };
+  // "Learning" nav shortcut - goes straight to its one interactive lesson,
+  // reusing the same reader/course dispatch as any other interactive
+  // lesson below (kind: 'learning' instead of 'course' only so the nav
+  // bar highlights "Learning", not "Courses", while there).
+  if (hash === '/learning') return { view: 'reader', kind: 'learning', bookId: LEARNING_SHORTCUT_COURSE_ID };
 
   const courseLevelMatch = hash.match(/^\/courses\/(A1|A2|B1|B2|C1|C2)$/);
   if (courseLevelMatch) return { view: 'courseLevel', level: courseLevelMatch[1] };
@@ -132,7 +134,7 @@ function setActiveNav(view) {
   links.forEach((a) => a.classList.remove('active'));
   const bookViews = ['library', 'reader:book', 'addPages:book', 'editPage:book', 'add'];
   const courseViews = ['courses', 'courseLevel', 'reader:course', 'addPages:course', 'editPage:course', 'addCourse'];
-  const learningViews = ['learningHome', 'courseOverview', 'lessonPlayer'];
+  const learningViews = ['reader:learning'];
   const map = { books: 0, courses: 1, learning: 2, practice: 3, words: 4 };
   let group = null;
   if (bookViews.includes(view)) group = 'books';
@@ -144,11 +146,11 @@ function setActiveNav(view) {
 }
 
 async function route() {
-  const { view, kind, bookId, pageNumber, level, courseId, lessonId } = parseRoute();
+  const { view, kind, bookId, pageNumber, level } = parseRoute();
   const navKey = kind ? `${view}:${kind}` : view;
   setActiveNav(navKey);
   const host = document.getElementById('viewHost');
-  if (view === 'reader' && kind === 'course' && INTERACTIVE_LESSONS[bookId]) {
+  if (view === 'reader' && (kind === 'course' || kind === 'learning') && INTERACTIVE_LESSONS[bookId]) {
     renderInteractiveLessonPlayer(host, INTERACTIVE_LESSONS[bookId]);
   } else if (view === 'reader') {
     await renderReader(host, bookId, kind);
@@ -174,12 +176,6 @@ async function route() {
     await renderSettings(host);
   } else if (view === 'importHistory') {
     await renderImportHistory(host);
-  } else if (view === 'learningHome') {
-    await renderLearningHome(host);
-  } else if (view === 'courseOverview') {
-    await renderCourseOverview(host, courseId);
-  } else if (view === 'lessonPlayer') {
-    await renderLessonPlayer(host, courseId, lessonId);
   } else {
     await renderLibrary(host);
   }
