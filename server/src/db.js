@@ -222,3 +222,14 @@ if (!userColumns.includes('vision_provider')) {
 if (!userColumns.includes('vision_api_key_enc')) {
   db.exec('ALTER TABLE users ADD COLUMN vision_api_key_enc TEXT');
 }
+// Speech-to-text provider for the LessonPlayer mic button. NULL/'self-hosted'
+// both mean "use the self-hosted Whisper container" (no key needed, no row
+// update required to opt into it - it's the default). 'groq' calls Groq's
+// hosted Whisper API instead, much faster than the self-hosted CPU
+// container, and needs the account's own key in asr_api_key_enc.
+if (!userColumns.includes('asr_provider')) {
+  db.exec('ALTER TABLE users ADD COLUMN asr_provider TEXT');
+}
+if (!userColumns.includes('asr_api_key_enc')) {
+  db.exec('ALTER TABLE users ADD COLUMN asr_api_key_enc TEXT');
+}

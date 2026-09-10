@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { db } from '../db.js';
 import { encrypt } from '../crypto.js';
 import { LLM_PROVIDERS, VISION_CAPABLE_PROVIDERS } from '../llm.js';
+import { ASR_PROVIDERS_LIST } from '../asr.js';
 import { VOICES, DEFAULT_VOICE, DEFAULT_RATE, MIN_RATE, MAX_RATE } from '../tts.js';
 
 const router = Router();
@@ -61,6 +62,40 @@ router.post('/vision', async (req, res) => {
 router.delete('/vision', (req, res) => {
   db.prepare('UPDATE users SET vision_provider = NULL, vision_api_key_enc = NULL WHERE id = ?').run(req.userId);
   res.json({ configured: false });
+});
+
+// GET/POST/DELETE /api/settings/asr — speech-to-text provider for the
+// LessonPlayer mic button. Defaults to the self-hosted Whisper container
+// (no key needed) when unconfigured - this only exists so an account can
+// opt into 'groq' (Groq's hosted Whisper API, much faster) with its own key.
+router.get('/asr', (req, res) => {
+  const row = db.prepare('SELECT asr_provider FROM users WHERE id = ?').get(req.userId);
+  const provider = row?.asr_provider || 'self-hosted';
+  res.json({ provider, configured: provider !== 'self-hosted' });
+});
+
+router.post('/asr', async (req, res) => {
+  const { provider, apiKey } = req.body || {};
+  if (!ASR_PROVIDERS_LIST.includes(provider)) {
+    return res.status(400).json({ error: `provider must be one of: ${ASR_PROVIDERS_LIST.join(', ')}` });
+  }
+  // 'self-hosted' is our own container - no per-account key to collect.
+  let enc = null;
+  if (provider !== 'self-hosted') {
+    if (!apiKey || typeof apiKey !== 'string' || apiKey.trim().length < 8) {
+      return res.status(400).json({ error: 'a valid API key is required' });
+    }
+    enc = await encrypt(apiKey.trim());
+  }
+  db.prepare('UPDATE users SET asr_provider = ?, asr_api_key_enc = ? WHERE id = ?').run(provider, enc, req.userId);
+  res.json({ provider, configured: provider !== 'self-hosted' });
+});
+
+// Resets to the self-hosted default rather than leaving the account with
+// no working provider at all.
+router.delete('/asr', (req, res) => {
+  db.prepare('UPDATE users SET asr_provider = NULL, asr_api_key_enc = NULL WHERE id = ?').run(req.userId);
+  res.json({ provider: 'self-hosted', configured: false });
 });
 
 // GET /api/settings/voice — the account's read-aloud voice/speed, falling

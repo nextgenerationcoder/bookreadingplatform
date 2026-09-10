@@ -1,5 +1,7 @@
 import { Router } from 'express';
 import multer from 'multer';
+import { db } from '../db.js';
+import { decrypt } from '../crypto.js';
 import { transcribeAudio } from '../asr.js';
 
 const router = Router();
@@ -9,8 +11,9 @@ const router = Router();
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
 
 // POST /api/asr/transcribe (multipart "audio", a WAV file) — returns the
-// transcribed text via the self-hosted Whisper container. No per-account
-// setup needed: it's our own service, not a third-party API key.
+// transcribed text. Defaults to the self-hosted Whisper container (no
+// per-account setup needed); if the account has configured 'groq' with its
+// own key in Settings, that's used instead.
 router.post('/transcribe', upload.single('audio'), async (req, res) => {
   if (!req.file) return res.status(400).json({ error: 'an audio file is required' });
 
@@ -23,7 +26,13 @@ router.post('/transcribe', upload.single('audio'), async (req, res) => {
       : undefined;
 
   try {
+    const row = db.prepare('SELECT asr_provider, asr_api_key_enc FROM users WHERE id = ?').get(req.userId);
+    const provider = row?.asr_provider || 'self-hosted';
+    const apiKey = row?.asr_api_key_enc ? await decrypt(row.asr_api_key_enc) : null;
+
     const text = await transcribeAudio({
+      provider,
+      apiKey,
       audioBuffer: req.file.buffer,
       mimeType: req.file.mimetype || 'audio/wav',
       filename: req.file.originalname || 'audio.wav',
