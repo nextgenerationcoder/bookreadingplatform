@@ -7,19 +7,26 @@ import { blobToWav } from '../lessonEngine/audioToWav.js';
 // step at a time - never the whole lesson at once, and never the
 // expectedAnswer before the learner produces it themselves.
 //
-// lesson: { id, title, backHref, backLabel, storageKey, steps, registerHotwords? }
-// steps[i]: { id, software: [{german, persian}], promptFa, expectedAnswer }
+// lesson: { id, title, backHref, backLabel, storageKey, steps, registerHotwords?, promptLang? }
+// steps[i]: { id, software: [{german, persian}], promptFa, expectedAnswer, noteFa? }
 //   - software.length && promptFa && expectedAnswer  -> teach + practice
 //   - !software.length && promptFa && expectedAnswer  -> practice only (recall)
 //   - promptFa === null && expectedAnswer === null    -> teach only (no input)
+//   - noteFa (optional): a short Persian grammar aside shown under the
+//     prompt - not part of the input/answer, just context.
 //
 // registerHotwords (optional): words/forms fixed across the WHOLE lesson
 // (e.g. this lesson only ever uses formal "Sie", never "ihr") - unlike a
 // step's own new words, these aren't specific to any one exercise's
 // answer, so including them as ASR hotwords doesn't leak anything; they
 // just tell the recognizer which register/forms this speaker will use.
+//
+// promptFa is displayed dir="rtl" by default (Persian). Set lesson's
+// promptLang: 'en' for lessons authored with an English cue instead (see
+// interviewLessonImporter.js's PROMPT_LANG) - same field, just shown ltr.
 export function renderLessonPlayer(host, lesson) {
-  const { steps, storageKey, title, backHref, backLabel, registerHotwords = [] } = lesson;
+  const { steps, storageKey, title, backHref, backLabel, registerHotwords = [], promptLang = 'fa' } = lesson;
+  const promptDir = promptLang === 'en' ? 'ltr' : 'rtl';
   const { currentStepIndex: startIndex } = loadLessonProgress(storageKey, steps.length);
   let currentStepIndex = startIndex;
 
@@ -72,7 +79,8 @@ export function renderLessonPlayer(host, lesson) {
         ${
           isTeachOnly
             ? ''
-            : `<p class="lessonPromptFa" dir="rtl">${escapeHtml(step.promptFa)}</p>
+            : `<p class="lessonPromptFa" dir="${promptDir}">${escapeHtml(step.promptFa)}</p>
+               ${step.noteFa ? `<p class="lessonNoteFa" dir="rtl">${escapeHtml(step.noteFa)}</p>` : ''}
                <p class="stepInstruction" dir="rtl">جمله‌ی آلمانی را بساز:</p>
                <form id="answerForm" autocomplete="off">
                  <input type="text" id="answerInput" class="answerInput" dir="ltr" autocomplete="off" autocapitalize="off" spellcheck="false">
@@ -85,6 +93,7 @@ export function renderLessonPlayer(host, lesson) {
                  </div>
                </form>`
         }
+        ${isTeachOnly && step.noteFa ? `<p class="lessonNoteFa" dir="rtl">${escapeHtml(step.noteFa)}</p>` : ''}
         ${isTeachOnly ? `<div class="formActions"><button type="button" id="continueBtn">ادامه</button></div>` : ''}
       </div>
     `;
@@ -137,12 +146,22 @@ export function renderLessonPlayer(host, lesson) {
         micBtn.hidden = true;
         primaryBtn.textContent = 'ادامه';
         input.setAttribute('readonly', 'readonly');
+        recordVocabForStep(step, true);
       } else {
         feedback.textContent = 'دوباره تلاش کن';
         feedback.className = 'lessonFeedback lessonFeedback-wrong';
         // Don't clear the input - the learner edits their existing attempt.
+        recordVocabForStep(step, false);
       }
     };
+  }
+
+  // Fire-and-forget mastery tracking for this step's newly-taught words - see
+  // routes/vocab.js. Never awaited/blocking: a failed request here shouldn't
+  // interrupt the lesson, it just means this one rep isn't counted.
+  function recordVocabForStep(step, correct) {
+    if (!step.software.length) return;
+    api.recordVocab(step.software, correct).catch(() => {});
   }
 
   // Record → convert to WAV (the self-hosted Whisper container's ffmpeg

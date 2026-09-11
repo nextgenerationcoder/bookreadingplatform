@@ -120,6 +120,8 @@ button:disabled { opacity: .35 }
 .wordPair .de { font-size: 19px }
 .wordPair .fa { font-size: 15px; margin: 0 }
 .lessonPromptFa { font-size: 19px; line-height: 1.8; margin: 4px 0 2px; text-align: right }
+.lessonPromptFa[dir="ltr"] { text-align: left }
+.lessonNoteFa { font-size: 14px; line-height: 1.6; margin: 0 0 10px; text-align: right; color: var(--muted) }
 .answerInput { width: 100%; padding: 12px 14px; border: 1px solid var(--line); border-radius: 10px; font-size: 17px; font-family: Georgia, "Times New Roman", serif; background: var(--paper) }
 .answerInput:read-only { background: #f4f1e9; color: var(--muted) }
 .lessonFeedback { min-height: 20px; margin-top: 8px; font-size: 14px; font-weight: 600 }
@@ -162,6 +164,11 @@ button:disabled { opacity: .35 }
 .wordsTable thead th { color: var(--muted); font-weight: 600; font-size: 12px }
 .wordsTable tbody tr:last-child td { border-bottom: none }
 .wordCell { font-family: Georgia, "Times New Roman", serif; font-size: 16px; text-align: left }
+.wordsSectionTitle { font-size: 16px; margin: 26px 0 4px }
+.wordsSectionTitle:first-of-type { margin-top: 10px }
+.vocabTabs { display: flex; gap: 8px; margin: 10px 0 12px }
+.vocabTabBtn { padding: 6px 14px; border: 1px solid var(--line); border-radius: 999px; background: var(--paper); font-size: 13px; cursor: pointer }
+.vocabTabBtn.active { background: var(--accent); color: #fff; border-color: var(--accent) }
 .page { background: var(--paper); margin-top: 16px; border: 1px solid var(--line); border-radius: 18px; padding: 24px 22px; box-shadow: 0 5px 18px rgba(0,0,0,.05) }
 header.pageHeader { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--line); padding-bottom: 12px; margin-bottom: 18px; color: var(--muted) }
 .chapterDivider { margin: 22px 0 10px; padding-top: 10px; border-top: 1px dashed var(--line); color: var(--muted); font-size: 13px; text-align: center }

@@ -16,8 +16,8 @@ export const tuvNordFoodGpt = {
   id: 'tuvNordFoodGpt',
   courseId: 'tuv-nord-food-gpt-lektion-1',
   title: 'TÜV NORD Food GPT - Interview',
-  backHref: '#/courses',
-  backLabel: '← Courses',
+  backHref: '#/interview',
+  backLabel: '← Interview',
   storageKey: 'lesson-progress-tuv-nord-food-gpt-1-v1',
   steps: [
     // Stage 1 - basic person + verb

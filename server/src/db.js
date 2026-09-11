@@ -233,3 +233,39 @@ if (!userColumns.includes('asr_provider')) {
 if (!userColumns.includes('asr_api_key_enc')) {
   db.exec('ALTER TABLE users ADD COLUMN asr_api_key_enc TEXT');
 }
+
+db.exec(`
+  -- Interview-style lessons imported via the text format in
+  -- interviewLessonImporter.js (Settings-page-free "Interview" section,
+  -- see routes/interviewLessons.js) - steps_json holds the same shape
+  -- LessonPlayer.js already renders for the static lesson files
+  -- (client/src/lessons/*.js), just fetched over the API instead of
+  -- bundled at build time.
+  CREATE TABLE IF NOT EXISTS interview_lessons (
+    course_id TEXT PRIMARY KEY,
+    title TEXT NOT NULL,
+    prompt_lang TEXT NOT NULL DEFAULT 'fa',
+    steps_json TEXT NOT NULL,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+  );
+
+  -- Per-account mastery tracking for words/phrases taught across any
+  -- LessonPlayer-based lesson (A1 or Interview) - see routes/vocab.js.
+  -- Identity is (user_id, german): the same word taught in two different
+  -- lessons is one row, one streak, not tracked separately per lesson.
+  CREATE TABLE IF NOT EXISTS vocab_progress (
+    user_id TEXT NOT NULL,
+    german TEXT NOT NULL,
+    persian TEXT NOT NULL,
+    times_seen INTEGER NOT NULL DEFAULT 0,
+    times_correct_total INTEGER NOT NULL DEFAULT 0,
+    correct_streak INTEGER NOT NULL DEFAULT 0,
+    status TEXT NOT NULL DEFAULT 'learning',
+    first_seen_at TEXT NOT NULL,
+    last_seen_at TEXT NOT NULL,
+    learned_at TEXT,
+    PRIMARY KEY (user_id, german),
+    FOREIGN KEY (user_id) REFERENCES users(id)
+  );
+`);

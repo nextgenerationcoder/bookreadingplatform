@@ -4,12 +4,13 @@ import { getDictionary, normalizeWord } from '../state.js';
 export async function renderMyWords(host) {
   host.innerHTML = '<div class="loading">Loading words…</div>';
 
-  let clicks, dictionary, books;
+  let clicks, dictionary, books, vocab;
   try {
-    [clicks, dictionary, books] = await Promise.all([
+    [clicks, dictionary, books, vocab] = await Promise.all([
       api.getWordClicks(),
       getDictionary(),
       api.listBooks(),
+      api.getVocabProgress(),
     ]);
   } catch (err) {
     host.innerHTML = `<div class="error">Failed to load your words.<br><small>${err.message}</small></div>`;
@@ -32,9 +33,38 @@ export async function renderMyWords(host) {
   const titleById = Object.fromEntries(books.map((b) => [b.id, b.title]));
   const rows = Object.values(clicks).sort((a, b) => b.count - a.count);
 
+  const learned = vocab.words.filter((w) => w.status === 'learned');
+  const learning = vocab.words.filter((w) => w.status !== 'learned');
+
   host.innerHTML = `
     <div class="formPage">
       <h1>My Words</h1>
+
+      <h2 class="wordsSectionTitle">Vocabulary from Lessons</h2>
+      <p class="hint">
+        Words taught in a Course or Interview lesson. A word is marked "learned" once you've answered
+        it correctly ${vocab.learnedStreakThreshold} times in a row - like Anki's idea of a mastery streak.
+      </p>
+      <div class="vocabTabs">
+        <button class="vocabTabBtn active" data-tab="learning">Learning (${learning.length})</button>
+        <button class="vocabTabBtn" data-tab="learned">Learned (${learned.length})</button>
+      </div>
+      <div class="wordsTableWrap">
+        <table class="wordsTable">
+          <thead>
+            <tr>
+              <th>Word</th>
+              <th>Meaning</th>
+              <th>Streak</th>
+              <th>Last Practiced</th>
+            </tr>
+          </thead>
+          <tbody id="vocabBody"></tbody>
+        </table>
+      </div>
+      <div id="vocabEmptyState" class="loading" hidden></div>
+
+      <h2 class="wordsSectionTitle">Words Clicked While Reading</h2>
       <p class="hint">
         Every German word you've tapped while reading shows up here, with how many times and which book/page it was on.
       </p>
@@ -56,6 +86,42 @@ export async function renderMyWords(host) {
       <div id="emptyState" class="loading" hidden>You haven't clicked any words yet.</div>
     </div>
   `;
+
+  const vocabBody = host.querySelector('#vocabBody');
+  const vocabEmptyState = host.querySelector('#vocabEmptyState');
+  const vocabTabBtns = host.querySelectorAll('.vocabTabBtn');
+  let activeVocabTab = 'learning';
+
+  function renderVocabRows() {
+    const list = activeVocabTab === 'learned' ? learned : learning;
+    vocabBody.innerHTML = '';
+    if (!list.length) {
+      vocabEmptyState.hidden = false;
+      vocabEmptyState.textContent =
+        activeVocabTab === 'learned' ? 'No words learned yet - keep practicing!' : 'No lesson words in progress yet.';
+      return;
+    }
+    vocabEmptyState.hidden = true;
+    for (const w of list) {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td dir="ltr" class="wordCell">${escapeHtml(w.german)}</td>
+        <td dir="rtl">${escapeHtml(w.persian)}</td>
+        <td>${w.correctStreak} / ${vocab.learnedStreakThreshold}</td>
+        <td>${formatRelative(w.lastSeenAt)}</td>
+      `;
+      vocabBody.appendChild(tr);
+    }
+  }
+
+  vocabTabBtns.forEach((btn) => {
+    btn.onclick = () => {
+      activeVocabTab = btn.dataset.tab;
+      vocabTabBtns.forEach((b) => b.classList.toggle('active', b === btn));
+      renderVocabRows();
+    };
+  });
+  renderVocabRows();
 
   const tbody = host.querySelector('#wordsBody');
   const filterInput = host.querySelector('#filterInput');

@@ -14,17 +14,21 @@ import { renderMyWords } from './views/myWords.js';
 import { renderSettings } from './views/settings.js';
 import { renderImportHistory } from './views/importHistory.js';
 import { renderLessonPlayer as renderInteractiveLessonPlayer } from './components/LessonPlayer.js';
+import { renderInterviewHome } from './views/interviewHome.js';
+import { renderAddInterviewLesson } from './views/addInterviewLesson.js';
 import { lesson1 } from './lessons/lesson1.js';
 import { tuvNordFoodGpt } from './lessons/tuvNordFoodGpt.js';
 
 // Courses with an active-recall LessonPlayer instead of the plain reading
 // view - keyed by course id, so more lessons can be added here later
-// without touching the router again.
-const INTERACTIVE_LESSONS = { [lesson1.courseId]: lesson1, [tuvNordFoodGpt.courseId]: tuvNordFoodGpt };
-// "Learning" nav shortcut - takes you straight to the one interactive
-// lesson there, replacing the old stateful multi-lesson "Learning" section
-// (learningEngine/*, views/learning/*) with this simpler format instead.
-const LEARNING_SHORTCUT_COURSE_ID = tuvNordFoodGpt.courseId;
+// without touching the router again. lesson1 (A1 Lektion 1) stays under
+// "Courses"; the Interview section (formerly "Learning") starts with just
+// tuvNordFoodGpt bundled at build time, plus whatever's imported later via
+// Add Lesson (server/src/interviewLessonImporter.js) - see
+// STATIC_INTERVIEW_LESSONS below for the ones that belong to that section.
+const INTERACTIVE_LESSONS = { [lesson1.courseId]: lesson1 };
+const STATIC_INTERVIEW_LESSONS = [tuvNordFoodGpt];
+const STATIC_INTERVIEW_LESSONS_BY_ID = { [tuvNordFoodGpt.courseId]: tuvNordFoodGpt };
 
 const app = document.getElementById('app');
 let currentUser = null;
@@ -51,11 +55,14 @@ function parseRoute() {
   const courseMatch = hash.match(/^\/course\/([^/]+)$/);
   if (courseMatch) return { view: 'reader', kind: 'course', bookId: decodeURIComponent(courseMatch[1]) };
 
-  // "Learning" nav shortcut - goes straight to its one interactive lesson,
-  // reusing the same reader/course dispatch as any other interactive
-  // lesson below (kind: 'learning' instead of 'course' only so the nav
-  // bar highlights "Learning", not "Courses", while there).
-  if (hash === '/learning') return { view: 'reader', kind: 'learning', bookId: LEARNING_SHORTCUT_COURSE_ID };
+  // "Interview" section (formerly "Learning") - a list of lessons instead
+  // of the old single-lesson shortcut, now that more than one exists.
+  // kind: 'learning' on the reader route (instead of 'course') only so the
+  // nav bar highlights "Interview", not "Courses", while there.
+  const interviewLessonMatch = hash.match(/^\/interview\/([^/]+)$/);
+  if (interviewLessonMatch) return { view: 'reader', kind: 'learning', bookId: decodeURIComponent(interviewLessonMatch[1]) };
+  if (hash === '/interview') return { view: 'interview' };
+  if (hash === '/add-interview-lesson') return { view: 'addInterviewLesson' };
 
   const courseLevelMatch = hash.match(/^\/courses\/(A1|A2|B1|B2|C1|C2)$/);
   if (courseLevelMatch) return { view: 'courseLevel', level: courseLevelMatch[1] };
@@ -82,7 +89,7 @@ function buildShell() {
       <div class="navLinks">
         <a href="#/">Books</a>
         <a href="#/courses">Courses</a>
-        <a href="#/learning">Learning</a>
+        <a href="#/interview">Interview</a>
         <a href="#/practice">Practice</a>
         <a href="#/words">My Words</a>
       </div>
@@ -134,15 +141,39 @@ function setActiveNav(view) {
   links.forEach((a) => a.classList.remove('active'));
   const bookViews = ['library', 'reader:book', 'addPages:book', 'editPage:book', 'add'];
   const courseViews = ['courses', 'courseLevel', 'reader:course', 'addPages:course', 'editPage:course', 'addCourse'];
-  const learningViews = ['reader:learning'];
+  const interviewViews = ['reader:learning', 'interview', 'addInterviewLesson'];
   const map = { books: 0, courses: 1, learning: 2, practice: 3, words: 4 };
   let group = null;
   if (bookViews.includes(view)) group = 'books';
   else if (courseViews.includes(view)) group = 'courses';
-  else if (learningViews.includes(view)) group = 'learning';
+  else if (interviewViews.includes(view)) group = 'learning';
   else if (view === 'practice') group = 'practice';
   else if (view === 'words') group = 'words';
   if (group) links[map[group]]?.classList.add('active');
+}
+
+// Static lessons (bundled at build time) resolve instantly; anything else is
+// looked up in the DB-backed interview_lessons table (see
+// server/src/interviewLessonImporter.js and routes/interviewLessons.js).
+async function renderInterviewLesson(host, courseId) {
+  if (STATIC_INTERVIEW_LESSONS_BY_ID[courseId]) {
+    renderInteractiveLessonPlayer(host, STATIC_INTERVIEW_LESSONS_BY_ID[courseId]);
+    return;
+  }
+  host.innerHTML = '<div class="loading">Loading lesson…</div>';
+  let lesson;
+  try {
+    lesson = await api.getInterviewLesson(courseId);
+  } catch (err) {
+    host.innerHTML = `<div class="error">Failed to load lesson.<br><small>${err.message}</small></div>`;
+    return;
+  }
+  renderInteractiveLessonPlayer(host, {
+    ...lesson,
+    backHref: '#/interview',
+    backLabel: '← Interview',
+    storageKey: `interview-lesson-${lesson.courseId}`,
+  });
 }
 
 async function route() {
@@ -150,10 +181,16 @@ async function route() {
   const navKey = kind ? `${view}:${kind}` : view;
   setActiveNav(navKey);
   const host = document.getElementById('viewHost');
-  if (view === 'reader' && (kind === 'course' || kind === 'learning') && INTERACTIVE_LESSONS[bookId]) {
+  if (view === 'reader' && kind === 'course' && INTERACTIVE_LESSONS[bookId]) {
     renderInteractiveLessonPlayer(host, INTERACTIVE_LESSONS[bookId]);
+  } else if (view === 'reader' && kind === 'learning') {
+    await renderInterviewLesson(host, bookId);
   } else if (view === 'reader') {
     await renderReader(host, bookId, kind);
+  } else if (view === 'interview') {
+    await renderInterviewHome(host, STATIC_INTERVIEW_LESSONS);
+  } else if (view === 'addInterviewLesson') {
+    renderAddInterviewLesson(host);
   } else if (view === 'addPages') {
     await renderAddPages(host, bookId, kind);
   } else if (view === 'editPage') {

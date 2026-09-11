@@ -119,22 +119,6 @@ export const api = {
   saveVoiceSettings: (voiceId, speechRate) => post('/api/settings/voice', { voiceId, speechRate }),
   synthesize: (text) => post('/api/tts/synthesize', { text }),
 
-  listLearningCourses: () => get('/api/learning/courses'),
-  getLearningCourse: (courseId) => get(`/api/learning/courses/${courseId}`),
-  getLearningLesson: (courseId, lessonId) => get(`/api/learning/courses/${courseId}/lessons/${lessonId}`),
-  saveLearningStep: (courseId, lessonId, body) =>
-    post(`/api/learning/courses/${courseId}/lessons/${lessonId}/progress`, body),
-  submitExitCheck: (courseId, lessonId, responses) =>
-    post(`/api/learning/courses/${courseId}/lessons/${lessonId}/exit-check`, { responses }),
-  submitRetrievalChallenge: (courseId, lessonId, responses) =>
-    post(`/api/learning/courses/${courseId}/lessons/${lessonId}/retrieval`, { responses }),
-  uploadRecording: (blob) => {
-    const fd = new FormData();
-    fd.append('audio', blob, `recording.${blob.type.includes('mp4') ? 'mp4' : blob.type.includes('wav') ? 'wav' : 'webm'}`);
-    return postForm('/api/learning/recordings', fd);
-  },
-  recordingUrl: (recordingId) => `/api/learning/recordings/${recordingId}`,
-
   // wavBlob: a Blob already converted to WAV (see lessonEngine/audioToWav.js).
   // hotwords: already-taught words to bias recognition toward - see asr.js.
   transcribeAudio: (wavBlob, { hotwords } = {}) => {
@@ -143,4 +127,14 @@ export const api = {
     for (const word of hotwords || []) fd.append('hotwords', word);
     return postForm('/api/asr/transcribe', fd);
   },
+
+  listInterviewLessons: () => get('/api/interview-lessons'),
+  getInterviewLesson: (courseId) => get(`/api/interview-lessons/${encodeURIComponent(courseId)}`),
+  importInterviewLesson: (text) => post('/api/interview-lessons/import', { text }),
+  deleteInterviewLesson: (courseId) => del(`/api/interview-lessons/${encodeURIComponent(courseId)}`),
+
+  // words: [{german, persian}] - every word a lesson step introduced, sent
+  // together in one call per answer-check. See routes/vocab.js.
+  recordVocab: (words, correct) => post('/api/vocab/record', { words, correct }),
+  getVocabProgress: () => get('/api/vocab'),
 };
