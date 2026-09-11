@@ -1,102 +1,81 @@
 #!/usr/bin/env node
-// Imports a German word-frequency list from a Leipzig Corpora Collection
-// corpus archive (https://wortschatz-leipzig.de) into the word_frequency
-// table - see db.js. Only the corpus's "*-words.txt" member is used (a
-// plain <rank>\t<word>\t<frequency> list); the far larger sentences/
-// co-occurrence files in the same archive are ignored.
+// (Re)generates server/data/word-frequency.seed.json from a German word-
+// frequency list - loaded automatically at server startup by seed.js, the
+// same way dictionary.seed.json and wikidict-de-fa.json already are. You
+// don't need to run this on every deploy: the generated JSON is committed
+// to the repo, so a fresh deployment picks it up with no extra step.
 //
-// This needs real internet access to *-leipzig.de, which most sandboxed dev
-// environments block - run it on the actual server instead:
-//   docker compose exec app node server/scripts/import-word-frequency.js
-// (or `npm run import-word-frequency --workspace server` outside Docker)
+// Default source: hermitdave/FrequencyWords on GitHub
+// (https://github.com/hermitdave/FrequencyWords), a word-frequency list
+// derived from OpenSubtitles - not the Leipzig Corpora Collection
+// originally discussed, because *-leipzig.de is blocked from most
+// sandboxed dev environments' networks while raw.githubusercontent.com
+// isn't. Casing follows the source (mostly lowercase, since it's subtitle
+// transcription) - lowercased here to match how this app already keys its
+// dictionary (see client/src/state.js's normalizeWord).
 //
-// Usage:
-//   node scripts/import-word-frequency.js [url-or-local-tar.gz-path]
-// Defaults to the German news 2025 1M-sentence corpus if no argument is given.
+// Usage: node scripts/import-word-frequency.js [url-or-local-path] [topN]
+// topN defaults to 200000 - the source file runs past a million rows deep
+// into OCR-noise/misspelling territory, so this keeps only the meaningful
+// head of the list.
 
-import { execFileSync } from 'node:child_process';
 import { promises as fs } from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
-import { db } from '../src/db.js';
+import { fileURLToPath } from 'node:url';
 
-const DEFAULT_URL = 'https://downloads.wortschatz-leipzig.de/corpora/deu_news_2025_1M.tar.gz';
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const OUTPUT_PATH = path.join(__dirname, '..', 'data', 'word-frequency.seed.json');
+const DEFAULT_URL = 'https://raw.githubusercontent.com/hermitdave/FrequencyWords/master/content/2018/de/de_full.txt';
+const DEFAULT_TOP_N = 200000;
 
-async function downloadToTemp(url) {
-  const res = await fetch(url);
-  if (!res.ok) throw new Error(`Download failed: ${res.status} ${res.statusText}`);
-  const buffer = Buffer.from(await res.arrayBuffer());
-  const tmpFile = path.join(os.tmpdir(), `word-freq-${Date.now()}.tar.gz`);
-  await fs.writeFile(tmpFile, buffer);
-  return tmpFile;
+async function loadText(source) {
+  if (/^https?:\/\//i.test(source)) {
+    const res = await fetch(source);
+    if (!res.ok) throw new Error(`Download failed: ${res.status} ${res.statusText}`);
+    return res.text();
+  }
+  return fs.readFile(path.resolve(process.cwd(), source), 'utf-8');
 }
 
-function findWordsMember(tarPath) {
-  const listing = execFileSync('tar', ['-tzf', tarPath], { encoding: 'utf-8' });
-  const member = listing.split('\n').find((line) => line.trim().endsWith('-words.txt'));
-  if (!member) throw new Error(`No "*-words.txt" file found inside the archive. Contents:\n${listing}`);
-  return member.trim();
-}
-
-function extractMember(tarPath, member) {
-  return execFileSync('tar', ['-xzf', tarPath, '-O', member], { encoding: 'utf-8', maxBuffer: 1024 * 1024 * 200 });
-}
-
-// Leipzig's "-words.txt" format: <rank>\t<word>\t<frequency>, one per line,
-// sorted by rank (most frequent word first). Same skip-and-log approach as
-// other bulk ingestion in this project - a handful of malformed lines
-// shouldn't abort the whole import.
-function parseWordsFile(text) {
-  const rows = [];
+// Source format: "<word> <count>" per line, already sorted by frequency
+// descending. Lowercased and summed on collision (a handful of words
+// appear twice after lowercasing distinct-cased source rows, e.g.
+// "Server"/"server"), then re-sorted since collisions can shuffle order.
+function parseFrequencyList(text, topN) {
+  const byWord = new Map();
   let skipped = 0;
   for (const line of text.split('\n')) {
     if (!line.trim()) continue;
-    const parts = line.split('\t');
-    if (parts.length !== 3) {
+    const spaceIdx = line.lastIndexOf(' ');
+    if (spaceIdx === -1) {
       skipped++;
       continue;
     }
-    const [rankStr, word, freqStr] = parts;
-    const rank = Number(rankStr);
-    const frequency = Number(freqStr);
-    if (!word.trim() || !Number.isFinite(rank) || !Number.isFinite(frequency)) {
+    const word = line.slice(0, spaceIdx).trim().toLowerCase();
+    const count = Number(line.slice(spaceIdx + 1).trim());
+    if (!word || !Number.isFinite(count)) {
       skipped++;
       continue;
     }
-    rows.push({ word: word.trim(), rank, frequency });
+    byWord.set(word, (byWord.get(word) || 0) + count);
   }
-  return { rows, skipped };
+  const sorted = [...byWord.entries()].sort((a, b) => b[1] - a[1]).slice(0, topN);
+  return { entries: sorted, skipped };
 }
 
 async function main() {
-  const arg = process.argv[2] || DEFAULT_URL;
-  const isUrl = /^https?:\/\//i.test(arg);
+  const source = process.argv[2] || DEFAULT_URL;
+  const topN = Number(process.argv[3]) || DEFAULT_TOP_N;
 
-  console.log(isUrl ? `Downloading ${arg} ...` : `Reading local file ${arg} ...`);
-  const tarPath = isUrl ? await downloadToTemp(arg) : path.resolve(process.cwd(), arg);
+  console.log(`Loading ${source} ...`);
+  const text = await loadText(source);
 
-  try {
-    const member = findWordsMember(tarPath);
-    console.log(`Extracting ${member} ...`);
-    const text = extractMember(tarPath, member);
+  const { entries, skipped } = parseFrequencyList(text, topN);
+  if (!entries.length) throw new Error('No word/frequency rows parsed - check the source format.');
 
-    const { rows, skipped } = parseWordsFile(text);
-    if (!rows.length) throw new Error('No word/frequency rows parsed - check the archive format.');
+  await fs.writeFile(OUTPUT_PATH, JSON.stringify(Object.fromEntries(entries)));
 
-    console.log(`Parsed ${rows.length} words (${skipped} skipped lines). Writing to database ...`);
-    const insert = db.prepare(
-      `INSERT INTO word_frequency (word, rank, frequency) VALUES (?, ?, ?)
-       ON CONFLICT(word) DO UPDATE SET rank = excluded.rank, frequency = excluded.frequency`
-    );
-    const tx = db.transaction((items) => {
-      for (const { word, rank, frequency } of items) insert.run(word, rank, frequency);
-    });
-    tx(rows);
-
-    console.log(`Done: ${rows.length} words in word_frequency.`);
-  } finally {
-    if (isUrl) await fs.unlink(tarPath).catch(() => {});
-  }
+  console.log(`Wrote ${entries.length} words (${skipped} skipped lines) to ${path.relative(process.cwd(), OUTPUT_PATH)}.`);
 }
 
 main().catch((err) => {

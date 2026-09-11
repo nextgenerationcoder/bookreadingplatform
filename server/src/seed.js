@@ -13,6 +13,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const SEED_DICTIONARY = path.join(__dirname, '..', 'data', 'dictionary.seed.json');
 const SEED_CONTENT_DIR = path.join(__dirname, '..', 'content');
 const WIKIDICT_SEED = path.join(__dirname, '..', 'data', 'wikidict-de-fa.json');
+const WORD_FREQUENCY_SEED = path.join(__dirname, '..', 'data', 'word-frequency.seed.json');
 
 async function seedDictionary() {
   const { count } = db.prepare('SELECT COUNT(*) AS count FROM dictionary').get();
@@ -63,6 +64,32 @@ async function seedWikidict() {
   console.log(`Backfilled ${entries.length} dictionary entries from wikidict-de.`);
 }
 
+// Bulk-fills word_frequency from a generated word-frequency list (see
+// scripts/import-word-frequency.js) - shared across all accounts, not
+// per-user, so this only ever needs to run once against an empty table
+// rather than per-word INSERT OR IGNORE like the dictionary seeds above.
+async function seedWordFrequency() {
+  const { count } = db.prepare('SELECT COUNT(*) AS count FROM word_frequency').get();
+  if (count > 0) return;
+
+  let raw;
+  try {
+    raw = await fs.readFile(WORD_FREQUENCY_SEED, 'utf-8');
+  } catch (err) {
+    if (err.code === 'ENOENT') return;
+    throw err;
+  }
+  // The source file is already sorted by frequency descending, so object
+  // key order (preserved by JSON.parse for string keys) doubles as rank.
+  const entries = Object.entries(JSON.parse(raw));
+  const insert = db.prepare('INSERT OR IGNORE INTO word_frequency (word, rank, frequency) VALUES (?, ?, ?)');
+  const tx = db.transaction(() => {
+    entries.forEach(([word, frequency], i) => insert.run(word, i + 1, frequency));
+  });
+  tx();
+  console.log(`Seeded ${entries.length} word-frequency entries.`);
+}
+
 async function seedBooks() {
   const { count } = db.prepare('SELECT COUNT(*) AS count FROM books').get();
   if (count > 0) return;
@@ -85,5 +112,6 @@ async function seedBooks() {
 export async function seedIfEmpty() {
   await seedDictionary();
   await seedWikidict();
+  await seedWordFrequency();
   await seedBooks();
 }
