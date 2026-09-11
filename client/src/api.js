@@ -137,4 +137,8 @@ export const api = {
   // together in one call per answer-check. See routes/vocab.js.
   recordVocab: (words, correct) => post('/api/vocab/record', { words, correct }),
   getVocabProgress: () => get('/api/vocab'),
+
+  // toLearn/passive: [{german, persian}] - every word on a finished reading
+  // page, split by whether it was clicked (see reader.js's "Finish Page").
+  recordReadingPage: (toLearn, passive) => post('/api/vocab/reading-page', { toLearn, passive }),
 };

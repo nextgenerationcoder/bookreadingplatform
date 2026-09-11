@@ -47,6 +47,9 @@ button:disabled { opacity: .35 }
 .ttsBar { display: flex; align-items: center; gap: 8px; padding: 8px 0 4px; flex-wrap: wrap }
 .ttsBar #ttsStatus { margin: 0; font-size: 13px }
 
+.pageFinishBar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin: 18px 0 30px; padding-top: 14px; border-top: 1px solid var(--line) }
+.pageFinishBar #finishPageStatus { margin: 0; font-size: 13px }
+
 .libraryHeader { display: flex; justify-content: space-between; align-items: center; margin: 22px 0 16px }
 .libraryHeader h1 { font-size: 20px; margin: 0 }
 .bookGrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 14px }

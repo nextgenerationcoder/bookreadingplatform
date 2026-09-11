@@ -91,4 +91,61 @@ router.post('/record', (req, res) => {
   res.json({ ok: true });
 });
 
+// POST /api/vocab/reading-page { toLearn: [{german, persian}], passive: [{german, persian}] }
+// — called once when finishing a book/course page (reader.js's "Finish
+// Page" button). toLearn is every word on the page the student clicked for
+// a gloss (they don't know it); passive is every other word on the page
+// (never clicked, so assumed passively understood - "read it without
+// needing help").
+//
+// Reuses vocab_progress rather than a separate table so a word's status is
+// one thing regardless of whether it came from a lesson or from reading -
+// but the two lists behave asymmetrically on conflict:
+//   - toLearn always pushes status toward 'learning' (a click is a clear
+//     "I don't know this" signal, even if reading had it filed as passive
+//     before) - unless it's already 'learned', which a page skim shouldn't
+//     undo.
+//   - passive only sets status on a brand-new word. An existing 'learning'
+//     or 'learned' row is never downgraded just because this particular
+//     page didn't need a click for it - that'd erase real progress on a
+//     word the student happens to recognize today but is still practicing.
+router.post('/reading-page', (req, res) => {
+  const { toLearn, passive } = req.body || {};
+  if (!Array.isArray(toLearn) || !Array.isArray(passive)) {
+    return res.status(400).json({ error: 'toLearn and passive (arrays) are required' });
+  }
+
+  const now = new Date().toISOString();
+  const insertLearning = db.prepare(
+    `INSERT INTO vocab_progress (user_id, german, persian, times_seen, times_correct_total, correct_streak, status, first_seen_at, last_seen_at, learned_at)
+     VALUES (?, ?, ?, 1, 0, 0, 'learning', ?, ?, NULL)
+     ON CONFLICT(user_id, german) DO UPDATE SET
+       times_seen = times_seen + 1,
+       last_seen_at = excluded.last_seen_at,
+       persian = CASE WHEN vocab_progress.persian = '' THEN excluded.persian ELSE vocab_progress.persian END,
+       status = CASE WHEN vocab_progress.status = 'learned' THEN 'learned' ELSE 'learning' END`
+  );
+  const insertPassive = db.prepare(
+    `INSERT INTO vocab_progress (user_id, german, persian, times_seen, times_correct_total, correct_streak, status, first_seen_at, last_seen_at, learned_at)
+     VALUES (?, ?, ?, 1, 0, 0, 'passive', ?, ?, NULL)
+     ON CONFLICT(user_id, german) DO UPDATE SET
+       times_seen = times_seen + 1,
+       last_seen_at = excluded.last_seen_at`
+  );
+
+  const tx = db.transaction(() => {
+    for (const { german, persian } of toLearn) {
+      if (!german) continue;
+      insertLearning.run(req.userId, german, persian || '', now, now);
+    }
+    for (const { german, persian } of passive) {
+      if (!german) continue;
+      insertPassive.run(req.userId, german, persian || '', now, now);
+    }
+  });
+  tx();
+
+  res.json({ ok: true, toLearnCount: toLearn.length, passiveCount: passive.length });
+});
+
 export default router;

@@ -69,6 +69,10 @@ export async function renderReader(host, bookId, kind = 'book') {
     </div>
     <div class="hint">Tap any German word to see its meaning. Words you tap are saved automatically.</div>
     <div id="pageHost"></div>
+    <div class="pageFinishBar">
+      <button id="finishPageBtn" type="button">✓ Finish Page</button>
+      <span id="finishPageStatus" class="importStatus"></span>
+    </div>
   `;
 
   const prevBtn = host.querySelector('#prev');
@@ -80,6 +84,8 @@ export async function renderReader(host, bookId, kind = 'book') {
   const prevSentenceBtn = host.querySelector('#prevSentenceBtn');
   const nextSentenceBtn = host.querySelector('#nextSentenceBtn');
   const ttsStatus = host.querySelector('#ttsStatus');
+  const finishPageBtn = host.querySelector('#finishPageBtn');
+  const finishPageStatus = host.querySelector('#finishPageStatus');
 
   // --- Read Aloud (Piper TTS) state ---------------------------------------
   // Word timing is estimated server-side (proportional to word length, not
@@ -293,6 +299,9 @@ export async function renderReader(host, bookId, kind = 'book') {
     window.scrollTo({ top: 0, behavior: 'instant' });
     hidePopup();
 
+    finishPageStatus.textContent = '';
+    finishPageStatus.className = 'importStatus';
+
     api.setProgress(bookId, page.page).catch(() => {});
   }
 
@@ -388,6 +397,49 @@ export async function renderReader(host, bookId, kind = 'book') {
 
     api.recordWordClick(bookId, Number(el.dataset.page), word).catch(() => {});
   }
+
+  // Splits every distinct German word on the current page into two piles:
+  // ever-clicked ("I needed the gloss, so I don't know this") goes toward
+  // active learning, everything else is assumed passively understood
+  // ("read past it without needing help"). Deliberately an explicit click,
+  // not automatic on page turn - a page you only skimmed shouldn't silently
+  // get credited as words you passively know.
+  finishPageBtn.onclick = async () => {
+    const seen = new Set();
+    const toLearn = [];
+    const passive = [];
+    for (const el of pageHost.querySelectorAll('.word')) {
+      const word = el.dataset.word;
+      const key = normalize(word);
+      if (seen.has(key)) continue;
+      seen.add(key);
+      const gloss = el.dataset.gloss;
+      if (gloss === NO_GLOSS) continue;
+      const entry = { german: word, persian: gloss };
+      if (el.classList.contains('learned')) toLearn.push(entry);
+      else passive.push(entry);
+    }
+
+    if (!toLearn.length && !passive.length) {
+      finishPageStatus.textContent = 'No words with a known translation on this page.';
+      finishPageStatus.className = 'importStatus';
+      return;
+    }
+
+    finishPageBtn.disabled = true;
+    finishPageStatus.textContent = 'Saving…';
+    finishPageStatus.className = 'importStatus';
+    try {
+      await api.recordReadingPage(toLearn, passive);
+      finishPageStatus.textContent = `Saved: ${toLearn.length} to learn, ${passive.length} passively known.`;
+      finishPageStatus.className = 'importStatus success';
+    } catch (err) {
+      finishPageStatus.textContent = `Error: ${err.message}`;
+      finishPageStatus.className = 'importStatus error';
+    } finally {
+      finishPageBtn.disabled = false;
+    }
+  };
 
   prevBtn.onclick = () => go(-1);
   nextBtn.onclick = () => go(1);

@@ -34,19 +34,25 @@ export async function renderMyWords(host) {
   const rows = Object.values(clicks).sort((a, b) => b.count - a.count);
 
   const learned = vocab.words.filter((w) => w.status === 'learned');
-  const learning = vocab.words.filter((w) => w.status !== 'learned');
+  const learning = vocab.words.filter((w) => w.status === 'learning');
+  const passive = vocab.words.filter((w) => w.status === 'passive');
 
   host.innerHTML = `
     <div class="formPage">
       <h1>My Words</h1>
 
-      <h2 class="wordsSectionTitle">Vocabulary from Lessons</h2>
+      <h2 class="wordsSectionTitle">Vocabulary</h2>
       <p class="hint">
-        Words taught in a Course or Interview lesson. A word is marked "learned" once you've answered
-        it correctly ${vocab.learnedStreakThreshold} times in a row - like Anki's idea of a mastery streak.
+        Words from lessons and from reading. <strong>Passive</strong> is every word you read past without
+        tapping for a translation - assumed understood, but not tested. <strong>Learning</strong> is a word
+        you tapped for a gloss (in a book) or answered on (in a lesson) - a word you're actively working on.
+        <strong>Learned</strong> means you've answered it correctly ${vocab.learnedStreakThreshold} times in
+        a row in a lesson - like Anki's idea of a mastery streak. Tapping a word you'd filed as passive moves
+        it to Learning - a click is a clearer signal than a guess.
       </p>
       <div class="vocabTabs">
         <button class="vocabTabBtn active" data-tab="learning">Learning (${learning.length})</button>
+        <button class="vocabTabBtn" data-tab="passive">Passive (${passive.length})</button>
         <button class="vocabTabBtn" data-tab="learned">Learned (${learned.length})</button>
       </div>
       <div class="wordsTableWrap">
@@ -92,22 +98,29 @@ export async function renderMyWords(host) {
   const vocabTabBtns = host.querySelectorAll('.vocabTabBtn');
   let activeVocabTab = 'learning';
 
+  const VOCAB_LISTS = { learning, passive, learned };
+  const VOCAB_EMPTY_TEXT = {
+    learning: 'No words in progress yet.',
+    passive: 'No passively-known words yet - they show up here as you read.',
+    learned: 'No words learned yet - keep practicing!',
+  };
+
   function renderVocabRows() {
-    const list = activeVocabTab === 'learned' ? learned : learning;
+    const list = VOCAB_LISTS[activeVocabTab];
     vocabBody.innerHTML = '';
     if (!list.length) {
       vocabEmptyState.hidden = false;
-      vocabEmptyState.textContent =
-        activeVocabTab === 'learned' ? 'No words learned yet - keep practicing!' : 'No lesson words in progress yet.';
+      vocabEmptyState.textContent = VOCAB_EMPTY_TEXT[activeVocabTab];
       return;
     }
     vocabEmptyState.hidden = true;
     for (const w of list) {
       const tr = document.createElement('tr');
+      const streakCell = activeVocabTab === 'passive' ? '—' : `${w.correctStreak} / ${vocab.learnedStreakThreshold}`;
       tr.innerHTML = `
         <td dir="ltr" class="wordCell">${escapeHtml(w.german)}</td>
-        <td dir="rtl">${escapeHtml(w.persian)}</td>
-        <td>${w.correctStreak} / ${vocab.learnedStreakThreshold}</td>
+        <td dir="rtl">${w.persian ? escapeHtml(w.persian) : '—'}</td>
+        <td>${streakCell}</td>
         <td>${formatRelative(w.lastSeenAt)}</td>
       `;
       vocabBody.appendChild(tr);
