@@ -9,6 +9,7 @@
     "start": "node src/index.js",
     "import-book": "node scripts/import-book.js",
     "import-course": "node scripts/import-course.js",
+    "import-word-frequency": "node scripts/import-word-frequency.js",
     "test": "node --test src/**/__tests__/*.test.js"
   },
   "dependencies": {

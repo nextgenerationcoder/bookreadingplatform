@@ -268,4 +268,15 @@ db.exec(`
     PRIMARY KEY (user_id, german),
     FOREIGN KEY (user_id) REFERENCES users(id)
   );
+
+  -- German word frequency, from a Leipzig Corpora Collection word list (see
+  -- scripts/import-word-frequency.js) - shared across all accounts, not
+  -- per-user. Not wired into any feature yet; this is just the raw data
+  -- brought in so frequency-based features (e.g. prioritizing which words
+  -- to check for passive knowledge) can be built on top of it later.
+  CREATE TABLE IF NOT EXISTS word_frequency (
+    word TEXT PRIMARY KEY,
+    rank INTEGER NOT NULL,
+    frequency INTEGER NOT NULL
+  );
 `);
