@@ -9,14 +9,22 @@
 //   PROMPT_LANG: en                    (optional, "en" or "fa" - default "fa")
 //
 //   ### STEP
-//   NOTE: optional Persian grammar note - shown as a hint under the prompt
-//   WORD: german = persian             (repeatable - new vocab this step)
+//   NOTE: optional grammar note, in PROMPT_LANG - shown as a hint under the prompt
+//   WORD: german = translation         (repeatable - new vocab this step,
+//                                        translation in PROMPT_LANG)
 //   SAY: what the learner should produce, in PROMPT_LANG
 //   ANSWER: the correct German sentence
 //
 //   ### STEP
-//   WORD: german = persian
+//   WORD: german = translation
 //   (no SAY:/ANSWER: - a teach-only step, just shows the word(s))
+//
+// PROMPT_LANG controls the language of everything shown to the learner for
+// this lesson - SAY, NOTE, WORD's translation half, and the player's own UI
+// text (buttons/instructions/feedback, see LessonPlayer.js's UI_STRINGS) -
+// not just the SAY prompt. A German-Persian lesson (PROMPT_LANG: fa, or
+// omitted) and a German-English lesson (PROMPT_LANG: en) each stay
+// consistently one language throughout, never a mix.
 //
 // Deliberately close to the Teacher:/Say:/Student: dialogue style already
 // used to draft lessons by hand (see the TÜV NORD Food GPT lesson) - WORD/

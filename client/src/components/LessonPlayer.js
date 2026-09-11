@@ -12,21 +12,63 @@ import { blobToWav } from '../lessonEngine/audioToWav.js';
 //   - software.length && promptFa && expectedAnswer  -> teach + practice
 //   - !software.length && promptFa && expectedAnswer  -> practice only (recall)
 //   - promptFa === null && expectedAnswer === null    -> teach only (no input)
-//   - noteFa (optional): a short Persian grammar aside shown under the
-//     prompt - not part of the input/answer, just context.
+//   - noteFa (optional): a short grammar aside shown under the prompt -
+//     not part of the input/answer, just context.
+//
+// Field names (promptFa/noteFa/w.persian) are legacy from when every lesson
+// was German-Persian - they now just hold "the gloss/prompt/note text",
+// in whatever language the lesson's promptLang says. promptLang also
+// switches all the player's own UI text (buttons, feedback, instructions)
+// between Persian and English - see UI_STRINGS below - so an
+// English-authored lesson (PROMPT_LANG: en in interviewLessonImporter.js)
+// never shows Persian chrome around English content.
 //
 // registerHotwords (optional): words/forms fixed across the WHOLE lesson
 // (e.g. this lesson only ever uses formal "Sie", never "ihr") - unlike a
 // step's own new words, these aren't specific to any one exercise's
 // answer, so including them as ASR hotwords doesn't leak anything; they
 // just tell the recognizer which register/forms this speaker will use.
-//
-// promptFa is displayed dir="rtl" by default (Persian). Set lesson's
-// promptLang: 'en' for lessons authored with an English cue instead (see
-// interviewLessonImporter.js's PROMPT_LANG) - same field, just shown ltr.
+const UI_STRINGS = {
+  fa: {
+    dir: 'rtl',
+    stepOf: (i, n) => `مرحله ${i} از ${n}`,
+    newWord: 'کلمه‌ی جدید',
+    instruction: 'جمله‌ی آلمانی را بساز:',
+    micStart: '🎙️ گفتن پاسخ',
+    micStop: '⏹ توقف',
+    hint: 'راهنمایی',
+    check: 'بررسی جواب',
+    continueBtn: 'ادامه',
+    correct: '✓ درست است',
+    wrong: 'دوباره تلاش کن',
+    transcribing: 'در حال تبدیل صدا به متن…',
+    transcribeError: (msg) => `خطا در تبدیل صدا: ${msg}`,
+    micDenied: 'دسترسی به میکروفون ممکن نیست — لطفاً تایپ کنید.',
+    doneTitle: 'درس تمام شد',
+  },
+  en: {
+    dir: 'ltr',
+    stepOf: (i, n) => `Step ${i} of ${n}`,
+    newWord: 'New word',
+    instruction: 'Build the German sentence:',
+    micStart: '🎙️ Say your answer',
+    micStop: '⏹ Stop',
+    hint: 'Hint',
+    check: 'Check answer',
+    continueBtn: 'Continue',
+    correct: '✓ Correct',
+    wrong: 'Try again',
+    transcribing: 'Transcribing…',
+    transcribeError: (msg) => `Transcription error: ${msg}`,
+    micDenied: 'Microphone unavailable — please type instead.',
+    doneTitle: 'Lesson complete',
+  },
+};
+
 export function renderLessonPlayer(host, lesson) {
   const { steps, storageKey, title, backHref, backLabel, registerHotwords = [], promptLang = 'fa' } = lesson;
   const promptDir = promptLang === 'en' ? 'ltr' : 'rtl';
+  const t = UI_STRINGS[promptLang] || UI_STRINGS.fa;
   const { currentStepIndex: startIndex } = loadLessonProgress(storageKey, steps.length);
   let currentStepIndex = startIndex;
 
@@ -46,7 +88,7 @@ export function renderLessonPlayer(host, lesson) {
       <div class="lessonPlayer">
         <div class="lessonTopBar">
           <a href="${backHref}" class="backLink">${backLabel}</a>
-          <div class="lessonTopMeta">${escapeHtml(title)} · مرحله ${currentStepIndex + 1} از ${steps.length}</div>
+          <div class="lessonTopMeta">${escapeHtml(title)} · ${t.stepOf(currentStepIndex + 1, steps.length)}</div>
           <div class="progressBar"><div class="progressFill" id="lessonProgressFill"></div></div>
         </div>
         <div id="lessonBody"></div>
@@ -65,11 +107,11 @@ export function renderLessonPlayer(host, lesson) {
         ${
           hasWords
             ? `<div class="newElementBox">
-                 <div class="newElementLabel">کلمه‌ی جدید</div>
+                 <div class="newElementLabel">${t.newWord}</div>
                  <div class="wordPairList">
                    ${step.software
                      .map(
-                       (w) => `<div class="wordPair"><span class="de">${escapeHtml(w.german)}</span><span class="fa" dir="rtl">${escapeHtml(w.persian)}</span></div>`
+                       (w) => `<div class="wordPair"><span class="de">${escapeHtml(w.german)}</span><span class="fa" dir="${promptDir}">${escapeHtml(w.persian)}</span></div>`
                      )
                      .join('')}
                  </div>
@@ -80,21 +122,21 @@ export function renderLessonPlayer(host, lesson) {
           isTeachOnly
             ? ''
             : `<p class="lessonPromptFa" dir="${promptDir}">${escapeHtml(step.promptFa)}</p>
-               ${step.noteFa ? `<p class="lessonNoteFa" dir="rtl">${escapeHtml(step.noteFa)}</p>` : ''}
-               <p class="stepInstruction" dir="rtl">جمله‌ی آلمانی را بساز:</p>
+               ${step.noteFa ? `<p class="lessonNoteFa" dir="${promptDir}">${escapeHtml(step.noteFa)}</p>` : ''}
+               <p class="stepInstruction" dir="${t.dir}">${t.instruction}</p>
                <form id="answerForm" autocomplete="off">
                  <input type="text" id="answerInput" class="answerInput" dir="ltr" autocomplete="off" autocapitalize="off" spellcheck="false">
-                 <div class="lessonFeedback" id="lessonFeedback" dir="rtl"></div>
+                 <div class="lessonFeedback" id="lessonFeedback" dir="${t.dir}"></div>
                  <div class="lessonHint" id="lessonHint" dir="ltr" hidden></div>
                  <div class="formActions">
-                   <button type="button" id="micBtn">🎙️ گفتن پاسخ</button>
-                   <button type="button" id="hintBtn">راهنمایی</button>
-                   <button type="submit" id="primaryBtn">بررسی جواب</button>
+                   <button type="button" id="micBtn">${t.micStart}</button>
+                   <button type="button" id="hintBtn">${t.hint}</button>
+                   <button type="submit" id="primaryBtn">${t.check}</button>
                  </div>
                </form>`
         }
-        ${isTeachOnly && step.noteFa ? `<p class="lessonNoteFa" dir="rtl">${escapeHtml(step.noteFa)}</p>` : ''}
-        ${isTeachOnly ? `<div class="formActions"><button type="button" id="continueBtn">ادامه</button></div>` : ''}
+        ${isTeachOnly && step.noteFa ? `<p class="lessonNoteFa" dir="${promptDir}">${escapeHtml(step.noteFa)}</p>` : ''}
+        ${isTeachOnly ? `<div class="formActions"><button type="button" id="continueBtn">${t.continueBtn}</button></div>` : ''}
       </div>
     `;
 
@@ -140,15 +182,15 @@ export function renderLessonPlayer(host, lesson) {
       }
       if (answersMatch(input.value, step.expectedAnswer)) {
         correct = true;
-        feedback.textContent = '✓ درست است';
+        feedback.textContent = t.correct;
         feedback.className = 'lessonFeedback lessonFeedback-correct';
         hintBtn.hidden = true;
         micBtn.hidden = true;
-        primaryBtn.textContent = 'ادامه';
+        primaryBtn.textContent = t.continueBtn;
         input.setAttribute('readonly', 'readonly');
         recordVocabForStep(step, true);
       } else {
-        feedback.textContent = 'دوباره تلاش کن';
+        feedback.textContent = t.wrong;
         feedback.className = 'lessonFeedback lessonFeedback-wrong';
         // Don't clear the input - the learner edits their existing attempt.
         recordVocabForStep(step, false);
@@ -190,10 +232,10 @@ export function renderLessonPlayer(host, lesson) {
           if (e.data.size > 0) chunks.push(e.data);
         };
         mediaRecorder.onstop = async () => {
-          stream.getTracks().forEach((t) => t.stop());
-          micBtn.textContent = '🎙️ گفتن پاسخ';
+          stream.getTracks().forEach((track) => track.stop());
+          micBtn.textContent = t.micStart;
           micBtn.disabled = true;
-          feedback.textContent = 'در حال تبدیل صدا به متن…';
+          feedback.textContent = t.transcribing;
           feedback.className = 'lessonFeedback';
           try {
             const rawBlob = new Blob(chunks, { type: mediaRecorder.mimeType || 'audio/webm' });
@@ -203,16 +245,16 @@ export function renderLessonPlayer(host, lesson) {
             feedback.textContent = '';
             input.focus();
           } catch (err) {
-            feedback.textContent = `خطا در تبدیل صدا: ${err.message}`;
+            feedback.textContent = t.transcribeError(err.message);
             feedback.className = 'lessonFeedback lessonFeedback-wrong';
           } finally {
             micBtn.disabled = false;
           }
         };
         mediaRecorder.start();
-        micBtn.textContent = '⏹ توقف';
+        micBtn.textContent = t.micStop;
       } catch {
-        feedback.textContent = 'دسترسی به میکروفون ممکن نیست — لطفاً تایپ کنید.';
+        feedback.textContent = t.micDenied;
         feedback.className = 'lessonFeedback lessonFeedback-wrong';
       }
     };
@@ -227,8 +269,8 @@ export function renderLessonPlayer(host, lesson) {
   function renderCompletion() {
     host.innerHTML = `
       <div class="lessonPlayer">
-        <div class="lessonSummary">
-          <h2>درس ۱ تمام شد</h2>
+        <div class="lessonSummary" dir="${t.dir}">
+          <h2>${t.doneTitle}</h2>
           <p class="hint" style="padding:0">${steps.length} / ${steps.length}</p>
           <a class="button" href="${backHref}">${backLabel}</a>
         </div>
