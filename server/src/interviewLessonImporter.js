@@ -41,8 +41,20 @@ function stripMarkup(str) {
   return str.trim().replace(/\*\*/g, '').trim();
 }
 
+// Copying lesson text out of a chat UI or word processor and into the
+// textarea often collapses real line breaks into plain spaces (this has
+// bitten real drafts - a whole ~50-step lesson pasted as one paragraph).
+// Since every tag this format recognizes is a unique, unambiguous token,
+// reinsert a newline before each one wherever it shows up, so the
+// line-based parser below works the same whether the source text kept its
+// line breaks or not.
+const TAG_TOKEN_RE = /(^|\s)(#{2,3}\s*STEP\b|LESSON:|TITLE:|PROMPT_LANG:|NOTE:|WORD:|SAY:|ANSWER:)/gi;
+function reflowTags(text) {
+  return text.replace(TAG_TOKEN_RE, (_match, _lead, tag) => `\n${tag}`);
+}
+
 export function parseInterviewLessonText(text) {
-  const lines = text.split(/\r?\n/);
+  const lines = reflowTags(text).split(/\r?\n/);
   let courseId = null;
   let title = null;
   let promptLang = 'fa';
