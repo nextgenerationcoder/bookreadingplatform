@@ -16,6 +16,7 @@ import { renderImportHistory } from './views/importHistory.js';
 import { renderLessonPlayer as renderInteractiveLessonPlayer } from './components/LessonPlayer.js';
 import { renderInterviewHome } from './views/interviewHome.js';
 import { renderAddInterviewLesson } from './views/addInterviewLesson.js';
+import { renderInterviewShell } from './components/interviewSidebar.js';
 import { lesson1 } from './lessons/lesson1.js';
 import { tuvNordFoodGpt } from './lessons/tuvNordFoodGpt.js';
 
@@ -184,13 +185,16 @@ async function route() {
   if (view === 'reader' && kind === 'course' && INTERACTIVE_LESSONS[bookId]) {
     renderInteractiveLessonPlayer(host, INTERACTIVE_LESSONS[bookId]);
   } else if (view === 'reader' && kind === 'learning') {
-    await renderInterviewLesson(host, bookId);
+    const contentHost = await renderInterviewShell(host, STATIC_INTERVIEW_LESSONS, bookId);
+    await renderInterviewLesson(contentHost, bookId);
   } else if (view === 'reader') {
     await renderReader(host, bookId, kind);
   } else if (view === 'interview') {
-    await renderInterviewHome(host, STATIC_INTERVIEW_LESSONS);
+    const contentHost = await renderInterviewShell(host, STATIC_INTERVIEW_LESSONS, null);
+    await renderInterviewHome(contentHost, STATIC_INTERVIEW_LESSONS);
   } else if (view === 'addInterviewLesson') {
-    renderAddInterviewLesson(host);
+    const contentHost = await renderInterviewShell(host, STATIC_INTERVIEW_LESSONS, null);
+    renderAddInterviewLesson(contentHost);
   } else if (view === 'addPages') {
     await renderAddPages(host, bookId, kind);
   } else if (view === 'editPage') {
