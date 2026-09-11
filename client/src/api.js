@@ -141,4 +141,8 @@ export const api = {
   // toLearn/passive: [{german, persian}] - every word on a finished reading
   // page, split by whether it was clicked (see reader.js's "Finish Page").
   recordReadingPage: (toLearn, passive) => post('/api/vocab/reading-page', { toLearn, passive }),
+
+  // words: string[] - returns { word: rank } for whichever of these words
+  // are in the top 200k frequency list (see server/data/word-frequency.seed.json).
+  getWordFrequency: (words) => post('/api/word-frequency/lookup', { words }),
 };

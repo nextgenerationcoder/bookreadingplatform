@@ -163,15 +163,19 @@ button:disabled { opacity: .35 }
 .wordsTableWrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 12px; background: var(--paper) }
 .wordsTable { width: 100%; border-collapse: collapse; font-size: 14px }
 .wordsTable th, .wordsTable td { padding: 10px 12px; text-align: left; border-bottom: 1px solid #eee8dc; white-space: nowrap }
-.wordsTable th:nth-child(4), .wordsTable td:nth-child(4) { white-space: normal }
+.wordsTable .wrapCell { white-space: normal }
 .wordsTable thead th { color: var(--muted); font-weight: 600; font-size: 12px }
 .wordsTable tbody tr:last-child td { border-bottom: none }
 .wordCell { font-family: Georgia, "Times New Roman", serif; font-size: 16px; text-align: left }
 .wordsSectionTitle { font-size: 16px; margin: 26px 0 4px }
 .wordsSectionTitle:first-of-type { margin-top: 10px }
-.vocabTabs { display: flex; gap: 8px; margin: 10px 0 12px }
+.vocabTabs { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin: 10px 0 12px }
 .vocabTabBtn { padding: 6px 14px; border: 1px solid var(--line); border-radius: 999px; background: var(--paper); font-size: 13px; cursor: pointer }
 .vocabTabBtn.active { background: var(--accent); color: #fff; border-color: var(--accent) }
+.sortSelectLabel { margin-inline-start: auto; font-size: 13px; color: var(--muted); display: flex; align-items: center; gap: 6px }
+.sortSelect { padding: 6px 8px; border: 1px solid var(--line); border-radius: 8px; background: var(--paper); font-size: 13px }
+.wordsControls { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin: 12px 0 }
+.wordsControls .filterInput { flex: 1; min-width: 160px; margin: 0 }
 
 /* Pinned to the true left edge of the browser window, full height, like a
    persistent app rail (e.g. Claude Code's own left sidebar) - not just
