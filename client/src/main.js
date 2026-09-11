@@ -16,7 +16,7 @@ import { renderImportHistory } from './views/importHistory.js';
 import { renderLessonPlayer as renderInteractiveLessonPlayer } from './components/LessonPlayer.js';
 import { renderInterviewHome } from './views/interviewHome.js';
 import { renderAddInterviewLesson } from './views/addInterviewLesson.js';
-import { renderInterviewShell } from './components/interviewSidebar.js';
+import { renderInterviewShell, teardownInterviewShell } from './components/interviewSidebar.js';
 import { lesson1 } from './lessons/lesson1.js';
 import { tuvNordFoodGpt } from './lessons/tuvNordFoodGpt.js';
 
@@ -182,6 +182,8 @@ async function route() {
   const navKey = kind ? `${view}:${kind}` : view;
   setActiveNav(navKey);
   const host = document.getElementById('viewHost');
+  const isInterviewView = (view === 'reader' && kind === 'learning') || view === 'interview' || view === 'addInterviewLesson';
+  if (!isInterviewView) teardownInterviewShell();
   if (view === 'reader' && kind === 'course' && INTERACTIVE_LESSONS[bookId]) {
     renderInteractiveLessonPlayer(host, INTERACTIVE_LESSONS[bookId]);
   } else if (view === 'reader' && kind === 'learning') {

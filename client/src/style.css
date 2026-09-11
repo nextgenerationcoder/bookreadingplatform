@@ -170,14 +170,26 @@ button:disabled { opacity: .35 }
 .vocabTabBtn { padding: 6px 14px; border: 1px solid var(--line); border-radius: 999px; background: var(--paper); font-size: 13px; cursor: pointer }
 .vocabTabBtn.active { background: var(--accent); color: #fff; border-color: var(--accent) }
 
-.interviewLayout { display: flex; align-items: flex-start; gap: 16px; margin-top: 16px }
-.interviewSidebar { width: 220px; flex-shrink: 0; background: var(--paper); border: 1px solid var(--line); border-radius: 14px; padding: 12px; transition: width .15s ease, padding .15s ease }
-.interviewSidebar.collapsed { width: 46px; padding: 12px 8px }
-.interviewSidebarHeader { display: flex; align-items: center; justify-content: space-between; gap: 6px; margin-bottom: 8px }
+/* Pinned to the true left edge of the browser window, full height, like a
+   persistent app rail (e.g. Claude Code's own left sidebar) - not just
+   indented within the centered #app column. body.has-interview-sidebar
+   pushes #app (nav + everything) to the right by the rail's current width,
+   which interviewSidebar.js keeps in --interview-sidebar-w so the push
+   shrinks/grows with the collapse toggle. */
+:root { --interview-sidebar-w: 220px }
+body.has-interview-sidebar #app { margin-left: calc(var(--interview-sidebar-w) + 20px); margin-right: auto; transition: margin-left .15s ease }
+.interviewSidebar {
+  position: fixed; left: 0; top: 0; bottom: 0; width: var(--interview-sidebar-w);
+  z-index: 20; background: var(--paper); border-right: 1px solid var(--line);
+  padding: 16px 12px; box-sizing: border-box; overflow-y: auto;
+  transition: width .15s ease, padding .15s ease;
+}
+.interviewSidebar.collapsed { width: 46px; padding: 16px 8px }
+.interviewSidebarHeader { display: flex; align-items: center; justify-content: space-between; gap: 6px; margin-bottom: 10px }
 .interviewSidebarTitle { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); white-space: nowrap; overflow: hidden }
 .interviewSidebar.collapsed .interviewSidebarTitle { display: none }
 .interviewSidebarToggle { flex-shrink: 0; width: 26px; height: 26px; border: 1px solid var(--line); background: var(--paper); border-radius: 7px; cursor: pointer; font-size: 13px; line-height: 1; color: var(--ink) }
-.interviewSidebarList { display: flex; flex-direction: column; gap: 2px; max-height: 60vh; overflow-y: auto }
+.interviewSidebarList { display: flex; flex-direction: column; gap: 2px }
 .interviewSidebar.collapsed .interviewSidebarList,
 .interviewSidebar.collapsed .interviewSidebarAdd { display: none }
 .interviewSidebarLink { display: block; padding: 7px 9px; border-radius: 8px; font-size: 13px; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis }
@@ -185,14 +197,13 @@ button:disabled { opacity: .35 }
 .interviewSidebarLink.active { background: var(--accent); color: #fff }
 .interviewSidebarEmpty { font-size: 13px; color: var(--muted); padding: 6px 9px }
 .interviewSidebarAdd { display: block; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--line); font-size: 13px; text-align: center }
-.interviewContent { flex: 1; min-width: 0 }
+.interviewContent { min-width: 0 }
 
 @media (max-width: 640px) {
-  .interviewLayout { flex-direction: column }
-  .interviewSidebar { width: 100% !important }
-  .interviewSidebar.collapsed .interviewSidebarList,
-  .interviewSidebar.collapsed .interviewSidebarAdd { display: none }
-  .interviewSidebar.collapsed { padding: 12px }
+  body.has-interview-sidebar #app { margin-left: 46px }
+  .interviewSidebar { width: 46px; box-shadow: 2px 0 10px rgba(0,0,0,.12) }
+  .interviewSidebar:not(.collapsed) { width: 200px }
+  .interviewSidebar:not(.collapsed) .interviewSidebarTitle { display: block }
 }
 .page { background: var(--paper); margin-top: 16px; border: 1px solid var(--line); border-radius: 18px; padding: 24px 22px; box-shadow: 0 5px 18px rgba(0,0,0,.05) }
 header.pageHeader { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--line); padding-bottom: 12px; margin-bottom: 18px; color: var(--muted) }
