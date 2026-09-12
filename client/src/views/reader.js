@@ -44,6 +44,14 @@ export async function renderReader(host, bookId, kind = 'book') {
   }
 
   let pageIndex = 0;
+  // Reset per page (in renderPage()). wordIndexCounter gives every .word
+  // span on the page a stable left-to-right position; lastCommittedIndex
+  // is the furthest position reached by a click so far, so clicking a word
+  // can commit everything *read past* to get there as passive/green - see
+  // onWordClick's incremental commit below. Finish Page still separately
+  // covers the tail beyond the last click through the end of the page.
+  let wordIndexCounter = 0;
+  let lastCommittedIndex = -1;
   try {
     const savedProgress = await api.getProgress(bookId).catch(() => null);
     if (savedProgress?.page) {
@@ -296,6 +304,8 @@ export async function renderReader(host, bookId, kind = 'book') {
     editPageLink.href = `${editPageBase}/page/${page.page}/edit`;
 
     pageHost.innerHTML = '';
+    wordIndexCounter = 0;
+    lastCommittedIndex = -1;
     const section = document.createElement('section');
     section.className = 'page';
 
@@ -363,6 +373,7 @@ export async function renderReader(host, bookId, kind = 'book') {
         const key = normalize(effectiveWord);
         if (clickedWords[key]) span.classList.add('learned');
         applyWordColor(span, key);
+        span.dataset.pageIndex = wordIndexCounter++;
         span.dataset.word = effectiveWord;
         span.dataset.gloss = compound ? compound.gloss : glossFor(token);
         span.dataset.page = pageNum;
@@ -429,19 +440,48 @@ export async function renderReader(host, bookId, kind = 'book') {
     }
 
     api.recordWordClick(bookId, Number(el.dataset.page), word).catch(() => {});
+    commitReadUpTo(el);
   }
 
-  // Splits every distinct German word on the current page into two piles:
-  // ever-clicked ("I needed the gloss, so I don't know this") goes toward
-  // active learning, everything else is assumed passively understood
-  // ("read past it without needing help"). Deliberately an explicit click,
-  // not automatic on page turn - a page you only skimmed shouldn't silently
-  // get credited as words you passively know.
-  finishPageBtn.onclick = async () => {
+  // A click is also a "I've read at least this far" signal - everything
+  // between the previous furthest click and this one gets committed as
+  // passive (green) right away, not just this one word, so reading most of
+  // a page and then navigating away (without ever hitting Finish Page)
+  // still saves that progress instead of losing it silently. Finish Page
+  // still separately covers whatever's left *after* the last click through
+  // the true end of the page - this only ever advances forward, so
+  // clicking an earlier word again (already inside a committed range)
+  // doesn't redo anything.
+  function commitReadUpTo(clickedEl) {
+    const clickedIndex = Number(clickedEl.dataset.pageIndex);
+    if (!Number.isFinite(clickedIndex) || clickedIndex <= lastCommittedIndex) return;
+
+    const spansInRange = [...pageHost.querySelectorAll('.word')].filter((el) => {
+      const idx = Number(el.dataset.pageIndex);
+      return idx > lastCommittedIndex && idx <= clickedIndex;
+    });
+    lastCommittedIndex = clickedIndex;
+
+    const { toLearn, passive } = classifyWordSpans(spansInRange);
+    for (const { german } of passive) {
+      const key = normalize(german);
+      if (vocabStatus[key] === 'learned' || vocabStatus[key] === 'learning') continue;
+      vocabStatus[key] = 'passive';
+      pageHost.querySelectorAll(`.word[data-word="${CSS.escape(german)}"]`).forEach((span) => applyWordColor(span, key));
+    }
+    if (toLearn.length || passive.length) api.recordReadingPage(toLearn, passive).catch(() => {});
+  }
+
+  // Splits a set of word spans into two piles: ever-clicked ("I needed the
+  // gloss, so I don't know this") goes toward active learning, everything
+  // else is assumed passively understood ("read past it without needing
+  // help"). Shared by Finish Page (the whole page) and onWordClick's
+  // incremental commit (just the span range read to reach this click).
+  function classifyWordSpans(spans) {
     const seen = new Set();
     const toLearn = [];
     const passive = [];
-    for (const el of pageHost.querySelectorAll('.word')) {
+    for (const el of spans) {
       const word = el.dataset.word;
       const key = normalize(word);
       if (seen.has(key)) continue;
@@ -452,6 +492,14 @@ export async function renderReader(host, bookId, kind = 'book') {
       if (el.classList.contains('learned')) toLearn.push(entry);
       else passive.push(entry);
     }
+    return { toLearn, passive };
+  }
+
+  // Deliberately an explicit click (or Finish Page below), not automatic on
+  // page turn - a page you only skimmed shouldn't silently get credited as
+  // words you passively know.
+  finishPageBtn.onclick = async () => {
+    const { toLearn, passive } = classifyWordSpans(pageHost.querySelectorAll('.word'));
 
     if (!toLearn.length && !passive.length) {
       finishPageStatus.textContent = 'No words with a known translation on this page.';
