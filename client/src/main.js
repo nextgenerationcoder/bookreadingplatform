@@ -80,34 +80,28 @@ function parseRoute() {
   if (hash === '/words') return { view: 'words' };
   if (hash === '/settings') return { view: 'settings' };
   if (hash === '/import-history') return { view: 'importHistory' };
-  if (hash === '/import-url') {
-    const params = new URLSearchParams(query || '');
-    return { view: 'importUrl', sharedUrl: params.get('url') || '' };
-  }
+  if (hash === '/import-url') return { view: 'importUrl' };
   return { view: 'library' };
 }
 
 // Android's share sheet (see manifest.json's share_target) navigates to the
-// real path /share-target?title=...&text=...&url=... - not a #/ hash route,
-// since a Web Share Target action has to be an actual URL the browser can
-// GET. Converts that one-time real-path landing into the app's normal
-// #/import-url hash route before the router ever runs, so everything past
-// this point only ever has to deal with hash routes like every other view.
-//
-// The shared link isn't always in the "url" field - a lot of apps (Chrome
-// itself included, depending on Android version) put it in "text" instead,
-// sometimes with other words around it - so this also scans "text" for
-// something URL-shaped as a fallback.
+// real path /share-target?title=...&text=... - not a #/ hash route, since a
+// Web Share Target action has to be an actual URL the browser can GET.
+// Sharing selected text (not a whole page) sends it in the "text" field, so
+// that's what lands directly in the paste box on #/import-url - handed off
+// via sessionStorage rather than a hash query param, since a long shared
+// passage (a whole job posting) could realistically exceed a practical URL
+// length; importUrl.js reads and clears these two keys on load.
 function redirectShareTargetToHash() {
   if (window.location.pathname !== '/share-target') return;
   const params = new URLSearchParams(window.location.search);
-  const fromUrlField = params.get('url') || '';
   const text = params.get('text') || '';
-  const urlInText = text.match(/https?:\/\/\S+/)?.[0] || '';
-  const sharedUrl = fromUrlField || urlInText;
+  const title = params.get('title') || '';
+  if (text) sessionStorage.setItem('pendingShareText', text);
+  if (title) sessionStorage.setItem('pendingShareTitle', title);
 
   window.history.replaceState(null, '', '/');
-  window.location.hash = `#/import-url${sharedUrl ? `?url=${encodeURIComponent(sharedUrl)}` : ''}`;
+  window.location.hash = '#/import-url';
 }
 redirectShareTargetToHash();
 
@@ -142,7 +136,7 @@ function buildShell() {
         <div class="drawerEmail">${currentUser.email}</div>
       </div>
       <a href="#/settings" id="settingsLink" class="drawerItem">Settings</a>
-      <a href="#/import-url" id="importUrlLink" class="drawerItem">Import Web Page</a>
+      <a href="#/import-url" id="importUrlLink" class="drawerItem">Import Text</a>
       <a href="#/import-history" id="importHistoryLink" class="drawerItem">Import History</a>
       <div class="drawerSpacer"></div>
       <button id="logoutBtn" class="drawerItem drawerLogout" type="button">Log out</button>
@@ -217,7 +211,7 @@ async function renderInterviewLesson(host, courseId) {
 }
 
 async function route() {
-  const { view, kind, bookId, pageNumber, level, sharedUrl } = parseRoute();
+  const { view, kind, bookId, pageNumber, level } = parseRoute();
   const navKey = kind ? `${view}:${kind}` : view;
   setActiveNav(navKey);
   const host = document.getElementById('viewHost');
@@ -259,7 +253,7 @@ async function route() {
   } else if (view === 'importHistory') {
     await renderImportHistory(host);
   } else if (view === 'importUrl') {
-    renderImportUrl(host, sharedUrl);
+    renderImportUrl(host);
   } else {
     await renderLibrary(host);
   }

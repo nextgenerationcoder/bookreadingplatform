@@ -1,73 +1,26 @@
-// Turns a shared webpage URL into a readable book: fetch -> strip down to
-// readable text (cheerio) -> paginate like a real book's pages -> translate
-// each page via the account's own Translation API key (same
-// formatPageFromText() the PDF import pipeline already uses) -> save.
+// Turns pasted/shared text into a readable book: paginate like a real
+// book's pages -> translate each page via the account's own Translation
+// API key (same formatPageFromText() the PDF import pipeline already
+// uses) -> save.
 //
-// Used by routes/urlImport.js, which is what the "Import Web Page" view
+// Used by routes/urlImport.js, which is what the "Import Text" view
 // (client/src/views/importUrl.js) and Android's share-to-app flow
-// (manifest.json's share_target -> #/import-url) both call into.
-
-import * as cheerio from 'cheerio';
+// (manifest.json's share_target -> #/import-url) both call into. An
+// earlier version fetched a URL server-side and extracted readable text
+// with cheerio, but a real test (a LinkedIn job posting) showed that
+// doesn't work for anything login-gated or JS-rendered - removed in favor
+// of just taking the text directly, copied from wherever the person can
+// actually see the real content.
 
 // Roughly one page's worth of reading - matches the unit formatPageFromText
-// already works in one call at a time (a PDF page), so a long article reads
-// the same way a long PDF does: split into multiple pages, not one giant
-// block sent to the AI at once.
+// already works in one call at a time (a PDF page), so a long passage
+// reads the same way a long PDF does: split into multiple pages, not one
+// giant block sent to the AI at once.
 const MAX_PAGE_CHARS = 2500;
-// Caps how much of a very long page/article gets imported - well past a
-// normal "read a few pages" session, with plenty of headroom. A genuinely
-// book-length page belongs in the PDF import instead.
+// Caps how much of a very long passage gets imported - well past a normal
+// "read a few pages" session, with plenty of headroom. A genuinely
+// book-length passage belongs in the PDF import instead.
 const MAX_TOTAL_CHARS = 20000;
-
-// A page's paragraph-tag extraction only "worked" if it captured a real
-// share of the container's actual text - otherwise the real content almost
-// certainly isn't in <p>/<li>/etc at all (common on JS-heavy sites: the
-// visible text sits in plain <div>/<span> wrappers), and a handful of short
-// unrelated <p> tags (cookie notices, UI labels) would otherwise look like
-// "it worked" while missing the actual article/posting entirely.
-const MIN_PARAGRAPH_COVERAGE = 0.4;
-
-// Strips a fetched webpage down to its readable text (no nav/ads/scripts) -
-// one paragraph per block-level element, so pagination below can group them
-// without cutting mid-thought more than it has to. Prefers <article>/<main>
-// (most real sites wrap their actual content in one of those) and falls
-// back to <body> otherwise.
-export function extractReadableText(html) {
-  const $ = cheerio.load(html);
-  $('script, style, noscript, nav, header, footer, aside, svg, iframe, form, button').remove();
-
-  let container = $('article').first();
-  if (!container.length) container = $('main').first();
-  if (!container.length) container = $('body');
-
-  const paragraphs = [];
-  container.find('p, li, h1, h2, h3, blockquote').each((_, el) => {
-    const text = $(el).text().replace(/\s+/g, ' ').trim();
-    if (text.length > 20) paragraphs.push(text);
-  });
-
-  const wholeChars = container.text().replace(/\s+/g, ' ').trim().length;
-  const paragraphChars = paragraphs.reduce((n, p) => n + p.length, 0);
-
-  // Falls back to every leaf element's own text (no child elements, so no
-  // double-counting a parent and its children) whenever the tag-based
-  // extraction came up empty or clearly missed most of the real content -
-  // catches sites whose real text sits in plain <div>/<span> wrappers
-  // rather than semantic <p>/<li> tags (common on JS-templated pages).
-  if (!wholeChars) return paragraphs;
-  if (!paragraphs.length || paragraphChars < wholeChars * MIN_PARAGRAPH_COVERAGE) {
-    const leaves = [];
-    container.find('*').each((_, el) => {
-      const node = $(el);
-      if (node.children().length) return;
-      const text = node.text().replace(/\s+/g, ' ').trim();
-      if (text.length > 20) leaves.push(text);
-    });
-    if (leaves.length) return leaves;
-  }
-
-  return paragraphs;
-}
 
 // Groups paragraphs into page-sized chunks, capped overall at
 // MAX_TOTAL_CHARS - same idea as a real book's pages.
@@ -90,17 +43,6 @@ export function paginateText(paragraphs) {
   }
   if (current.length) pages.push(current.join('\n\n'));
   return pages;
-}
-
-export function extractTitle(html, fallbackUrl) {
-  const $ = cheerio.load(html);
-  const title = $('meta[property="og:title"]').attr('content')?.trim() || $('title').first().text().trim() || $('h1').first().text().trim();
-  if (title) return title;
-  try {
-    return new URL(fallbackUrl).hostname;
-  } catch {
-    return 'Imported Page';
-  }
 }
 
 // bookIds are shared across all accounts (see routes/books.js), so a
