@@ -15,6 +15,11 @@ const router = Router();
 // cases without needing a DNS round trip on every import.
 const PRIVATE_HOST_RE = /^(localhost|127\.|0\.0\.0\.0|::1|10\.|172\.(1[6-9]|2\d|3[01])\.|192\.168\.|169\.254\.)/i;
 
+// Below this, there's essentially nothing to translate - see the check
+// right after extraction, which turns this into an honest diagnosis
+// ("this page needs a login/JS") instead of a confusing AI failure.
+const MIN_CONTENT_CHARS = 150;
+
 function assertSafeUrl(rawUrl) {
   let parsed;
   try {
@@ -73,8 +78,16 @@ router.post('/', async (req, res) => {
   }
 
   const paragraphs = extractReadableText(html);
-  if (!paragraphs.length) {
-    return res.status(400).json({ error: 'No readable text found on that page.' });
+  const extractedChars = paragraphs.reduce((n, p) => n + p.length, 0);
+  if (!paragraphs.length || extractedChars < MIN_CONTENT_CHARS) {
+    // A clear diagnosis instead of letting this look like a translation
+    // failure: sites that need a login or run mostly client-side JS (many
+    // job boards, including LinkedIn's job view pages) serve almost no
+    // real content in the plain HTML this fetch sees - there's nothing an
+    // AI call could recover here, so this fails before spending one.
+    return res.status(400).json({
+      error: `Only found ${extractedChars} characters of readable text on that page - probably needs a login or JavaScript to show its real content, which this import can't do.`,
+    });
   }
   const pages = paginateText(paragraphs);
   const title = extractTitle(html, parsedUrl.href);
@@ -109,7 +122,10 @@ router.post('/', async (req, res) => {
   }
 
   if (!meta) {
-    return res.status(400).json({ error: 'Could not translate any page of this content — it may not be German text.' });
+    const reason = errors[0]?.error || 'unknown reason';
+    return res.status(400).json({
+      error: `Could not translate any page of this content (${reason}) — it may not be German text.`,
+    });
   }
 
   res.json({ ...meta, url: parsedUrl.href, pagesRequested: pages.length, errors });

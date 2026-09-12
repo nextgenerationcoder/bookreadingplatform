@@ -19,6 +19,14 @@ const MAX_PAGE_CHARS = 2500;
 // book-length page belongs in the PDF import instead.
 const MAX_TOTAL_CHARS = 20000;
 
+// A page's paragraph-tag extraction only "worked" if it captured a real
+// share of the container's actual text - otherwise the real content almost
+// certainly isn't in <p>/<li>/etc at all (common on JS-heavy sites: the
+// visible text sits in plain <div>/<span> wrappers), and a handful of short
+// unrelated <p> tags (cookie notices, UI labels) would otherwise look like
+// "it worked" while missing the actual article/posting entirely.
+const MIN_PARAGRAPH_COVERAGE = 0.4;
+
 // Strips a fetched webpage down to its readable text (no nav/ads/scripts) -
 // one paragraph per block-level element, so pagination below can group them
 // without cutting mid-thought more than it has to. Prefers <article>/<main>
@@ -38,11 +46,24 @@ export function extractReadableText(html) {
     if (text.length > 20) paragraphs.push(text);
   });
 
-  // Some pages don't use semantic paragraph tags at all - fall back to the
-  // container's whole text rather than coming back with nothing.
-  if (!paragraphs.length) {
-    const wholeText = container.text().replace(/\s+/g, ' ').trim();
-    if (wholeText) paragraphs.push(wholeText);
+  const wholeChars = container.text().replace(/\s+/g, ' ').trim().length;
+  const paragraphChars = paragraphs.reduce((n, p) => n + p.length, 0);
+
+  // Falls back to every leaf element's own text (no child elements, so no
+  // double-counting a parent and its children) whenever the tag-based
+  // extraction came up empty or clearly missed most of the real content -
+  // catches sites whose real text sits in plain <div>/<span> wrappers
+  // rather than semantic <p>/<li> tags (common on JS-templated pages).
+  if (!wholeChars) return paragraphs;
+  if (!paragraphs.length || paragraphChars < wholeChars * MIN_PARAGRAPH_COVERAGE) {
+    const leaves = [];
+    container.find('*').each((_, el) => {
+      const node = $(el);
+      if (node.children().length) return;
+      const text = node.text().replace(/\s+/g, ' ').trim();
+      if (text.length > 20) leaves.push(text);
+    });
+    if (leaves.length) return leaves;
   }
 
   return paragraphs;
