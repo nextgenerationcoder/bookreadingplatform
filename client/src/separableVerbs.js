@@ -54,12 +54,63 @@ function normalize(word) {
   return word.toLowerCase();
 }
 
+// du-/er-forms of common strong (stem-vowel-changing) verbs, mapped back to
+// their infinitive - e.g. "trägst" -> "tragen", so "trägst ... bei"
+// resolves to "beitragen" even when "trägst" has no hand-curated " • infinitive"
+// dictionary hint (most dictionary entries come from the large wikidict.json
+// bulk import, which doesn't include that annotation - only the ~700
+// hand-curated entries in dictionary.seed.json do). Without this, a
+// separable verb built on a stem-changing verb only gets recognized by
+// coincidence; regular (weak) verbs don't need this since their du-/er-forms
+// already resemble the infinitive closely enough.
+const IRREGULAR_PRESENT_FORMS = {
+  trägst: 'tragen', trägt: 'tragen',
+  fährst: 'fahren', fährt: 'fahren',
+  schläfst: 'schlafen', schläft: 'schlafen',
+  läufst: 'laufen', läuft: 'laufen',
+  hältst: 'halten', hält: 'halten',
+  lässt: 'lassen',
+  fällst: 'fallen', fällt: 'fallen',
+  rätst: 'raten', rät: 'raten',
+  brätst: 'braten', brät: 'braten',
+  gräbst: 'graben', gräbt: 'graben',
+  schlägst: 'schlagen', schlägt: 'schlagen',
+  wächst: 'wachsen',
+  wäschst: 'waschen', wäscht: 'waschen',
+  fängst: 'fangen', fängt: 'fangen',
+  nimmst: 'nehmen', nimmt: 'nehmen',
+  gibst: 'geben', gibt: 'geben',
+  siehst: 'sehen', sieht: 'sehen',
+  liest: 'lesen',
+  isst: 'essen',
+  vergisst: 'vergessen',
+  misst: 'messen',
+  trittst: 'treten', tritt: 'treten',
+  sprichst: 'sprechen', spricht: 'sprechen',
+  brichst: 'brechen', bricht: 'brechen',
+  hilfst: 'helfen', hilft: 'helfen',
+  stirbst: 'sterben', stirbt: 'sterben',
+  wirfst: 'werfen', wirft: 'werfen',
+  triffst: 'treffen', trifft: 'treffen',
+  giltst: 'gelten', gilt: 'gelten',
+  empfiehlst: 'empfehlen', empfiehlt: 'empfehlen',
+  befiehlst: 'befehlen', befiehlt: 'befehlen',
+  stiehlst: 'stehlen', stiehlt: 'stehlen',
+  wirst: 'werden', wird: 'werden',
+  lädst: 'laden', lädt: 'laden',
+  stößt: 'stoßen',
+};
+
 function hintsFor(token, dictionary) {
-  const entry = dictionary[normalize(token)];
-  if (!entry) return [];
-  const idx = entry.lastIndexOf(' • ');
-  if (idx === -1) return [];
-  return entry.slice(idx + 3).split('/').map((s) => s.trim());
+  const key = normalize(token);
+  const hints = [];
+  if (IRREGULAR_PRESENT_FORMS[key]) hints.push(IRREGULAR_PRESENT_FORMS[key]);
+
+  const entry = dictionary[key];
+  const idx = entry ? entry.lastIndexOf(' • ') : -1;
+  if (idx !== -1) hints.push(...entry.slice(idx + 3).split('/').map((s) => s.trim()));
+
+  return hints;
 }
 
 function resolveCompound(clauseWords, prefix, dictionary) {

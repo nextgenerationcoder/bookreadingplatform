@@ -686,7 +686,6 @@
   "filmleinwand": "پردهٔ نمایش فیلم",
   "halbjahr": "نیم‌سال",
   "gesprochen": "صحبت کرده بود • sprechen",
-
   "ging": "رفت • gehen",
   "kehrte": "برگشت / رو کرد • kehren",
   "fuhr": "راند / رفت • fahren",
@@ -694,7 +693,6 @@
   "baut": "می‌سازد / برپا می‌کند • bauen",
   "hört": "گوش کن • hören",
   "schreibt": "می‌نویسد • schreiben",
-
   "umsehen": "به اطراف نگاه کردن (sich umsehen)",
   "zusammensammeln": "جمع کردن",
   "vorübergehen": "از کنار گذشتن",
@@ -704,5 +702,8 @@
   "vorbeidrängen": "با فشار از کنار رد شدن",
   "zurückgehen": "برگشتن",
   "aussehen": "به نظر رسیدن",
-  "aufbauen": "سرهم / آماده کردن"
+  "aufbauen": "سرهم / آماده کردن",
+  "beitragen": "کمک کردن / سهیم بودن",
+  "trägst": "حمل می‌کنی؛ می‌پوشی • tragen",
+  "trägt": "حمل می‌کند؛ می‌پوشد • tragen"
 }
