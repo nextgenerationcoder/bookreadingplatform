@@ -487,8 +487,12 @@ export async function renderReader(host, bookId, kind = 'book') {
       if (seen.has(key)) continue;
       seen.add(key);
       const gloss = el.dataset.gloss;
-      if (gloss === NO_GLOSS) continue;
-      const entry = { german: word, persian: gloss };
+      // Still counts as "read past it" even with no dictionary gloss yet
+      // (foreign loanwords mixed into German text, proper nouns, a word
+      // just not in the dictionary) - persian stays '' rather than being
+      // skipped outright, so it still gets colored/tracked; My Words
+      // already shows '—' for an empty gloss.
+      const entry = { german: word, persian: gloss === NO_GLOSS ? '' : gloss };
       if (el.classList.contains('learned')) toLearn.push(entry);
       else passive.push(entry);
     }
