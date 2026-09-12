@@ -19,6 +19,7 @@ import asrRouter from './routes/asr.js';
 import interviewLessonsRouter from './routes/interviewLessons.js';
 import vocabRouter from './routes/vocab.js';
 import wordFrequencyRouter from './routes/wordFrequency.js';
+import urlImportRouter from './routes/urlImport.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -67,6 +68,7 @@ app.use('/api/asr', requireAuth, asrRouter);
 app.use('/api/interview-lessons', requireAuth, interviewLessonsRouter);
 app.use('/api/vocab', requireAuth, vocabRouter);
 app.use('/api/word-frequency', requireAuth, wordFrequencyRouter);
+app.use('/api/import-url', requireAuth, urlImportRouter);
 
 // In production the client is built to client/dist and served by this same
 // process, so the whole app is one container behind one port. In local dev
@@ -75,6 +77,17 @@ app.use('/api/word-frequency', requireAuth, wordFrequencyRouter);
 const clientDist = path.join(__dirname, '..', '..', 'client', 'dist');
 if (existsSync(clientDist)) {
   app.use(express.static(clientDist));
+
+  // SPA fallback: this app routes with #/ hash fragments (never sent to the
+  // server) EXCEPT for one real path - /share-target, which Android's share
+  // sheet navigates to directly (see client/public/manifest.json's
+  // share_target and main.js's redirectShareTargetToHash()). Any GET that
+  // isn't a static asset or an API call serves the same index.html so the
+  // client JS boots and can handle it - deliberately after express.static
+  // so real files (JS/CSS/icons) are still served as themselves, not this.
+  app.get(/^(?!\/api\/).*/, (_req, res) => {
+    res.sendFile(path.join(clientDist, 'index.html'));
+  });
 }
 
 app.use((err, _req, res, _next) => {

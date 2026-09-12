@@ -145,4 +145,9 @@ export const api = {
   // words: string[] - returns { word: rank } for whichever of these words
   // are in the top 200k frequency list (see server/data/word-frequency.seed.json).
   getWordFrequency: (words) => post('/api/word-frequency/lookup', { words }),
+
+  // Fetches, translates, and saves a shared webpage as a readable book -
+  // see server/src/urlImport.js. Requires a Translation API key configured
+  // in Settings (same one PDF import uses).
+  importUrl: (url) => post('/api/import-url', { url }),
 };

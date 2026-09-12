@@ -13,6 +13,7 @@ import { renderAddWords } from './views/addWords.js';
 import { renderMyWords } from './views/myWords.js';
 import { renderSettings } from './views/settings.js';
 import { renderImportHistory } from './views/importHistory.js';
+import { renderImportUrl } from './views/importUrl.js';
 import { renderLessonPlayer as renderInteractiveLessonPlayer } from './components/LessonPlayer.js';
 import { renderInterviewHome } from './views/interviewHome.js';
 import { renderAddInterviewLesson } from './views/addInterviewLesson.js';
@@ -79,7 +80,43 @@ function parseRoute() {
   if (hash === '/words') return { view: 'words' };
   if (hash === '/settings') return { view: 'settings' };
   if (hash === '/import-history') return { view: 'importHistory' };
+  if (hash === '/import-url') {
+    const params = new URLSearchParams(query || '');
+    return { view: 'importUrl', sharedUrl: params.get('url') || '' };
+  }
   return { view: 'library' };
+}
+
+// Android's share sheet (see manifest.json's share_target) navigates to the
+// real path /share-target?title=...&text=...&url=... - not a #/ hash route,
+// since a Web Share Target action has to be an actual URL the browser can
+// GET. Converts that one-time real-path landing into the app's normal
+// #/import-url hash route before the router ever runs, so everything past
+// this point only ever has to deal with hash routes like every other view.
+//
+// The shared link isn't always in the "url" field - a lot of apps (Chrome
+// itself included, depending on Android version) put it in "text" instead,
+// sometimes with other words around it - so this also scans "text" for
+// something URL-shaped as a fallback.
+function redirectShareTargetToHash() {
+  if (window.location.pathname !== '/share-target') return;
+  const params = new URLSearchParams(window.location.search);
+  const fromUrlField = params.get('url') || '';
+  const text = params.get('text') || '';
+  const urlInText = text.match(/https?:\/\/\S+/)?.[0] || '';
+  const sharedUrl = fromUrlField || urlInText;
+
+  window.history.replaceState(null, '', '/');
+  window.location.hash = `#/import-url${sharedUrl ? `?url=${encodeURIComponent(sharedUrl)}` : ''}`;
+}
+redirectShareTargetToHash();
+
+if ('serviceWorker' in navigator) {
+  // Required for the app to be a real installable PWA (not just a browser
+  // bookmark) and for Web Share Target (manifest.json) to work at all -
+  // Android only offers an installed PWA as a share-sheet destination, and
+  // only counts it as "installed" once a service worker is registered.
+  navigator.serviceWorker.register('/sw.js').catch(() => {});
 }
 
 function buildShell() {
@@ -105,6 +142,7 @@ function buildShell() {
         <div class="drawerEmail">${currentUser.email}</div>
       </div>
       <a href="#/settings" id="settingsLink" class="drawerItem">Settings</a>
+      <a href="#/import-url" id="importUrlLink" class="drawerItem">Import Web Page</a>
       <a href="#/import-history" id="importHistoryLink" class="drawerItem">Import History</a>
       <div class="drawerSpacer"></div>
       <button id="logoutBtn" class="drawerItem drawerLogout" type="button">Log out</button>
@@ -128,6 +166,7 @@ function buildShell() {
   menuBtn.onclick = openDrawer;
   overlay.onclick = closeDrawer;
   document.getElementById('settingsLink').onclick = closeDrawer;
+  document.getElementById('importUrlLink').onclick = closeDrawer;
   document.getElementById('importHistoryLink').onclick = closeDrawer;
 
   document.getElementById('logoutBtn').onclick = async () => {
@@ -178,7 +217,7 @@ async function renderInterviewLesson(host, courseId) {
 }
 
 async function route() {
-  const { view, kind, bookId, pageNumber, level } = parseRoute();
+  const { view, kind, bookId, pageNumber, level, sharedUrl } = parseRoute();
   const navKey = kind ? `${view}:${kind}` : view;
   setActiveNav(navKey);
   const host = document.getElementById('viewHost');
@@ -219,6 +258,8 @@ async function route() {
     await renderSettings(host);
   } else if (view === 'importHistory') {
     await renderImportHistory(host);
+  } else if (view === 'importUrl') {
+    renderImportUrl(host, sharedUrl);
   } else {
     await renderLibrary(host);
   }
