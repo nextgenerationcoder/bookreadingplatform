@@ -150,4 +150,10 @@ export const api = {
   // see server/src/urlImport.js. Requires a Translation API key configured
   // in Settings (same one PDF import uses).
   importUrl: (url) => post('/api/import-url', { url }),
+
+  // Same translate-and-save pipeline, but for text pasted by hand instead
+  // of a URL to fetch - for pages this server can't fetch the real content
+  // of (login-gated, JS-rendered) but the person can see on their own
+  // phone/browser.
+  importPastedText: (text, title) => post('/api/import-url/text', { text, title }),
 };
