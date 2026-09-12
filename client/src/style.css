@@ -1,6 +1,6 @@
 :root {
   --bg: #f5f1e8; --paper: #fffdf8; --ink: #202020; --muted: #777; --line: #ded8ca;
-  --accent: #2a5c8a; --popup: #111; --popupText: #fff; --learned: #d98c2b;
+  --accent: #2a5c8a; --popup: #111; --popupText: #fff; --learned: #d98c2b; --known: #2f8f4e; --unset: #9a9488;
 }
 * { box-sizing: border-box }
 body { margin: 0; background: var(--bg); color: var(--ink); font-family: system-ui, -apple-system, "Segoe UI", Arial, sans-serif }
@@ -223,7 +223,13 @@ header.pageHeader { display: flex; justify-content: space-between; align-items: 
 .fa { font-size: 18px; line-height: 1.9; margin: 8px 0 0; color: #4d4d4d }
 .word { cursor: pointer; border-radius: 5px; padding: 1px 2px; transition: .12s }
 .word:hover, .word:active { background: #e8f0f8; color: #173e64 }
-.word.learned { text-decoration: underline dotted var(--learned); text-underline-offset: 3px }
+/* Tri-color word status (see reader.js's applyWordColor): green for known
+   (learned via lesson practice, or passively understood while reading),
+   orange for a word you're actively working on, gray/muted for a word
+   you've never encountered before - see vocab_progress in db.js. */
+.word.wordKnown { color: var(--known) }
+.word.wordLearning { color: var(--learned) }
+.word.wordUnset { color: var(--unset) }
 .word.speaking { font-weight: 700; background: #fdeecb; color: #7a4b06 }
 .word.compoundPart { border-bottom: 2px dotted var(--accent); padding-bottom: 0 }
 .word.compoundPart.compoundActive { background: #e8f0f8; color: #173e64 }

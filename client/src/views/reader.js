@@ -18,18 +18,26 @@ export async function renderReader(host, bookId, kind = 'book') {
 
   host.innerHTML = '<div class="loading">Loading…</div>';
 
-  let book, dictionary, clickedWords;
+  let book, dictionary, clickedWords, vocabStatus;
   try {
-    const [bookData, dict, clicksRaw] = await Promise.all([
+    const [bookData, dict, clicksRaw, vocab] = await Promise.all([
       getContent(bookId),
       getDictionary(),
       api.getWordClicks().catch(() => ({})),
+      api.getVocabProgress().catch(() => ({ words: [] })),
     ]);
     book = bookData;
     dictionary = dict;
     clickedWords = Object.fromEntries(
       Object.entries(clicksRaw).map(([w, v]) => [normalizeWord(w), v.count])
     );
+    // Passive is shown the same as learned (green) - both mean "you know
+    // this", just via different evidence (passed a page without needing
+    // help vs. answered correctly enough times in a lesson). Only
+    // 'learning' (orange) and no entry at all (gray, never encountered)
+    // are visually distinct - see the .wordKnown/.wordLearning/.wordUnset
+    // rules in style.css.
+    vocabStatus = Object.fromEntries(vocab.words.map((w) => [normalizeWord(w.german), w.status]));
   } catch (err) {
     host.innerHTML = `<div class="error">Failed to load. Make sure the server is running.<br><small>${err.message}</small></div>`;
     return;
@@ -51,6 +59,19 @@ export async function renderReader(host, bookId, kind = 'book') {
   }
   function glossFor(word) {
     return dictionary[normalize(word)] || NO_GLOSS;
+  }
+
+  // Tri-color word status, independent of the "ever clicked" (.learned)
+  // flag below: green (wordKnown) for learned/passive - both mean "you
+  // know this", just via different evidence - orange (wordLearning) for
+  // actively being worked on, gray (wordUnset) for a word with no
+  // vocab_progress entry at all yet.
+  function applyWordColor(span, key) {
+    span.classList.remove('wordKnown', 'wordLearning', 'wordUnset');
+    const status = vocabStatus[key];
+    if (status === 'learned' || status === 'passive') span.classList.add('wordKnown');
+    else if (status === 'learning') span.classList.add('wordLearning');
+    else span.classList.add('wordUnset');
   }
 
   host.innerHTML = `
@@ -339,7 +360,9 @@ export async function renderReader(host, bookId, kind = 'book') {
           span.dataset.compoundGroup = compound.groupId;
           span.title = `Separable verb: ${compound.infinitive}`;
         }
-        if (clickedWords[normalize(effectiveWord)]) span.classList.add('learned');
+        const key = normalize(effectiveWord);
+        if (clickedWords[key]) span.classList.add('learned');
+        applyWordColor(span, key);
         span.dataset.word = effectiveWord;
         span.dataset.gloss = compound ? compound.gloss : glossFor(token);
         span.dataset.page = pageNum;
@@ -386,6 +409,16 @@ export async function renderReader(host, bookId, kind = 'book') {
 
     clickedWords[key] = (clickedWords[key] || 0) + 1;
     el.classList.add('learned');
+
+    // Immediate visual feedback - a click means "I don't know this", so it
+    // turns orange right away rather than waiting for Finish Page to
+    // persist it server-side. A word already green (learned) never gets
+    // downgraded by a click, matching what Finish Page itself does
+    // server-side (see routes/vocab.js's reading-page upsert).
+    if (vocabStatus[key] !== 'learned') {
+      vocabStatus[key] = 'learning';
+      pageHost.querySelectorAll(`.word[data-word="${CSS.escape(word)}"]`).forEach((span) => applyWordColor(span, key));
+    }
 
     // Both halves of a separable verb share one dataset.word (the resolved
     // infinitive), so mark the other half learned too and highlight the pair.
