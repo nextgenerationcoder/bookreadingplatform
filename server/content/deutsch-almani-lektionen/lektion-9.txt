@@ -1,0 +1,271 @@
+COURSE: deutsch-almani-lektion-9
+TITLE: Lektion 9
+LEVEL: A1
+LANG: de -> fa
+
+PAGE 1
+CHAPTER: Lektion 9
+1: er wird hier bleiben
+او اینجا خواهد ماند
+2: er wird nicht hier bleiben
+او اینجا نخواهد ماند
+3: wie lange bleiben Sie hier?
+چه مدت شما اینجا می مانید؟
+4: wie lange werden Sie hier bleiben?
+چه مدت شما اینجا خواهید ماند؟
+5: wollen Sie mir sagen, wie lange Sie hier bleiben werden?
+می خواهید شما به من بگویید، چه مدت شما اینجا خواهید ماند؟
+6: ich möchte wissen, wie lange Sie hier bleiben können?
+من دوست دارم بدانم ،چه مدت شما اینجا می توانید بمانید ؟
+7: wie lange bleibst du hier?
+چه مدت اینجا تو می مانی؟
+8: wie lange bleibst du?
+چه مدت تو می مانی ؟
+9: ich werde bleiben
+من خواهم ماند
+10: wie lange werden Sie bleiben?
+چه مدت شما خواهید ماند؟
+11: Sie werden nicht hier bleiben
+شما اینجا نخواهید ماند
+12: du wirst bleiben
+تو خواهی ماند
+13: ich weiß nicht, wie lange er hier bleiben wird
+من نمی دانم چه مدت او اینجا خواهد ماند
+14: ich weiß nicht, wie lange du hier bleiben wirst
+من نمی دانم چه مدت تو اینجا خواهی ماند
+15: ich werde es Ihnen später sagen
+من آن را به شما بعدأ خواهم گفت
+16: ich werde es dir später sagen
+من آن را به تو بعدا خواهم گفت
+17: Um wie viel Uhr werden Sie hier sein?
+در چه ساعتی شما اینجا خواهید بود؟
+18: wo wollen Sie auf mich warten?
+کجا می خواهید شما منتظر من باشید؟
+19: wo willst du auf mich warten?
+کجا می خواهی منتظر من باشی؟
+20: er wird es nicht finden können
+او آن را نخواهد توانست پیدا کند
+21: er wird es Ihnen nicht sagen können, weil er es nicht weiß
+او آن را به شما نخواهد توانست بگوید، چون او آن را نمی داند
+22: ich weiß, er weiß, du weißt
+من می دانم ، او می داند ، تو می دانی
+23: er würde es nie tun können
+او آن را هرگز نتواند انجام دهد
+24: nie
+هرگز
+25: ich werde die Zeitung lesen
+من روزنامه خواهم خواند
+26: können Sie mit mir kommen?
+می توانید شما با من بیایید؟
+27: könntest du mit mir kommen?
+می توانی تو با من بیایی؟
+28: er hat, du hast
+او دارد، تو داری
+29: Sie haben Recht
+شما حق دارید
+30: rechts
+راست ( سمت راست )
+31: du hast Recht
+تو حق داری
+32: warum kaufen Sie es nicht?
+چرا آن را نمی خرید؟
+33: warum wollen Sie es nicht kaufen?
+چرا نمی خواهید آن را بخرید؟
+34: wo werden Sie es kaufen?
+کجا شما آن را خواهید خرید؟
+35: warum werden Sie es nicht kaufen?
+چرا شما آن را نخواهید خرید ؟
+36: ich habe gekauft
+من خریدم
+37: ich habe es nicht gekauft
+من آن را نخریدم
+38: noch
+هنوز
+39: noch etwas
+هنوز یه چیزی ( یه خورده بیشتر )
+40: ich will noch etwas
+من یکم بیشتر می خواهم
+41: ich will noch etwas essen
+من یکم بیشتر می خواهم بخورم
+42: noch ein wenig
+هنوز یک کم
+43: noch ein bisschen
+هنوز یک خورده
+44: noch nicht
+هنوز نه
+45: er hat es noch nicht gekauft
+او آن را هنوز نخریده است
+46: warum haben Sie es noch nicht gekauft
+چرا شما آن را هنوز نخریده اید؟
+47: warum hast du es noch nicht gekauft?
+چرا تو هنوز آن را نخریده ای؟
+48: machen
+ساختن / درست کردن / انجام دادن
+49: er hat es gemacht
+او آن را ساخت/ انجام داد
+50: lachen
+خندیدن
+51: er hat gelacht
+او خندید
+52: kaufen
+خریدن
+53: verkaufen
+فروختن
+54: weggehen
+دور رفتن
+55: ich gehe weg
+من دور میروم
+56: zurückkommen
+باز گشتن
+57: der Rücken
+پشت
+58: mein Rücken
+پشت من
+59: er kommt bald zurück
+او به زودی باز می گردد
+60: er wird bald zurückkommen
+او به زودی باز خواهد گشت
+61: ich verkaufe es
+من آن را می فروشم
+62: (kaufen – gekauft) (verkaufen- verkauft)
+جدا نشدنی (جدا شدنی) (einkaufen – eingekauft)
+63: ich habe es verkauft
+من آن را فروختم
+64: er hat es verkauft
+او آن را فروخت
+65: er hat es noch nicht verkauft
+او آن را هنوز نفروخته است
+66: wir haben es verkauft
+ما آن را فروختیم
+67: Sie haben es verkauft
+شما آن را فروختید
+68: du hast es verkauft
+تو آن را فروختی
+69: warum hast du es verkauft?
+چرا تو آن را فروختی؟
+70: warum haben Sie es nicht verkauft?
+چرا شما آن را نفروختی؟
+71: warum haben Sie es noch nicht verkauft?
+چرا شما هنوز آن را نفروختی ؟
+72: warum hast du es noch nicht verkauft?
+چرا تو هنوز آن را نفروخته ای؟
+73: alles ist verkauft
+همه چیز فروخته شده است
+74: es ist noch nicht verkauft
+آن هنوز فروخته نشده است
+75: er hat mir gesagt
+او به من گفت
+76: warum haben Sie mir nicht gesagt?
+چرا شما به من نگفتید ؟
+77: wir haben es Ihnen gesagt
+ما آن را به شما گفتیم
+78: wir haben es dir gesagt
+ما آن را به تو گفتیم
+79: er hat mir gesagt, dass er es nicht tun würde
+او به من گفت، که او آن را انجام ندهد
+80: er hat mir nicht gesagt, dass er es tun wird
+او به من نگفت، که او آن را انجام خواهد داد
+81: reparieren
+تعمیر کردن
+82: ich repariere es
+من تعمیر می کنم آن را
+83: er repariert es
+او آن را تعمیر می کند
+84: ich habe es repariert
+من آن را تعمیر کردم
+85: organisieren
+سازمان دهی کردن
+86: er hat es organisiert
+او آن را سازمان دهی کرد
+87: spezialisieren
+اختصاصی کردن
+88: kontrollieren
+کنترل کردن
+89: es hat es kontrolliert
+او آن را کنترل کرد
+90: es ist sehr gut organisiert
+آن خیلی خوب سازماندهی شده است
+91: alles ist sehr gut organisiert
+همه چیز خیلی خوب سازمان دهی شده
+92: alles ist verkauft
+همه چیز فروخته شده است
+93: ich habe es verkauft
+من آن را فروختم
+94: wir hatten
+ما داشتیم
+95: sie hatten
+آن ها داشتند
+96: er hatte
+او داشت
+97: du hattest
+تو داشتی
+98: ich hatte es
+من آن را داشتم
+99: ich hatte es nicht
+من آن را نداشتم
+100: ich hatte es nicht gekauft
+من آن را نخریده بودم
+101: denn es war sehr teuer
+چون آن خیلی گران بود
+102: weil es sehr teuer war
+چون آن خیلی گران بود
+103: war- waren
+بودن
+104: wir waren sehr beschäftigt
+ما خیلی مشغول بودیم
+105: wo waren Sie gestern Abend?
+کجا بودید شما دیروز عصر؟
+106: wo warst du gestern Abend?
+کجا بودی تو دیروز عصر؟
+107: er war da
+او آنجا بود
+108: er war nicht da
+او آنجا نبود
+109: wo warst du?
+کجا بودی تو؟
+110: wo waren Sie?
+کجا بودید؟
+111: wahr
+درست
+112: die Wahrheit
+حقیقت
+113: es war wahr
+آن درست بود
+114: wirklich
+واقعا
+115: es war wirklich wahr
+آن واقعا درست بود
+116: es ist wirklich so
+آن واقعا آن گونه است
+117: es ist wirklich wahr
+آن واقعا درست است
+118: glauben
+باور داشتن
+119: denken
+فکر کردن
+120: ich glaube nicht, dass er mit uns kommen wird
+من باور ندارم، که او با ما خواهد آمد
+121: sehen
+دیدن
+122: ich habe es gesehen
+من آن را دیدم
+123: ich hatte es gesehen
+من آن را دیده بودم
+124: ich habe auf Sie gewartet
+من منتظر شما بودم
+125: wie lange haben Sie gewartet?
+چه مدت شما منتظر بودید؟
+126: er hat auf mich gewartet
+او منتظر من بود
+127: wollen Sie auf mich warten?
+می خواهید شما منتظر من باشید؟
+128: warum willst du es nicht tun?
+چرا تو آن را نمیخواهی انجام دهی ؟
+129: können Sie es tun?
+می توانید شما آن را انجام دهید ؟
+130: können Sie mir sagen?
+می توانید شما به من بگویید ؟
+131: suchen
+جست و جو کردن
+132: ich habe es gesucht, aber ich konnte es nicht finden
+من آن را جست و جو کردم، اما من ن توانستم آن را پیدا کنم

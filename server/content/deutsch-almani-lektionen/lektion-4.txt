@@ -1,0 +1,181 @@
+COURSE: deutsch-almani-lektion-4
+TITLE: Lektion 4
+LEVEL: A1
+LANG: de -> fa
+
+PAGE 1
+CHAPTER: Lektion 4
+1: ich möchte
+من دوست دارم ( می خواهم )
+2: ich möchte es tun
+من دوست دارم آن را انجام دهم
+3: ich möchte es sehen
+من دوست دارم آن را ببینم
+4: ich möchte Sie sehen
+من دوست دارم شما را ببینم
+5: ich möchte es haben
+من دوست دارم آن را داشته باشم
+6: uns
+ما
+7: er möchte mit uns kommen
+او دوست دارد با ما بیاید
+8: er kann
+او می تواند
+9: sie kann
+او می تواند
+10: es kann
+آن می تواند
+11: es kann sein
+آن می تواند باش د
+12: möglich
+ممکن
+13: es ist nicht möglich
+آن ممکن نیست
+14: so
+آنطور / به آنصورت ( خیلی )
+15: es ist nicht so möglich
+آن به آن صورت ممکن نیست
+16: unmöglich
+ناممکن
+17: ganz
+کامأل / تمامأ
+18: es ist ganz unmöglich
+آن کامأل ناممکن است
+19: gern
+مشتاقانه / با میل
+20: ich tue es gern
+من آن را مشتاقانه انجام می دهم / من دوست دارم آن را انجام دهم
+21: ich tue es sehr gern
+من آن را خیلی دوست دارم انجام دهم
+22: ich sehe es gern
+من دوست دارم آن را ببینم
+23: ich gehe dorthin gern
+من دوست دارم به آنجا بروم
+24: ich werde gern mit Ihnen dorthin gehen
+من دوست خواهم داشت با شما به آنجا بروم
+25: wollen Sie mit mir kommen
+می خواهید شما با من بیایید
+26: Sehr gern
+خیلی مشتاقانه ، با کمال میل
+27: danke
+ممنون
+28: danke sehr, danke schön
+خیلی ممنون
+29: besten Dank
+بهترین تشکر ها
+30: ich möchte es haben
+من دوست دارم آن را داشته باشم
+31: wissen
+دانستن
+32: wissen Sie?
+می دانید شما؟
+33: ich weiß
+من می دانم
+34: er weiß
+او می داند
+35: ich weiß nicht, wo es ist
+من نمی دانم کجا است آن
+36: wollen Sie mir sagen?
+می خواهید شما به من بگویید؟
+37: Können Sie mir sagen?
+می توانید شما به من بگویید؟
+38: wollen Sie mir sagen, wo es ist
+می خواهید شما به من بگویید کجا است آن؟
+39: denn ich kann es nicht finden
+چون من نمی توانم آن را پیدا کنم
+40: müde
+خسته
+41: ich bin müde
+من خسته هستم
+42: das Haus
+خانه
+43: zu Hause
+در خانه
+44: nach Hause
+به سمت خانه
+45: ich gehe nach Hause
+من می روم به سمت خانه
+46: ich werde zu Hause bleiben
+من در خانه خواهم ماند
+47: ich bin sehr müde und ich gehe jetzt nach Hause und ich werde heute Abend zu Hause bleiben
+من خیلی خسته هستم و من میروم به سمت خانه االن و من در خانه امروز عصر خواهم ماند
+48: ich werde heute Abend zu Hause bleiben, denn ich bin sehr müde
+من در خانه امروز عصر خواهم ماند چون من خیل ی خسته هستم
+49: weil
+چون
+50: انتهای جمله قرار می گیرد.
+در جمالت بعد از weil فعل اول به صورت صرف شده در
+51: Weil ich sehr müde bin
+چون من خیلی خسته هستم
+52: ich verstehe Sie sehr gut
+من می فهمم شما را خیلی خوب
+53: ich verstehe Sie nicht sehr gut
+من شما را خیلی خوب نمی فهمم
+54: er versteht
+او می فهمد
+55: ich kann es nicht verstehen
+من نمی توانم آن را بفهمم
+56: ich verstehe Sie
+من شما را می فهمم
+57: ich verstehe Sie nicht
+من شما را نمی فهمم
+58: ich kann Sie nicht verstehen
+من نمی توانم شما را بفهمم
+59: ich weiß nicht, was Sie sagen
+من نمی دانم چه چیزی شما می گویید
+60: denn ich verstehe Sie nicht
+چون من نمی فهمم شما را
+61: weil ich Sie nicht verstehe
+چون من شما را نمی فهمم
+62: denn ich kann Sie nicht verstehen
+چون من نمی توانم شما را بفهمم
+63: weil ich Sie nicht verstehen kann
+چون من شما را نمی توانم بفهمم
+64: ich weiß nicht, was Sie sagen, weil ich Sie nicht verstehen kann
+م ن نمی دانم چه چیزی شما می گویید، چون من شما را نمی توانم بفهمم
+65: ich werde zu Hause bleiben, weil ich sehr müde bin
+من در خانه خواهم ماند، چون من خیلی خسته هستم
+66: ich kann es nicht tun, weil ich heute sehr beschäftigt bin
+من نمی توانم آن را انجام دهم، چون من امروز خیلی مشغول هستم
+67: ich kann es nicht tun, weil ich sehr beschäftigt sein werde
+من نمی توانم آن را انجام دهم، چون من خیلی مشغول خواهم بود
+68: weil ich mit Ihnen heute Abend nicht kommen kann
+چون من با شما امروز عصر نمی توانم بیاییم
+69: ich kann Ihnen nicht sagen
+من نمی توانم به شما بگوییم
+70: ich kann es Ihnen nicht sagen
+من نمی توانم آن را به شما بگوییم
+71: ich kann es Ihnen jetzt nicht sagen
+من نمی توانم آن را االن به شما بگوییم
+72: weil ich es nicht weiß
+چون من آن را نمی دانم
+73: kosten
+هزینه داشتن
+74: es kostet
+آن هزینه دارد
+75: ich will wissen, wieviel es kostet
+من می خواهم بدانم، هزینه آن چقدر می شود
+76: ich möchte wissen, wieviel es kostet
+من می خواهم بدانم ، هزینه آن چقدر می شود
+77: wollen Sie mir sagen, wieviel es kostet
+می خواهید شما به من بگویید هزینه آن قدر می ش ود؟
+78: weil ich es brauche
+زیرا من آن را نیاز دارم
+79: weil ich es haben will
+زیرا من می خواهم آن را داشته باشم
+80: weil ich es haben muss
+زیرا من باید آن را داشته باشم
+81: wann können Sie es mir bringen
+چه زمانی می توانید شما آن را به من بیاورید؟
+82: ich will wissen, um wie viel Uhr ich es haben kann
+من می خواهم بدانم در چه ساعتی من آن را می توانم داشته باشم
+83: wann kann ich es haben?
+چه زمانی من می توانم آن را داشته باشم ؟
+84: können Sie mir sagen, um wir viel Uhr ich es haben kann
+می توانید شما به من بگویید، در چه ساعتی من آن را می توانم داشته باشم
+85: wollen Sie mir sagen, wann ich es haben kann
+می خواهید شما به م ن بگویید ، چه زمانی من آن را می توانم داشته باشم؟
+86: es tut mir leid, aber ich kann jetzt Ihnen nicht sagen, warum ich es heute machen muss
+متاسفم، اما من نمی توانم اکنون به شما بگویم، چرا من آن را امروز باید انجام دهم
+87: warum ich es heute haben muss
+چرا من آن را امروز باید داشته باشم

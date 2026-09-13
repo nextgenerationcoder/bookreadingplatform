@@ -1,0 +1,153 @@
+async function extractError(res) {
+  try {
+    const body = await res.json();
+    return body?.error || `${res.status} ${res.statusText}`;
+  } catch {
+    return `${res.status} ${res.statusText}`;
+  }
+}
+
+// credentials: 'include' sends/accepts the session cookie so login works the
+// same in dev (client on :5173, API on :4000) and in production (same origin).
+async function get(url) {
+  const res = await fetch(url, { credentials: 'include' });
+  if (!res.ok) throw new Error(await extractError(res));
+  return res.json();
+}
+
+async function post(url, body) {
+  const res = await fetch(url, {
+    method: 'POST',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) throw new Error(await extractError(res));
+  return res.json();
+}
+
+async function patch(url, body) {
+  const res = await fetch(url, {
+    method: 'PATCH',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) throw new Error(await extractError(res));
+  return res.json();
+}
+
+async function del(url) {
+  const res = await fetch(url, { method: 'DELETE', credentials: 'include' });
+  if (!res.ok) throw new Error(await extractError(res));
+  return res.json();
+}
+
+async function postForm(url, formData) {
+  const res = await fetch(url, { method: 'POST', credentials: 'include', body: formData });
+  if (!res.ok) throw new Error(await extractError(res));
+  return res.json();
+}
+
+export const api = {
+  signup: (email, password) => post('/api/auth/signup', { email, password }),
+  login: (email, password) => post('/api/auth/login', { email, password }),
+  logout: () => post('/api/auth/logout', {}),
+  me: () => get('/api/auth/me'),
+
+  listBooks: () => get('/api/books'),
+  getBook: (bookId) => get(`/api/books/${bookId}`),
+  importBook: (text) => post('/api/books/import', { text }),
+  appendToBook: (bookId, text) => post(`/api/books/${bookId}/append`, { text }),
+  renameBook: (bookId, title) => patch(`/api/books/${bookId}`, { title }),
+  deleteBook: (bookId) => del(`/api/books/${bookId}`),
+  deletePage: (bookId, pageNumber) => del(`/api/books/${bookId}/pages/${pageNumber}`),
+  analyzePages: (files, startPage, chapter) => {
+    const fd = new FormData();
+    for (const file of files) fd.append('images', file);
+    fd.append('startPage', startPage);
+    fd.append('chapter', chapter || '');
+    return postForm('/api/ocr/batch', fd);
+  },
+  // Kicks off background PDF processing and returns { jobId, bookId }
+  // immediately - poll getPdfImportStatus(jobId) for progress. Pages are
+  // saved to the book as they complete, so it can be read while still
+  // importing.
+  importBookFromPdf: (file, bookId, title, startPage, chapter) => {
+    const fd = new FormData();
+    fd.append('pdf', file);
+    fd.append('bookId', bookId);
+    fd.append('title', title || '');
+    fd.append('startPage', startPage);
+    fd.append('chapter', chapter || '');
+    return postForm('/api/books/import-pdf', fd);
+  },
+  getPdfImportStatus: (jobId) => get(`/api/books/import-pdf/${jobId}/status`),
+  cancelPdfImport: (jobId) => post(`/api/books/import-pdf/${jobId}/cancel`, {}),
+  getActivePdfImports: () => get('/api/books/import-pdf/active'),
+  getPdfImportHistory: () => get('/api/books/import-pdf/history'),
+  getCourseLevels: () => get('/api/courses/levels'),
+  listCourses: (level) => get(`/api/courses${level ? `?level=${encodeURIComponent(level)}` : ''}`),
+  getCourse: (courseId) => get(`/api/courses/${courseId}`),
+  importCourse: (text) => post('/api/courses/import', { text }),
+  appendToCourse: (courseId, text) => post(`/api/courses/${courseId}/append`, { text }),
+  renameCourse: (courseId, title) => patch(`/api/courses/${courseId}`, { title }),
+  deleteCoursePage: (courseId, pageNumber) => del(`/api/courses/${courseId}/pages/${pageNumber}`),
+
+  getDictionary: () => get('/api/dictionary'),
+  importDictionary: (text) => post('/api/dictionary/import', { text }),
+  lookupWord: (word) => get(`/api/dictionary/lookup/${encodeURIComponent(word)}`),
+  getProgress: (bookId) => get(`/api/progress/${bookId}`),
+  setProgress: (bookId, page) => post(`/api/progress/${bookId}`, { page }),
+  recordWordClick: (bookId, page, word) => post('/api/word-clicks', { bookId, page, word }),
+  getWordClicks: () => get('/api/word-clicks'),
+
+  getLlmSettings: () => get('/api/settings/llm'),
+  saveLlmSettings: (provider, apiKey) => post('/api/settings/llm', { provider, apiKey }),
+  clearLlmSettings: () => del('/api/settings/llm'),
+
+  getVisionSettings: () => get('/api/settings/vision'),
+  saveVisionSettings: (provider, apiKey) => post('/api/settings/vision', { provider, apiKey }),
+  clearVisionSettings: () => del('/api/settings/vision'),
+
+  getAsrSettings: () => get('/api/settings/asr'),
+  saveAsrSettings: (provider, apiKey) => post('/api/settings/asr', { provider, apiKey }),
+  clearAsrSettings: () => del('/api/settings/asr'),
+
+  getVoices: () => get('/api/tts/voices'),
+  getVoiceSettings: () => get('/api/settings/voice'),
+  saveVoiceSettings: (voiceId, speechRate) => post('/api/settings/voice', { voiceId, speechRate }),
+  synthesize: (text) => post('/api/tts/synthesize', { text }),
+
+  // wavBlob: a Blob already converted to WAV (see lessonEngine/audioToWav.js).
+  // hotwords: already-taught words to bias recognition toward - see asr.js.
+  transcribeAudio: (wavBlob, { hotwords } = {}) => {
+    const fd = new FormData();
+    fd.append('audio', wavBlob, 'audio.wav');
+    for (const word of hotwords || []) fd.append('hotwords', word);
+    return postForm('/api/asr/transcribe', fd);
+  },
+
+  listInterviewLessons: () => get('/api/interview-lessons'),
+  getInterviewLesson: (courseId) => get(`/api/interview-lessons/${encodeURIComponent(courseId)}`),
+  importInterviewLesson: (text) => post('/api/interview-lessons/import', { text }),
+  deleteInterviewLesson: (courseId) => del(`/api/interview-lessons/${encodeURIComponent(courseId)}`),
+
+  // words: [{german, persian}] - every word a lesson step introduced, sent
+  // together in one call per answer-check. See routes/vocab.js.
+  recordVocab: (words, correct) => post('/api/vocab/record', { words, correct }),
+  getVocabProgress: () => get('/api/vocab'),
+
+  // toLearn/passive: [{german, persian}] - every word on a finished reading
+  // page, split by whether it was clicked (see reader.js's "Finish Page").
+  recordReadingPage: (toLearn, passive) => post('/api/vocab/reading-page', { toLearn, passive }),
+
+  // words: string[] - returns { word: rank } for whichever of these words
+  // are in the top 200k frequency list (see server/data/word-frequency.seed.json).
+  getWordFrequency: (words) => post('/api/word-frequency/lookup', { words }),
+
+  // Translates pasted/shared text into German + Persian and saves it as a
+  // readable book - see server/src/urlImport.js. Requires a Translation API
+  // key configured in Settings (same one PDF import uses).
+  importPastedText: (text, title) => post('/api/import-url', { text, title }),
+};

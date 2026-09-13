@@ -1,0 +1,255 @@
+COURSE: deutsch-almani-lektion-8
+TITLE: Lektion 8
+LEVEL: A1
+LANG: de -> fa
+
+PAGE 1
+CHAPTER: Lektion 8
+1: gehen
+رفتن
+2: weg
+دور
+3: der Weg
+راه
+4: weggehen
+دور رفتن
+5: wegfahren
+دور رفتن ( وسیله )
+6: ich werde bald weggehen
+من به زودی دور خواهم شد
+7: aber ich würde ohne Sie weggehen
+اما من بدون شما دور نروم nicht
+8: aus
+بیرون
+9: ausgehen
+بیرون رفتن
+10: ich möchte heute Abend ausgehen
+من دوست دارم امروز عصر بیرون بروم
+11: wir möchten heute Abend ausgehen
+ما دوست داریم امروز عصر بیرون بروی م
+12: der Ausgang
+خروجی
+13: die Ausfahrt
+خروجی (اتوبان )
+14: der Eingang
+ورودی
+15: die Einfahrt
+ورودی ( اتوبان )
+16: abfahren
+راهی شدن / عازم شدن / رخت بر بستن
+17: durchfahren
+از میان جایی عبور کردن
+18: durchgehen
+از میان جایی عبور کردن
+19: ich fahre weg
+من دور میروم
+20: wieder
+دوباره
+21: ich werde es wieder tun
+من آن را دوباره انجام خواهم داد
+22: nie wieder
+هرگز دوباره ( معنای منفی نیز به فعل می بخشد )
+23: ich werde es nie wieder tun
+من آن را هرگز دوباره انجام نخواهم داد
+24: holen
+آوردن / گرفتن / بردن
+25: abholen
+برداشتن ( یک نفر یا چیزی را از جایی برداشتن )
+26: ich werde es abholen
+من آن را بر خواهم داشت
+27: ich werde Sie abholen
+من شما را بر خواهم داشت
+28: ich hole es ab
+من آن را برمی دارم
+29: wiederholen (جدا شدنی)
+دوباره آوردن
+30: weiderholen (جدا نشدنی)
+تکرار کردن
+31: ich weiderhole
+من تکرار میکنم
+32: bekommen
+دریافت کردن
+33: ich bekomme es
+من آن را دریافت می کنم
+34: ankommen
+رسیدن
+35: ich komme an
+من می رسم
+36: ich komme morgen an
+من فردا می رسم
+37: morgen früh
+فردا صبح
+38: früh
+زود / بزودی / اوایل
+39: ich gehe heute Abend aus
+من امروز عصر بیرون میروم
+40: nach
+به سمت / بعد از
+41: der Mittag – der Nachmittag- heute Nachmittag
+وسط ظهر / بعد از ظهر / امروز بعد از ظهر
+42: wir fahren nach Frankfurt
+ما به سمت فرانکفورت می رویم
+43: vor
+قبل از
+44: der Vormittag- morgen Vormittag
+قبل از ظهر / فردا قبل از ظهر
+45: übermorgen
+پس فردا
+46: ich gehe hin, ich fahre hin
+من میروم به سمت
+47: Kommen Sie her
+بیایید به این سمت
+48: kommen Sie hier her
+بیایید به سمت اینجا
+49: herein
+به سمت داخل
+50: hereinkommen
+به سمت داخل آمدن ( داخل شدن )
+51: wollen Sie hereinkommen?
+می خواهید داخل شوید؟
+52: heraus, raus
+به سمت بیرون
+53: gehen Sie aus, raus
+بیرون بروید / .... بیرون
+54: legen
+قرار دادن ( به صورت خوابیده )
+55: liegen
+قرار داشتن
+56: stellen
+قرار دادن ( به صورت ایستاده )
+57: anlegen
+روی چیزی قرار دادن
+58: einlegen
+داخل چیزی قرار دادن
+59: ich lege es über
+من آن را باال قرار می دهم
+60: überlegen
+باال قرار دادن / فکر کردن
+61: ich werde es überlegen
+من در مورد آن فکر خواهم کرد
+62: unterkommen
+پایین آمدن
+63: kommen Sie runter
+بیایید پایین
+64: kommen Sie rein
+بیایید داخل
+65: ziehen
+کشیدن
+66: der Zug
+قطار / ترن
+67: sich anziehen
+لباس پوشیدن
+68: ich werde mich anziehen
+من لباس خواهم پوشید
+69: der Anzug
+لباس (بیشتر به کت و شلوار)
+70: ich ziehe mich an
+من میپوشم لباس
+71: ich muss mich anziehen
+من باید لباس بپوشم
+72: er zieht sich an
+او لباس می پوشد
+73: ausziehen
+اسباب کشی کردن از، نقل مکان کردن از
+74: der Auszug
+عزیمت از
+75: der Einzug
+عزیمت به
+76: umziehen
+اسباب کشی کردن، نقل مکان کردن
+77: schleißen
+بستن / تمام کردن
+78: der Schlüssel
+کلید
+79: mit dem Schlüssel schließen
+با کلید بستن
+80: die Tür schließen
+در را بستن
+81: die Tür zuschließen
+در را قفل کردن
+82: zumachen
+بستن
+83: aufmachen
+باز کردن
+84: das Fenster
+پنجره
+85: ich mache das Fenster auf
+من پنجره را باز میکنم
+86: ich mache die Tür zu
+من در را می بندم
+87: das Schloß
+قفل / قلعه
+88: geschloßen
+بسته / قفل شده
+89: die Tür ist geschloßen
+در بسته است
+90: alles ist heute geschloßen
+همه چیز امروز بسته است
+91: fangen
+گرفتن
+92: anfangen
+شروع کردن
+93: wir werden bald anfangen
+ما به زودی شروع خواهیم کرد
+94: wir fangen bald an
+ما به زودی شروع می کنیم
+95: wann fangen Sie an?
+چه زمانی شما شروع می کنید؟
+96: werden Sie mich später anrufen?
+شما بعدا با من ( من را ) تماس خواهید گرفت؟
+97: ich rufe Sie später an
+من بعدأ با شما تماس میگیرم
+98: ich werde Sie später anrufen
+من با شما بعدأ تماس خواهم گرفت
+99: ... um ... zu
+به منظور ...
+100: ich rufe Sie später an, um Sie zu fragen, ob Sie heute Abend mit uns kommen können
+من بعدأ با شما تماس میگیرم، به منظور اینکه از شما بپرسم ، که آیا شما با ما امروز عصر می توانید بیایید؟
+101: ich werde Sie sehen
+من شما را خواهم دید
+102: hoffen
+امید داشتن
+103: ich hoffe, dass ich es tun kann
+من امید دارم که من آن را بتوانم انجام دهم
+104: ich hoffe, dass er morgen ankommen wird
+امیدوارم، که او فردا خواهد رسید
+105: denken
+فکر کردن
+106: glauben
+باور داشتن، گمان داشتن
+107: ich glaube, dass er bald hier sein wird
+من بر این باورم که او به زودی اینجا خواهد بود
+108: ich hoffe, dass Sie heute Abend mit uns kommen können
+ا میدوارم که شما امروز عصر با ما بتوانید بیایید
+109: leicht
+آسان / سبک
+110: schwer
+سخت / سنگین
+111: es ist sehr leicht
+آن خیلی آسان است
+112: es ist sehr interessant
+آن خیلی جالب است
+113: bequem
+راحت
+114: es ist sehr bequem hier
+اینجا خیلی راحت است
+115: nett
+زیبا / دلنشین / خوشایند
+116: es ist sehr nett
+آن خیلی زیبا است
+117: gemütlich
+خوشایند / دلباز / دنج و راحت
+118: es ist sehr gemütlich hier
+اینجا خیلی دلباز است
+119: ich will ein Glas wein
+من یک لیوان شراب میخواهم
+120: ich möchte ein Glas Rotwein
+من یک لیوان شراب قرمز دوست دارم
+121: ich muss ein Glas Weißwein haben
+من باید یک لیوان شراب سفید داشته باشم
+122: Entschuldigung
+ببخشید
+123: entschuldigen Sie bitte, Verzeihung bitte
+ببخشید
+124: darf ich Sie fragen, wo ich es finden kann
+اجازه دارم ( میشه ) من از شما بپرسم، کجا می توانم آن را پیدا کنم

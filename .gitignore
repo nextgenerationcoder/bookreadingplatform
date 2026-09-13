@@ -1,0 +1,10 @@
+node_modules/
+dist/
+*.log
+.DS_Store
+server/data/app.db*
+server/data/.encryption-key
+tools/word-frequency/.venv/
+tools/word-frequency/data/
+tools/word-frequency/__pycache__/
+tools/word-frequency/run.log
