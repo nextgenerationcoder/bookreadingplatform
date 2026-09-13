@@ -375,7 +375,7 @@ export async function renderReader(host, bookId, kind = 'book') {
         applyWordColor(span, key);
         span.dataset.pageIndex = wordIndexCounter++;
         span.dataset.word = effectiveWord;
-        span.dataset.gloss = compound ? compound.gloss : glossFor(token);
+        span.dataset.gloss = compound ? (compound.gloss || NO_GLOSS) : glossFor(token);
         span.dataset.page = pageNum;
         span.textContent = token;
         span.addEventListener('click', onWordClick);

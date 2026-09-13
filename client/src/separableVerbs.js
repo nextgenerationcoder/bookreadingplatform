@@ -8,12 +8,28 @@
 // oder, aber, sondern, denn) — sentences can run several clauses together
 // ("... und ...", "..., ...") and each is checked independently.
 //
-// A candidate is only confirmed — never guessed — when the resulting
-// combined infinitive (found via the finite verb's "• infinitive" dictionary
-// hint, or the verb token itself concatenated with the prefix) exists as its
-// own dictionary entry. That keeps false positives out: as more separable
-// verbs get curated dictionary entries, more get recognized automatically —
-// nothing here is hardcoded to a specific sentence or book.
+// Purely mechanical, not dictionary-gated: German main-clause word order
+// (V2 - the finite verb sits early, near the subject) plus two cheap,
+// reliable signals are what actually confirm a match, not whether the
+// resulting compound happens to already be a dictionary word:
+//   - capitalization: every German noun is capitalized wherever it appears,
+//     verbs never are (except literally the first word of a sentence) - so
+//     excluding capitalized words from verb-candidacy rules out nouns
+//     without needing part-of-speech data.
+//   - conjugation shape: a lowercase, non-stopword word is only treated as
+//     the clause's finite verb if it's a recognized irregular form (see the
+//     PRESENT_FORMS/PRETERITE_FORMS tables) or matches a regular weak-verb
+//     present-tense ending (-e/-st/-t/-est/-et), from which the infinitive
+//     is reconstructed directly (stem + "en").
+// This used to additionally require the combined infinitive to already be
+// a dictionary word before accepting a match - reliable, but meant
+// detection quality depended entirely on how much dictionary coverage a
+// particular book happened to have built up, which is exactly why this
+// worked well in heavily-tested book content and poorly in freshly
+// translated/shared text. Word order + conjugation shape alone are enough
+// to confirm a split verb; the dictionary is only consulted afterward, for
+// a gloss to show (falls back to a live lookup - see reader.js - if the
+// resulting infinitive isn't already known).
 
 export const SEPARABLE_PREFIXES = [
   'ab', 'an', 'auf', 'aus', 'bei', 'da', 'dar', 'ein', 'empor', 'entgegen',
@@ -29,9 +45,8 @@ const SEPARABLE_PREFIX_SET = new Set(SEPARABLE_PREFIXES.map((p) => p.toLowerCase
 
 // Closed-class words that must never be guessed as the finite verb of a
 // separable-verb pair (articles, pronouns, prepositions, conjunctions,
-// common particles) — without this, short coincidences like "der" + "an"
-// happening to spell an unrelated real dictionary word ("ander") would be
-// misread as a compound verb.
+// common particles) — without this, a short function word that happens to
+// also match a conjugation-ending pattern could be misread as a verb.
 const STOPWORDS = new Set([
   'der', 'die', 'das', 'den', 'dem', 'des', 'ein', 'eine', 'einen', 'einem', 'einer', 'eines',
   'kein', 'keine', 'keinen', 'keinem', 'keiner', 'keines',
@@ -55,15 +70,11 @@ function normalize(word) {
 }
 
 // du-/er-forms of common strong (stem-vowel-changing) verbs, mapped back to
-// their infinitive - e.g. "trägst" -> "tragen", so "trägst ... bei"
-// resolves to "beitragen" even when "trägst" has no hand-curated " • infinitive"
-// dictionary hint (most dictionary entries come from the large wikidict.json
-// bulk import, which doesn't include that annotation - only the ~700
-// hand-curated entries in dictionary.seed.json do). Without this, a
-// separable verb built on a stem-changing verb only gets recognized by
-// coincidence; regular (weak) verbs don't need this since their du-/er-forms
-// already resemble the infinitive closely enough.
-const IRREGULAR_PRESENT_FORMS = {
+// their infinitive - e.g. "trägst" -> "tragen". Needed because these don't
+// fit the regular weak-verb ending pattern below at all (the stem vowel
+// itself changes), so there's no mechanical way to reconstruct them -
+// they just have to be listed.
+const PRESENT_FORMS = {
   trägst: 'tragen', trägt: 'tragen',
   fährst: 'fahren', fährt: 'fahren',
   schläfst: 'schlafen', schläft: 'schlafen',
@@ -97,39 +108,101 @@ const IRREGULAR_PRESENT_FORMS = {
   befiehlst: 'befehlen', befiehlt: 'befehlen',
   stiehlst: 'stehlen', stiehlt: 'stehlen',
   wirst: 'werden', wird: 'werden',
+  weist: 'weisen', reist: 'reisen', heizt: 'heizen', reizt: 'reizen',
   lädst: 'laden', lädt: 'laden',
   stößt: 'stoßen',
 };
 
-function hintsFor(token, dictionary) {
-  const key = normalize(token);
-  const hints = [];
-  if (IRREGULAR_PRESENT_FORMS[key]) hints.push(IRREGULAR_PRESENT_FORMS[key]);
+// Simple-past (Präteritum) forms of common strong verbs - these are often
+// short, irregular, monosyllabic forms (ging, kam, nahm, gab...) that don't
+// end in any conjugation pattern at all, so - like the present-tense table
+// above - they can only be recognized by listing them, not derived. Strong
+// verbs' 1st/3rd-person preterite forms are identical (no ending), which is
+// why each entry here covers both "ich"/"er" at once.
+const PRETERITE_FORMS = {
+  ging: 'gehen', kam: 'kommen', nahm: 'nehmen', gab: 'geben', sah: 'sehen',
+  sprach: 'sprechen', fand: 'finden', half: 'helfen', warf: 'werfen', traf: 'treffen',
+  blieb: 'bleiben', schrieb: 'schreiben', trug: 'tragen', fuhr: 'fahren', lief: 'laufen',
+  hielt: 'halten', fiel: 'fallen', schlug: 'schlagen', wusch: 'waschen', fing: 'fangen',
+  las: 'lesen', aß: 'essen', vergaß: 'vergessen', maß: 'messen', trat: 'treten',
+  brach: 'brechen', starb: 'sterben', empfahl: 'empfehlen', befahl: 'befehlen', stahl: 'stehlen',
+  wurde: 'werden', lud: 'laden', stieß: 'stoßen', wies: 'weisen', zog: 'ziehen',
+  flog: 'fliegen', bot: 'bieten', bat: 'bitten', litt: 'leiden', schnitt: 'schneiden',
+  saß: 'sitzen', stand: 'stehen', gewann: 'gewinnen', begann: 'beginnen', schwamm: 'schwimmen',
+  sank: 'sinken', sang: 'singen', trank: 'trinken', band: 'binden', fand: 'finden',
+  rief: 'rufen', lief: 'laufen', hieß: 'heißen', ließ: 'lassen', schloss: 'schließen',
+  goss: 'gießen', schoss: 'schießen', verlor: 'verlieren', bog: 'biegen', flog: 'fliegen',
+  stieg: 'steigen', schwieg: 'schweigen',
+};
 
-  const entry = dictionary[key];
-  const idx = entry ? entry.lastIndexOf(' • ') : -1;
-  if (idx !== -1) hints.push(...entry.slice(idx + 3).split('/').map((s) => s.trim()));
+// Regular (weak) verbs need no lookup table at all - their present-tense
+// conjugation is a fully mechanical pattern: strip the personal ending off
+// the stem and add back "en" for the infinitive. Checked longest-suffix
+// first so a stem ending in d/t (which inserts an extra "e": "arbeitest",
+// "arbeitet") isn't mis-stripped by the shorter "-st"/"-t" rule first.
+// Order matters: preterite endings ("-te"/"-test"/"-tet"/"-ten", added onto
+// the stem for regular/weak verbs) are tried before the shorter present-tense
+// endings, so e.g. "teilte" strips to "teil" (-> "teilen") rather than being
+// mistaken for present-tense "teilt" + "e" (-> the wrong "teilten").
+const WEAK_VERB_ENDINGS = ['test', 'tet', 'ten', 'te', 'est', 'et', 'st', 't', 'e'];
+const MIN_STEM_LENGTH = 2;
 
-  return hints;
+function reconstructWeakInfinitive(word) {
+  for (const ending of WEAK_VERB_ENDINGS) {
+    if (word.length > ending.length + MIN_STEM_LENGTH - 1 && word.endsWith(ending)) {
+      return `${word.slice(0, -ending.length)}en`;
+    }
+  }
+  return null;
 }
 
-function resolveCompound(clauseWords, prefix, dictionary) {
+// A lowercase, non-stopword word's most likely infinitive, from whichever
+// source recognizes it - irregular present, irregular preterite, or the
+// regular weak-verb pattern (tried last, since it's a guess rather than a
+// lookup - an irregular form that happens to also fit a weak ending
+// pattern, e.g. none of the tables' entries do, should never reach it, but
+// this keeps the precedence explicit).
+function likelyInfinitive(word) {
+  const key = normalize(word);
+  if (PRESENT_FORMS[key]) return PRESENT_FORMS[key];
+  if (PRETERITE_FORMS[key]) return PRETERITE_FORMS[key];
+  return reconstructWeakInfinitive(key);
+}
+
+function hintFromDictionary(token, dictionary) {
+  const entry = dictionary[normalize(token)];
+  const idx = entry ? entry.lastIndexOf(' • ') : -1;
+  return idx === -1 ? [] : entry.slice(idx + 3).split('/').map((s) => s.trim());
+}
+
+// isSentenceStart: true only for the clause's very first word AND that word
+// is also the whole sentence's first token - the one case a genuine verb is
+// allowed to be capitalized (sentence-initial, or an imperative like "Geh
+// doch mit."). Anywhere else, a capitalized word is a noun and is never a
+// verb candidate - German capitalizes every noun, wherever it falls in the
+// sentence, and never capitalizes a verb mid-sentence.
+function resolveCompound(clauseWords, prefix, dictionary, isSentenceStart) {
   for (const { index, word } of clauseWords) {
+    const capitalized = word[0] !== word[0].toLowerCase();
+    const isFirstWordOfSentence = isSentenceStart && index === clauseWords[0].index;
+    if (capitalized && !isFirstWordOfSentence) continue;
+    if (STOPWORDS.has(normalize(word))) continue;
+
     const candidates = new Set();
-    for (const h of hintsFor(word, dictionary)) {
+    // A dictionary hint (hand-curated " • infinitive" annotation) is tried
+    // first when present - it's an exact, curated answer, not a guess.
+    for (const h of hintFromDictionary(word, dictionary)) {
       const hLower = h.toLowerCase();
-      // A hint like "zurückrollen" starts with both "zu" and "zurück" as
-      // bare substrings; only the longest matching prefix is the real split.
-      const longestMatch = SEPARABLE_PREFIXES.filter((p) => hLower.startsWith(p)).sort(
-        (a, b) => b.length - a.length
-      )[0];
+      const longestMatch = SEPARABLE_PREFIXES.filter((p) => hLower.startsWith(p)).sort((a, b) => b.length - a.length)[0];
       if (longestMatch && longestMatch !== prefix) continue;
       candidates.add(longestMatch ? h : prefix + h);
     }
-    if (!STOPWORDS.has(normalize(word))) candidates.add(prefix + word);
-    for (const candidate of candidates) {
-      const gloss = dictionary[normalize(candidate)];
-      if (gloss) return { index, infinitive: candidate, gloss };
+    const guessed = likelyInfinitive(word);
+    if (guessed) candidates.add(prefix + guessed);
+
+    if (candidates.size) {
+      const infinitive = [...candidates][0];
+      return { index, infinitive, gloss: dictionary[normalize(infinitive)] || null };
     }
   }
   return null;
@@ -138,25 +211,29 @@ function resolveCompound(clauseWords, prefix, dictionary) {
 /**
  * @param {string[]} tokens - the sentence split via TOKEN_RE (words + punctuation, in order)
  * @param {Record<string,string>} dictionary
- * @returns {Array<{verbIndex:number, prefixIndex:number, infinitive:string, gloss:string}>}
+ * @returns {Array<{verbIndex:number, prefixIndex:number, infinitive:string, gloss:string|null}>}
  */
 export function findSeparableCompounds(tokens, dictionary) {
   const results = [];
   let clause = [];
+  const sentenceStartIndex = tokens.findIndex((t) => WORD_RE.test(t));
 
   const flush = () => {
     if (clause.length) {
       const last = clause[clause.length - 1];
       if (SEPARABLE_PREFIX_SET.has(normalize(last.word))) {
         const rest = clause.slice(0, -1);
-        const match = resolveCompound(rest, normalize(last.word), dictionary);
-        if (match) {
-          results.push({
-            verbIndex: match.index,
-            prefixIndex: last.index,
-            infinitive: match.infinitive,
-            gloss: match.gloss,
-          });
+        if (rest.length) {
+          const isSentenceStart = rest[0].index === sentenceStartIndex;
+          const match = resolveCompound(rest, normalize(last.word), dictionary, isSentenceStart);
+          if (match) {
+            results.push({
+              verbIndex: match.index,
+              prefixIndex: last.index,
+              infinitive: match.infinitive,
+              gloss: match.gloss,
+            });
+          }
         }
       }
     }
