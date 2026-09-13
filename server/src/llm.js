@@ -7,18 +7,38 @@
 //   book PDF import pipeline. Any text-chat provider, including DeepSeek,
 //   which has no vision API at all.
 //
-// Both return { sentences: [{ de, fa }] } - structured data, not free text
-// the model wrote in a format we then have to parse. Earlier this asked the
-// model to write its reply as literal "PAGE N / 1: sentence / translation"
-// text and parsed that back apart; it didn't reliably comply (especially on
-// short pages - a title page with just an author's name, a back-cover
-// blurb), and a page whose reply was missing the header line got rejected
-// outright. Now the API itself enforces the shape: Anthropic via forced
-// tool use, OpenAI via Structured Outputs (json_schema, strict), DeepSeek
-// via JSON mode (its OpenAI-compatible API doesn't guarantee a schema, so
-// the parsed result is still validated here). buildPageBlock() (in
-// bookImporter.js) then builds our PAGE/CHAPTER/"N: sentence" text
-// deterministically from that clean data.
+// Both return { sentences: [{ de, fa }], separableVerbs: [...] } -
+// structured data, not free text the model wrote in a format we then have
+// to parse. Earlier this asked the model to write its reply as literal
+// "PAGE N / 1: sentence / translation" text and parsed that back apart; it
+// didn't reliably comply (especially on short pages - a title page with
+// just an author's name, a back-cover blurb), and a page whose reply was
+// missing the header line got rejected outright. Now the API itself
+// enforces the shape: Anthropic via forced tool use, OpenAI via Structured
+// Outputs (json_schema, strict), DeepSeek via JSON mode (its
+// OpenAI-compatible API doesn't guarantee a schema, so the parsed result is
+// still validated here). buildPageBlock() (in bookImporter.js) then builds
+// our PAGE/CHAPTER/"N: sentence" text deterministically from that clean
+// data.
+//
+// separableVerbs (client/src/separableVerbs.js's "trennbares Verb"
+// detection - e.g. "trägst ... bei" = beitragen) only recognizes a compound
+// once its infinitive is a real dictionary entry, and a conjugated form
+// resolves to that infinitive via a " • infinitive" hint on its own
+// dictionary entry. Book content built up by hand over many rounds of
+// testing has good coverage; freshly-translated text (PDF import, the
+// text/paste import) hits brand-new vocabulary every time and had none of
+// that - so the same AI call that's already translating the page is also
+// asked to report every separable verb it used, which gets upserted into
+// the dictionary at import time (see upsertSeparableVerbs below),
+// automating what used to be a manual per-word dictionary fix.
+
+const SEPARABLE_VERB_INSTRUCTION =
+  'Also list every separable-prefix verb (trennbares Verb) used in the German text, e.g. "trägst ... bei" ' +
+  'is a split form of "beitragen" - give its exact conjugated form as it appears, its infinitive, and a ' +
+  'concise Persian gloss for the infinitive, in separableVerbs. This lets a reading app that highlights ' +
+  'split verbs as one clickable word recognize this one, even though its dictionary has never seen this ' +
+  'specific word before.';
 
 const SENTENCE_TOOL_SCHEMA = {
   type: 'object',
@@ -35,17 +55,46 @@ const SENTENCE_TOOL_SCHEMA = {
         required: ['de', 'fa'],
       },
     },
+    separableVerbs: {
+      type: 'array',
+      description:
+        'Every separable-prefix verb (trennbares Verb) used anywhere in the sentences above, e.g. "trägst ... bei" -> beitragen. Empty if none were used.',
+      items: {
+        type: 'object',
+        properties: {
+          conjugatedForm: { type: 'string', description: 'The exact inflected form as it appears in the text, e.g. "trägst".' },
+          infinitive: { type: 'string', description: 'The separable verb\'s infinitive, e.g. "beitragen".' },
+          gloss: { type: 'string', description: 'A concise Persian translation of the infinitive (the separable verb\'s meaning).' },
+        },
+        required: ['conjugatedForm', 'infinitive', 'gloss'],
+      },
+    },
   },
-  required: ['sentences'],
+  required: ['sentences', 'separableVerbs'],
 };
 
 function validateSentences(parsed) {
   if (!parsed || !Array.isArray(parsed.sentences)) {
     throw new Error('AI response was not in the expected {sentences: [...]} shape');
   }
-  return parsed.sentences
+  const sentences = parsed.sentences
     .filter((s) => s && typeof s.de === 'string' && typeof s.fa === 'string' && s.de.trim())
     .map((s) => ({ de: s.de.trim(), fa: s.fa.trim() }));
+
+  const separableVerbs = (Array.isArray(parsed.separableVerbs) ? parsed.separableVerbs : [])
+    .filter(
+      (v) =>
+        v &&
+        typeof v.conjugatedForm === 'string' &&
+        typeof v.infinitive === 'string' &&
+        typeof v.gloss === 'string' &&
+        v.conjugatedForm.trim() &&
+        v.infinitive.trim() &&
+        v.gloss.trim()
+    )
+    .map((v) => ({ conjugatedForm: v.conjugatedForm.trim(), infinitive: v.infinitive.trim(), gloss: v.gloss.trim() }));
+
+  return { sentences, separableVerbs };
 }
 
 const VISION_PROVIDERS = {
@@ -138,8 +187,21 @@ function openAiJsonSchema() {
               additionalProperties: false,
             },
           },
+          separableVerbs: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                conjugatedForm: { type: 'string' },
+                infinitive: { type: 'string' },
+                gloss: { type: 'string' },
+              },
+              required: ['conjugatedForm', 'infinitive', 'gloss'],
+              additionalProperties: false,
+            },
+          },
         },
-        required: ['sentences'],
+        required: ['sentences', 'separableVerbs'],
         additionalProperties: false,
       },
     },
@@ -234,6 +296,7 @@ function buildVisionSystemPrompt(chapter) {
     'reading app. Read every sentence on the page in order, correcting for photo/scan artifacts using',
     'context, and translate each sentence into fluent, natural Persian. Call the record_page tool with',
     'the result. If the photo has no readable German text at all, call it with an empty sentences array.',
+    SEPARABLE_VERB_INSTRUCTION,
     chapter ? `The current chapter is: ${chapter}` : null,
   ]
     .filter(Boolean)
@@ -245,18 +308,20 @@ export async function formatPageFromImage({ provider, apiKey, imageBase64, mimeT
   if (!impl) throw new Error(`"${provider}" doesn't support reading photos (no vision API) - use Anthropic or OpenAI for this.`);
   const systemPrompt = buildVisionSystemPrompt(chapter);
   const result = await impl.call(apiKey, systemPrompt, imageBase64, mimeType);
-  return { sentences: validateSentences(result) };
+  return validateSentences(result);
 }
 
 function buildTextSystemPrompt(chapter) {
   return [
     'You receive raw German text extracted from one page of a book (via a PDF text layer or OCR, so',
-    'it may contain minor extraction artifacts: stray line breaks, hyphenation, or misread characters).',
-    'Reconstruct the intended sentences, correcting obvious extraction mistakes using context, and',
-    'translate each sentence into fluent, natural Persian.',
-    'Respond with ONLY a JSON object of the exact shape {"sentences": [{"de": "...", "fa": "..."}]} -',
+    'it may contain minor extraction artifacts: stray line breaks, hyphenation, or misread characters),',
+    'or pasted/shared directly from a webpage. Reconstruct the intended sentences, correcting obvious',
+    'extraction mistakes using context, and translate each sentence into fluent, natural Persian.',
+    'Respond with ONLY a JSON object of the exact shape',
+    '{"sentences": [{"de": "...", "fa": "..."}], "separableVerbs": [...]} -',
     'no commentary, explanation, or markdown fences. If the text has no real content at all, respond',
-    'with {"sentences": []}.',
+    'with {"sentences": [], "separableVerbs": []}.',
+    SEPARABLE_VERB_INSTRUCTION,
     chapter ? `The current chapter is: ${chapter}` : null,
   ]
     .filter(Boolean)
@@ -268,5 +333,5 @@ export async function formatPageFromText({ provider, apiKey, rawText, chapter })
   if (!impl) throw new Error(`Unsupported AI provider: ${provider}`);
   const systemPrompt = buildTextSystemPrompt(chapter);
   const result = await impl.call(apiKey, systemPrompt, rawText);
-  return { sentences: validateSentences(result) };
+  return validateSentences(result);
 }

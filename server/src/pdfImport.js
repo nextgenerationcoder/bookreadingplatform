@@ -23,6 +23,7 @@ import { readFile, unlink } from 'node:fs/promises';
 import { formatPageFromText } from './llm.js';
 import { ocrImageBuffer } from './tesseractOcr.js';
 import { saveImportedBook, appendToBook, parseBookText, buildPageBlock } from './bookImporter.js';
+import { upsertSeparableVerbs } from './dictionaryImporter.js';
 import { CHUNK_SIZE, chunkFileName, chunkNumberForPage } from './pdfSplit.js';
 
 const MIN_EXTRACTABLE_CHARS = 20;
@@ -117,12 +118,13 @@ export async function importPdfAsBook({
     }
 
     try {
-      const { sentences } = await formatPageFromText({ provider: textAi.provider, apiKey: textAi.apiKey, rawText, chapter });
+      const { sentences, separableVerbs } = await formatPageFromText({ provider: textAi.provider, apiKey: textAi.apiKey, rawText, chapter });
       if (!sentences.length) {
         console.error(`PDF import: no translatable content on page ${pageNumber}${usedOcr ? ' (after OCR)' : ''}`);
         errors.push({ index: i - 1, pageNumber, error: `No translatable content found on this page${usedOcr ? ' (after OCR)' : ''}` });
         continue;
       }
+      upsertSeparableVerbs(separableVerbs);
       meta = saveOnePage(bookId, title, buildPageBlock(pageNumber, chapter, sentences));
       pagesFound += 1;
     } catch (err) {

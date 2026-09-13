@@ -61,3 +61,20 @@ export function importDictionaryEntries(entries) {
   });
   tx();
 }
+
+// separableVerbs: [{conjugatedForm, infinitive, gloss}] - as reported by
+// the translation AI alongside a page's sentences (see llm.js's
+// SEPARABLE_VERB_INSTRUCTION). Adds/refreshes the infinitive's own
+// dictionary entry plus a " • infinitive" hint on the conjugated form
+// (client/src/separableVerbs.js's resolveCompound() reads that hint to
+// recognize the split verb, e.g. "trägst ... bei" -> beitragen), so newly
+// translated content builds up the same dictionary coverage a hand-curated
+// book already has, automatically, page by page.
+export function upsertSeparableVerbs(separableVerbs) {
+  if (!separableVerbs?.length) return;
+  const entries = separableVerbs.flatMap(({ conjugatedForm, infinitive, gloss }) => [
+    { word: normalizeKey(infinitive), gloss },
+    { word: normalizeKey(conjugatedForm), gloss: `${gloss} • ${infinitive}` },
+  ]);
+  importDictionaryEntries(entries);
+}

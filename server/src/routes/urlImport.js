@@ -3,6 +3,7 @@ import { db } from '../db.js';
 import { decrypt } from '../crypto.js';
 import { formatPageFromText } from '../llm.js';
 import { saveImportedBook, appendToBook, parseBookText, buildPageBlock } from '../bookImporter.js';
+import { upsertSeparableVerbs } from '../dictionaryImporter.js';
 import { paginateText, slugifyForBookId } from '../urlImport.js';
 
 const router = Router();
@@ -23,11 +24,12 @@ async function translatePagesIntoBook({ pages, title, provider, apiKey }) {
   for (let i = 0; i < pages.length; i++) {
     const pageNumber = i + 1;
     try {
-      const { sentences } = await formatPageFromText({ provider, apiKey, rawText: pages[i], chapter: null });
+      const { sentences, separableVerbs } = await formatPageFromText({ provider, apiKey, rawText: pages[i], chapter: null });
       if (!sentences.length) {
         errors.push({ pageNumber, error: 'No translatable content found on this page' });
         continue;
       }
+      upsertSeparableVerbs(separableVerbs);
       const pageBlock = buildPageBlock(pageNumber, null, sentences);
       meta = meta
         ? appendToBook(bookId, pageBlock)
