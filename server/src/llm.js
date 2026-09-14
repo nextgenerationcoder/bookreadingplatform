@@ -460,15 +460,28 @@ export async function explainMistake({ provider, apiKey, promptText, expectedAns
   if (!impl) throw new Error(`Unsupported AI provider: ${provider}`);
 
   const explanationLanguage = promptLang === 'en' ? 'English' : 'Persian';
+  // Explicitly spelled out as a JSON object (not just "call this tool") even
+  // though the Anthropic path is forced via tool_choice regardless of
+  // phrasing - DeepSeek's OpenAI-compatible json_object response mode
+  // requires the word "json" to appear in the prompt at all, or its API
+  // rejects the request outright (this bit the AI page-translation prompts
+  // too, see buildTextSystemPrompt above, which is why that one spells out
+  // "JSON object" explicitly - this prompt originally didn't, which broke
+  // every DeepSeek call to this endpoint).
   const systemPrompt = [
     `You help a German learner understand a wrong answer in a language-learning app, without giving away the answer.`,
     `You are given the exercise prompt, the expected German answer (for your own grounding only), and what the`,
-    `learner actually typed. Call explain_mistake with a short explanation - ${explanationLanguage} - of what's`,
-    `wrong with the learner's answer (word order, wrong case, wrong verb form, missing word, wrong vocabulary,`,
-    `spelling, etc). CRITICAL: never state, spell out, or closely paraphrase the expected answer itself - the`,
-    `learner must still work it out themselves. If the mistake is a grammar mistake (not just vocabulary or`,
-    `spelling), pick the errorTags (zero or more) that best match it from this exact list, copying the spelling`,
-    `exactly - never invent a tag that isn't in this list: [${availableTags.join(', ')}].`,
+    `learner actually typed. Respond with ONLY a JSON object of the exact shape`,
+    `{"isGrammarMistake": true/false, "errorTags": ["..."], "explanation": "..."} - no commentary, explanation`,
+    `text outside that object, or markdown fences.`,
+    `explanation: a short explanation (1-2 sentences, in ${explanationLanguage}) of what's wrong with the`,
+    `learner's answer (word order, wrong case, wrong verb form, missing word, wrong vocabulary, spelling, etc).`,
+    `CRITICAL: never state, spell out, or closely paraphrase the expected answer itself in explanation - the`,
+    `learner must still work it out themselves.`,
+    `isGrammarMistake: true only if the mistake is about German grammar, not just vocabulary/spelling.`,
+    `errorTags: zero or more tags that best match the mistake, ONLY from this exact list, copying the spelling`,
+    `exactly - never invent a tag that isn't in this list: [${availableTags.join(', ')}]. Empty array if none fit`,
+    `or isGrammarMistake is false.`,
   ].join(' ');
 
   const userText = [
