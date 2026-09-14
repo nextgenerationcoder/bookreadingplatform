@@ -335,3 +335,148 @@ export async function formatPageFromText({ provider, apiKey, rawText, chapter })
   const result = await impl.call(apiKey, systemPrompt, rawText);
   return validateSentences(result);
 }
+
+// Explains why a wrong LessonPlayer answer is wrong (used by both Courses'
+// active-recall lessons and Interview lessons - see LessonPlayer.js's
+// onsubmit "wrong" branch). Uses the account's own Translation API key,
+// same as formatPageFromText above - a separate schema/provider table
+// because the shape is unrelated to page translation, but the same
+// per-provider call pattern (Anthropic forced tool use / OpenAI strict
+// Structured Outputs / DeepSeek best-effort JSON mode + validation).
+//
+// Deliberately never asked to reveal the correct answer - the schema has
+// no field for it, and the system prompt tells it not to state or imply
+// it in the explanation text. errorTags must come from availableTags (the
+// real error_tags already used across grammar_lessons - see
+// routes/grammar.js), not invented, so the client can reliably resolve
+// them back to a real, clickable grammar lesson.
+const MISTAKE_TOOL_SCHEMA = {
+  type: 'object',
+  properties: {
+    isGrammarMistake: {
+      type: 'boolean',
+      description: 'True if the mistake is about German grammar (word order, case, conjugation, article, etc.), false if it is vocabulary, spelling, or something else non-grammatical.',
+    },
+    errorTags: {
+      type: 'array',
+      description: 'Zero or more tags, ONLY from the provided list of available tags, that best describe the grammar mistake. Empty if isGrammarMistake is false or no tag fits well.',
+      items: { type: 'string' },
+    },
+    explanation: {
+      type: 'string',
+      description: 'One or two short sentences explaining why the learner\'s answer is wrong. Never state, spell out, or strongly imply the correct answer - just explain the nature of the mistake.',
+    },
+  },
+  required: ['isGrammarMistake', 'errorTags', 'explanation'],
+};
+
+function openAiMistakeJsonSchema() {
+  return {
+    type: 'json_schema',
+    json_schema: {
+      name: 'mistake_explanation',
+      strict: true,
+      schema: {
+        type: 'object',
+        properties: {
+          isGrammarMistake: { type: 'boolean' },
+          errorTags: { type: 'array', items: { type: 'string' } },
+          explanation: { type: 'string' },
+        },
+        required: ['isGrammarMistake', 'errorTags', 'explanation'],
+        additionalProperties: false,
+      },
+    },
+  };
+}
+
+function validateMistakeExplanation(parsed, availableTags) {
+  if (!parsed || typeof parsed.explanation !== 'string' || !parsed.explanation.trim()) {
+    throw new Error('AI response was not in the expected mistake-explanation shape');
+  }
+  const tagSet = new Set(availableTags);
+  return {
+    explanation: parsed.explanation.trim(),
+    isGrammarMistake: !!parsed.isGrammarMistake,
+    errorTags: Array.isArray(parsed.errorTags) ? parsed.errorTags.filter((tag) => tagSet.has(tag)) : [],
+  };
+}
+
+const MISTAKE_PROVIDERS = {
+  anthropic: {
+    model: 'claude-haiku-4-5-20251001',
+    async call(apiKey, systemPrompt, userText) {
+      const res = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
+        body: JSON.stringify({
+          model: MISTAKE_PROVIDERS.anthropic.model,
+          max_tokens: 500,
+          system: systemPrompt,
+          tools: [{ name: 'explain_mistake', description: 'Records why the learner\'s answer is wrong.', input_schema: MISTAKE_TOOL_SCHEMA }],
+          tool_choice: { type: 'tool', name: 'explain_mistake' },
+          messages: [{ role: 'user', content: userText }],
+        }),
+        signal: AbortSignal.timeout(30000),
+      });
+      if (!res.ok) throw new Error(`Anthropic API error (${res.status}): ${await res.text().catch(() => res.statusText)}`);
+      const data = await res.json();
+      return anthropicToolInput(data);
+    },
+  },
+  openai: {
+    model: 'gpt-4o-mini',
+    call: (apiKey, systemPrompt, userText) =>
+      openAiCompatibleMistakeCall('https://api.openai.com/v1/chat/completions', MISTAKE_PROVIDERS.openai.model, apiKey, systemPrompt, userText, { strictSchema: true }),
+  },
+  deepseek: {
+    model: 'deepseek-chat',
+    call: (apiKey, systemPrompt, userText) =>
+      openAiCompatibleMistakeCall('https://api.deepseek.com/chat/completions', MISTAKE_PROVIDERS.deepseek.model, apiKey, systemPrompt, userText, { strictSchema: false }),
+  },
+};
+
+async function openAiCompatibleMistakeCall(url, model, apiKey, systemPrompt, userText, { strictSchema }) {
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json', authorization: `Bearer ${apiKey}` },
+    body: JSON.stringify({
+      model,
+      response_format: strictSchema ? openAiMistakeJsonSchema() : { type: 'json_object' },
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: userText },
+      ],
+    }),
+    signal: AbortSignal.timeout(30000),
+  });
+  if (!res.ok) throw new Error(`API error (${res.status}): ${await res.text().catch(() => res.statusText)}`);
+  const data = await res.json();
+  return extractJson(data.choices?.[0]?.message?.content || '{}');
+}
+
+export async function explainMistake({ provider, apiKey, promptText, expectedAnswer, userAnswer, promptLang, availableTags }) {
+  const impl = MISTAKE_PROVIDERS[provider];
+  if (!impl) throw new Error(`Unsupported AI provider: ${provider}`);
+
+  const explanationLanguage = promptLang === 'en' ? 'English' : 'Persian';
+  const systemPrompt = [
+    `You help a German learner understand a wrong answer in a language-learning app, without giving away the answer.`,
+    `You are given the exercise prompt, the expected German answer (for your own grounding only), and what the`,
+    `learner actually typed. Call explain_mistake with a short explanation - ${explanationLanguage} - of what's`,
+    `wrong with the learner's answer (word order, wrong case, wrong verb form, missing word, wrong vocabulary,`,
+    `spelling, etc). CRITICAL: never state, spell out, or closely paraphrase the expected answer itself - the`,
+    `learner must still work it out themselves. If the mistake is a grammar mistake (not just vocabulary or`,
+    `spelling), pick the errorTags (zero or more) that best match it from this exact list, copying the spelling`,
+    `exactly - never invent a tag that isn't in this list: [${availableTags.join(', ')}].`,
+  ].join(' ');
+
+  const userText = [
+    `Exercise prompt: ${promptText}`,
+    `Expected answer (do not reveal): ${expectedAnswer}`,
+    `Learner's answer: ${userAnswer}`,
+  ].join('\n');
+
+  const result = await impl.call(apiKey, systemPrompt, userText);
+  return validateMistakeExplanation(result, availableTags);
+}

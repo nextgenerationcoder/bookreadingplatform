@@ -41,6 +41,8 @@ const UI_STRINGS = {
     continueBtn: 'ادامه',
     correct: '✓ درست است',
     wrong: 'دوباره تلاش کن',
+    explaining: 'در حال بررسی چرا این جواب اشتباه است…',
+    grammarLinkLabel: 'مرور درس گرامر:',
     transcribing: 'در حال تبدیل صدا به متن…',
     transcribeError: (msg) => `خطا در تبدیل صدا: ${msg}`,
     micDenied: 'دسترسی به میکروفون ممکن نیست — لطفاً تایپ کنید.',
@@ -58,6 +60,8 @@ const UI_STRINGS = {
     continueBtn: 'Continue',
     correct: '✓ Correct',
     wrong: 'Try again',
+    explaining: 'Checking why this is wrong…',
+    grammarLinkLabel: 'Review the grammar lesson:',
     transcribing: 'Transcribing…',
     transcribeError: (msg) => `Transcription error: ${msg}`,
     micDenied: 'Microphone unavailable — please type instead.',
@@ -127,6 +131,7 @@ export function renderLessonPlayer(host, lesson) {
                <form id="answerForm" autocomplete="off">
                  <input type="text" id="answerInput" class="answerInput" dir="ltr" autocomplete="off" autocapitalize="off" spellcheck="false">
                  <div class="lessonFeedback" id="lessonFeedback" dir="${t.dir}"></div>
+                 <div class="mistakeExplanation" id="mistakeExplanation" dir="${t.dir}" hidden></div>
                  <div class="lessonHint" id="lessonHint" dir="ltr" hidden></div>
                  <div class="formActions">
                    <button type="button" id="micBtn">${t.micStart}</button>
@@ -148,6 +153,7 @@ export function renderLessonPlayer(host, lesson) {
     const form = body.querySelector('#answerForm');
     const input = body.querySelector('#answerInput');
     const feedback = body.querySelector('#lessonFeedback');
+    const explanationEl = body.querySelector('#mistakeExplanation');
     const hintEl = body.querySelector('#lessonHint');
     const hintBtn = body.querySelector('#hintBtn');
     const primaryBtn = body.querySelector('#primaryBtn');
@@ -155,6 +161,7 @@ export function renderLessonPlayer(host, lesson) {
 
     let correct = false;
     let hintLevel = 0;
+    let explainRequestId = 0;
     const expectedWords = step.expectedAnswer.split(' ');
 
     input.focus();
@@ -174,6 +181,43 @@ export function renderLessonPlayer(host, lesson) {
     const hotwords = [...registerHotwords, ...step.software.map((w) => w.german)];
     wireMicButton(micBtn, input, feedback, () => correct, hotwords);
 
+    // Fire-and-forget: uses the account's own Translation API key to explain
+    // *why* the wrong answer is wrong (never the correct answer itself, see
+    // llm.js's explainMistake) and, if it's a grammar mistake, link to the
+    // matching grammar lesson(s) so the learner can look it up themselves -
+    // see routes/grammar.js's /explain-mistake. Purely additive: if it fails
+    // (no Translation key configured, API error, etc.) the "try again"
+    // feedback above is unaffected, this box just stays hidden.
+    async function requestMistakeExplanation(userAnswer) {
+      const requestId = ++explainRequestId;
+      explanationEl.hidden = false;
+      explanationEl.className = 'mistakeExplanation';
+      explanationEl.textContent = t.explaining;
+      try {
+        const { explanation, lessons } = await api.explainMistake({
+          promptText: step.promptFa,
+          expectedAnswer: step.expectedAnswer,
+          userAnswer,
+          promptLang,
+        });
+        if (requestId !== explainRequestId) return; // a newer attempt superseded this one
+        explanationEl.innerHTML = '';
+        const p = document.createElement('p');
+        p.textContent = explanation;
+        explanationEl.appendChild(p);
+        for (const lesson of lessons) {
+          const link = document.createElement('a');
+          link.className = 'mistakeGrammarLink';
+          link.href = `#/grammar/${encodeURIComponent(lesson.id)}`;
+          link.textContent = `${t.grammarLinkLabel} ${lesson.topic}`;
+          explanationEl.appendChild(link);
+        }
+      } catch {
+        if (requestId !== explainRequestId) return;
+        explanationEl.hidden = true;
+      }
+    }
+
     form.onsubmit = (e) => {
       e.preventDefault();
       if (correct) {
@@ -184,6 +228,7 @@ export function renderLessonPlayer(host, lesson) {
         correct = true;
         feedback.textContent = t.correct;
         feedback.className = 'lessonFeedback lessonFeedback-correct';
+        explanationEl.hidden = true;
         hintBtn.hidden = true;
         micBtn.hidden = true;
         primaryBtn.textContent = t.continueBtn;
@@ -194,6 +239,7 @@ export function renderLessonPlayer(host, lesson) {
         feedback.className = 'lessonFeedback lessonFeedback-wrong';
         // Don't clear the input - the learner edits their existing attempt.
         recordVocabForStep(step, false);
+        requestMistakeExplanation(input.value);
       }
     };
   }

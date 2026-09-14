@@ -97,6 +97,7 @@ export const api = {
   getGrammarLevels: () => get('/api/grammar/levels'),
   listGrammarLessons: (level) => get(`/api/grammar${level ? `?level=${encodeURIComponent(level)}` : ''}`),
   getGrammarLesson: (id) => get(`/api/grammar/lesson/${encodeURIComponent(id)}`),
+  explainMistake: (body) => post('/api/grammar/explain-mistake', body),
 
   getDictionary: () => get('/api/dictionary'),
   importDictionary: (text) => post('/api/dictionary/import', { text }),
