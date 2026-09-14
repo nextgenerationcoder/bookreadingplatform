@@ -91,10 +91,15 @@ async function seedWordFrequency() {
   console.log(`Seeded ${entries.length} word-frequency entries.`);
 }
 
+// Unlike the other seed functions above, this one always runs (no "table
+// already has data" early return) and upserts by id instead of plain
+// INSERT - grammar_lessons is static reference content with no user-editable
+// path anywhere in the app, so the seed file is the single source of truth
+// and re-running it (e.g. after adding a new CEFR level's lessons to
+// grammar-lessons.seed.json) should always bring the table in line with it,
+// not silently no-op just because A1 was already seeded from an earlier
+// deploy.
 async function seedGrammarLessons() {
-  const { count } = db.prepare('SELECT COUNT(*) AS count FROM grammar_lessons').get();
-  if (count > 0) return;
-
   let raw;
   try {
     raw = await fs.readFile(GRAMMAR_LESSONS_SEED, 'utf-8');
@@ -103,14 +108,25 @@ async function seedGrammarLessons() {
     throw err;
   }
   const lessons = JSON.parse(raw);
-  const insert = db.prepare(`
+  const upsert = db.prepare(`
     INSERT INTO grammar_lessons
       (id, level, order_index, topic, summary, explanation, rules_json, examples_json, common_mistakes_json, error_tags_json, book_reference)
     VALUES (@id, @level, @orderIndex, @topic, @summary, @explanation, @rules, @examples, @commonMistakes, @errorTags, @bookReference)
+    ON CONFLICT(id) DO UPDATE SET
+      level = excluded.level,
+      order_index = excluded.order_index,
+      topic = excluded.topic,
+      summary = excluded.summary,
+      explanation = excluded.explanation,
+      rules_json = excluded.rules_json,
+      examples_json = excluded.examples_json,
+      common_mistakes_json = excluded.common_mistakes_json,
+      error_tags_json = excluded.error_tags_json,
+      book_reference = excluded.book_reference
   `);
   const tx = db.transaction(() => {
     for (const lesson of lessons) {
-      insert.run({
+      upsert.run({
         id: lesson.id,
         level: lesson.level,
         orderIndex: lesson.orderIndex,
@@ -126,7 +142,7 @@ async function seedGrammarLessons() {
     }
   });
   tx();
-  console.log(`Seeded ${lessons.length} grammar lessons.`);
+  console.log(`Seeded/updated ${lessons.length} grammar lessons.`);
 }
 
 async function seedBooks() {
