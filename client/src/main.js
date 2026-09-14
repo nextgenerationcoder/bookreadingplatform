@@ -124,6 +124,7 @@ function buildShell() {
         <a href="#/interview">Interview</a>
         <a href="#/practice">Practice</a>
         <a href="#/words">My Words</a>
+        <a href="#/import-url">Import Text</a>
       </div>
       <button id="menuBtn" class="menuBtn" type="button" aria-label="Open menu">
         <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
@@ -136,7 +137,6 @@ function buildShell() {
         <div class="drawerEmail">${currentUser.email}</div>
       </div>
       <a href="#/settings" id="settingsLink" class="drawerItem">Settings</a>
-      <a href="#/import-url" id="importUrlLink" class="drawerItem">Import Text</a>
       <a href="#/import-history" id="importHistoryLink" class="drawerItem">Import History</a>
       <div class="drawerSpacer"></div>
       <button id="logoutBtn" class="drawerItem drawerLogout" type="button">Log out</button>
@@ -160,7 +160,6 @@ function buildShell() {
   menuBtn.onclick = openDrawer;
   overlay.onclick = closeDrawer;
   document.getElementById('settingsLink').onclick = closeDrawer;
-  document.getElementById('importUrlLink').onclick = closeDrawer;
   document.getElementById('importHistoryLink').onclick = closeDrawer;
 
   document.getElementById('logoutBtn').onclick = async () => {
@@ -176,13 +175,14 @@ function setActiveNav(view) {
   const bookViews = ['library', 'reader:book', 'addPages:book', 'editPage:book', 'add'];
   const courseViews = ['courses', 'courseLevel', 'reader:course', 'addPages:course', 'editPage:course', 'addCourse'];
   const interviewViews = ['reader:learning', 'interview', 'addInterviewLesson'];
-  const map = { books: 0, courses: 1, learning: 2, practice: 3, words: 4 };
+  const map = { books: 0, courses: 1, learning: 2, practice: 3, words: 4, importUrl: 5 };
   let group = null;
   if (bookViews.includes(view)) group = 'books';
   else if (courseViews.includes(view)) group = 'courses';
   else if (interviewViews.includes(view)) group = 'learning';
   else if (view === 'practice') group = 'practice';
   else if (view === 'words') group = 'words';
+  else if (view === 'importUrl') group = 'importUrl';
   if (group) links[map[group]]?.classList.add('active');
 }
 
