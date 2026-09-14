@@ -269,6 +269,31 @@ db.exec(`
     FOREIGN KEY (user_id) REFERENCES users(id)
   );
 
+  -- Grammar lessons (rules/examples/common mistakes for a CEFR level+topic),
+  -- seeded from server/data/grammar-lessons.seed.json - see seed.js. Used in
+  -- the Grammar tab under Courses (client/src/views/grammar.js). error_tags
+  -- (a JSON array of short slugs like "akkusativ", "trennbare-verben") is
+  -- the link between a grammar lesson and a specific mistake a learner
+  -- makes elsewhere in the app - e.g. Practice can look up "which lesson
+  -- explains this" by tag once it tags exercises the same way (see
+  -- routes/grammar.js's /by-tag endpoint and the TODO in
+  -- grammarExerciseGenerator.js for the planned third use).
+  CREATE TABLE IF NOT EXISTS grammar_lessons (
+    id TEXT PRIMARY KEY,
+    level TEXT NOT NULL,
+    order_index INTEGER NOT NULL,
+    topic TEXT NOT NULL,
+    summary TEXT NOT NULL,
+    explanation TEXT NOT NULL,
+    rules_json TEXT NOT NULL,
+    examples_json TEXT NOT NULL,
+    common_mistakes_json TEXT NOT NULL,
+    error_tags_json TEXT NOT NULL,
+    book_reference TEXT
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_grammar_lessons_level ON grammar_lessons(level, order_index);
+
   -- German word frequency, from a Leipzig Corpora Collection word list (see
   -- scripts/import-word-frequency.js) - shared across all accounts, not
   -- per-user. Not wired into any feature yet; this is just the raw data

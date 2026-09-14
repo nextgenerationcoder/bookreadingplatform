@@ -14,6 +14,7 @@ const SEED_DICTIONARY = path.join(__dirname, '..', 'data', 'dictionary.seed.json
 const SEED_CONTENT_DIR = path.join(__dirname, '..', 'content');
 const WIKIDICT_SEED = path.join(__dirname, '..', 'data', 'wikidict-de-fa.json');
 const WORD_FREQUENCY_SEED = path.join(__dirname, '..', 'data', 'word-frequency.seed.json');
+const GRAMMAR_LESSONS_SEED = path.join(__dirname, '..', 'data', 'grammar-lessons.seed.json');
 
 async function seedDictionary() {
   const { count } = db.prepare('SELECT COUNT(*) AS count FROM dictionary').get();
@@ -90,6 +91,44 @@ async function seedWordFrequency() {
   console.log(`Seeded ${entries.length} word-frequency entries.`);
 }
 
+async function seedGrammarLessons() {
+  const { count } = db.prepare('SELECT COUNT(*) AS count FROM grammar_lessons').get();
+  if (count > 0) return;
+
+  let raw;
+  try {
+    raw = await fs.readFile(GRAMMAR_LESSONS_SEED, 'utf-8');
+  } catch (err) {
+    if (err.code === 'ENOENT') return;
+    throw err;
+  }
+  const lessons = JSON.parse(raw);
+  const insert = db.prepare(`
+    INSERT INTO grammar_lessons
+      (id, level, order_index, topic, summary, explanation, rules_json, examples_json, common_mistakes_json, error_tags_json, book_reference)
+    VALUES (@id, @level, @orderIndex, @topic, @summary, @explanation, @rules, @examples, @commonMistakes, @errorTags, @bookReference)
+  `);
+  const tx = db.transaction(() => {
+    for (const lesson of lessons) {
+      insert.run({
+        id: lesson.id,
+        level: lesson.level,
+        orderIndex: lesson.orderIndex,
+        topic: lesson.topic,
+        summary: lesson.summary,
+        explanation: lesson.explanation,
+        rules: JSON.stringify(lesson.rules),
+        examples: JSON.stringify(lesson.examples),
+        commonMistakes: JSON.stringify(lesson.commonMistakes),
+        errorTags: JSON.stringify(lesson.errorTags),
+        bookReference: lesson.bookReference || null,
+      });
+    }
+  });
+  tx();
+  console.log(`Seeded ${lessons.length} grammar lessons.`);
+}
+
 async function seedBooks() {
   const { count } = db.prepare('SELECT COUNT(*) AS count FROM books').get();
   if (count > 0) return;
@@ -113,5 +152,6 @@ export async function seedIfEmpty() {
   await seedDictionary();
   await seedWikidict();
   await seedWordFrequency();
+  await seedGrammarLessons();
   await seedBooks();
 }

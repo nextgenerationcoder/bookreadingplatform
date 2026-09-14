@@ -62,6 +62,10 @@ export async function renderCourseList(host, level) {
       <h1>${LEVEL_LABELS[level] || level}</h1>
       <a class="button" href="#/add-course?level=${level}">+ Add Course</a>
     </div>
+    <div class="subTabs">
+      <a href="#/courses/${level}" class="subTab active">Speaking</a>
+      <a href="#/courses/${level}/grammar" class="subTab">Grammar</a>
+    </div>
     <div class="bookGrid"></div>
   `;
 

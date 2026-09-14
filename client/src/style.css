@@ -50,6 +50,17 @@ button:disabled { opacity: .35 }
 .pageFinishBar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin: 18px 0 30px; padding-top: 14px; border-top: 1px solid var(--line) }
 .pageFinishBar #finishPageStatus { margin: 0; font-size: 13px }
 
+.subTabs { display: flex; gap: 8px; margin: -6px 0 16px }
+.subTab { padding: 6px 14px; border-radius: 999px; border: 1px solid var(--line); font-size: 13px; color: var(--muted) }
+.subTab.active { background: var(--accent); border-color: var(--accent); color: #fff }
+
+.grammarRules, .grammarExamples, .grammarMistakes { list-style: none; margin: 10px 0 20px; padding: 0; display: flex; flex-direction: column; gap: 10px }
+.grammarRules li, .grammarExamples li, .grammarMistakes li { background: var(--paper); border: 1px solid var(--line); border-radius: 10px; padding: 10px 14px }
+.grammarDe { font-weight: 600 }
+.grammarEn { color: var(--muted) }
+.grammarWrong { color: #b3261e }
+.grammarRight { color: #1a7a3d; margin-top: 2px }
+
 .libraryHeader { display: flex; justify-content: space-between; align-items: center; margin: 22px 0 16px }
 .libraryHeader h1 { font-size: 20px; margin: 0 }
 .bookGrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 14px }

@@ -94,6 +94,10 @@ export const api = {
   renameCourse: (courseId, title) => patch(`/api/courses/${courseId}`, { title }),
   deleteCoursePage: (courseId, pageNumber) => del(`/api/courses/${courseId}/pages/${pageNumber}`),
 
+  getGrammarLevels: () => get('/api/grammar/levels'),
+  listGrammarLessons: (level) => get(`/api/grammar${level ? `?level=${encodeURIComponent(level)}` : ''}`),
+  getGrammarLesson: (id) => get(`/api/grammar/lesson/${encodeURIComponent(id)}`),
+
   getDictionary: () => get('/api/dictionary'),
   importDictionary: (text) => post('/api/dictionary/import', { text }),
   lookupWord: (word) => get(`/api/dictionary/lookup/${encodeURIComponent(word)}`),

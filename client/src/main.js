@@ -3,6 +3,7 @@ import { api } from './api.js';
 import { renderAuth } from './views/auth.js';
 import { renderLibrary } from './views/library.js';
 import { renderCourseLevels, renderCourseList } from './views/courses.js';
+import { renderGrammarList, renderGrammarLesson } from './views/grammar.js';
 import { renderPractice } from './views/practice.js';
 import { renderReader } from './views/reader.js';
 import { renderAddBook } from './views/addBook.js';
@@ -66,6 +67,10 @@ function parseRoute() {
   if (hash === '/interview') return { view: 'interview' };
   if (hash === '/add-interview-lesson') return { view: 'addInterviewLesson' };
 
+  const grammarLevelMatch = hash.match(/^\/courses\/(A1|A2|B1|B2|C1|C2)\/grammar$/);
+  if (grammarLevelMatch) return { view: 'grammarLevel', level: grammarLevelMatch[1] };
+  const grammarLessonMatch = hash.match(/^\/grammar\/([^/]+)$/);
+  if (grammarLessonMatch) return { view: 'grammarLesson', lessonId: decodeURIComponent(grammarLessonMatch[1]) };
   const courseLevelMatch = hash.match(/^\/courses\/(A1|A2|B1|B2|C1|C2)$/);
   if (courseLevelMatch) return { view: 'courseLevel', level: courseLevelMatch[1] };
   if (hash === '/courses') return { view: 'courses' };
@@ -173,7 +178,10 @@ function setActiveNav(view) {
   const links = app.querySelectorAll('.navLinks a');
   links.forEach((a) => a.classList.remove('active'));
   const bookViews = ['library', 'reader:book', 'addPages:book', 'editPage:book', 'add'];
-  const courseViews = ['courses', 'courseLevel', 'reader:course', 'addPages:course', 'editPage:course', 'addCourse'];
+  const courseViews = [
+    'courses', 'courseLevel', 'reader:course', 'addPages:course', 'editPage:course', 'addCourse',
+    'grammarLevel', 'grammarLesson',
+  ];
   const interviewViews = ['reader:learning', 'interview', 'addInterviewLesson'];
   const map = { books: 0, courses: 1, learning: 2, practice: 3, words: 4, importUrl: 5 };
   let group = null;
@@ -211,7 +219,7 @@ async function renderInterviewLesson(host, courseId) {
 }
 
 async function route() {
-  const { view, kind, bookId, pageNumber, level } = parseRoute();
+  const { view, kind, bookId, pageNumber, level, lessonId } = parseRoute();
   const navKey = kind ? `${view}:${kind}` : view;
   setActiveNav(navKey);
   const host = document.getElementById('viewHost');
@@ -242,6 +250,10 @@ async function route() {
     await renderCourseList(host, level);
   } else if (view === 'addCourse') {
     renderAddCourse(host, level);
+  } else if (view === 'grammarLevel') {
+    await renderGrammarList(host, level);
+  } else if (view === 'grammarLesson') {
+    await renderGrammarLesson(host, lessonId);
   } else if (view === 'practice') {
     renderPractice(host);
   } else if (view === 'addWords') {
