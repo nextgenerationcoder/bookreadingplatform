@@ -73,14 +73,22 @@ export function renderLessonPlayer(host, lesson) {
   const { steps, storageKey, title, backHref, backLabel, registerHotwords = [], promptLang = 'fa' } = lesson;
   const promptDir = promptLang === 'en' ? 'ltr' : 'rtl';
   const t = UI_STRINGS[promptLang] || UI_STRINGS.fa;
-  const { currentStepIndex: startIndex, draftAnswer: startDraft, wrongState: startWrongState } = loadLessonProgress(storageKey, steps.length);
+  const {
+    currentStepIndex: startIndex,
+    draftAnswer: startDraft,
+    isWrong: startIsWrong,
+    explanation: startExplanation,
+    lessons: startLessons,
+  } = loadLessonProgress(storageKey, steps.length);
   let currentStepIndex = startIndex;
   // Only relevant for the very first render (i.e. right after loading saved
   // progress) - once the learner advances to a new step within this same
   // session, there's nothing saved for it yet, so a fresh step is correctly
   // blank rather than re-showing the previous step's leftover draft.
   let pendingDraft = startDraft;
-  let pendingWrongState = startWrongState;
+  let pendingIsWrong = startIsWrong;
+  let pendingExplanation = startExplanation;
+  let pendingLessons = startLessons;
 
   render();
 
@@ -168,11 +176,22 @@ export function renderLessonPlayer(host, lesson) {
     let correct = false;
     let hintLevel = 0;
     let explainRequestId = 0;
-    let lastWrongState = null;
+    // isWrong drives the red "try again" feedback; explanation/lessons are
+    // the (optional, separately-arriving) AI mistake explanation for it -
+    // kept apart so a failed/not-yet-fetched explanation never erases the
+    // wrong-answer state itself (see lessonProgress.js's comment).
+    let wrongInfo = { isWrong: false, explanation: null, lessons: [] };
+
     const expectedWords = step.expectedAnswer.split(' ');
 
     function persistState() {
-      saveLessonProgress(storageKey, { currentStepIndex, draftAnswer: input.value, wrongState: lastWrongState });
+      saveLessonProgress(storageKey, {
+        currentStepIndex,
+        draftAnswer: input.value,
+        isWrong: wrongInfo.isWrong,
+        explanation: wrongInfo.explanation,
+        lessons: wrongInfo.lessons,
+      });
     }
 
     function renderExplanationBox(explanation, lessons) {
@@ -196,17 +215,19 @@ export function renderLessonPlayer(host, lesson) {
     // the whole point of that link - and came back) - their typed attempt,
     // and the wrong-answer explanation/grammar links already fetched for
     // it, so returning doesn't look like the attempt never happened.
-    if (pendingDraft || pendingWrongState) {
+    if (pendingDraft || pendingIsWrong) {
       input.value = pendingDraft;
-      if (pendingWrongState) {
+      if (pendingIsWrong) {
         feedback.textContent = t.wrong;
         feedback.className = 'lessonFeedback lessonFeedback-wrong';
-        lastWrongState = pendingWrongState;
-        renderExplanationBox(pendingWrongState.explanation, pendingWrongState.lessons);
+        wrongInfo = { isWrong: true, explanation: pendingExplanation, lessons: pendingLessons };
+        if (pendingExplanation) renderExplanationBox(pendingExplanation, pendingLessons);
       }
     }
     pendingDraft = '';
-    pendingWrongState = null;
+    pendingIsWrong = false;
+    pendingExplanation = null;
+    pendingLessons = [];
 
     input.focus();
     input.addEventListener('input', () => {
@@ -249,12 +270,16 @@ export function renderLessonPlayer(host, lesson) {
         });
         if (requestId !== explainRequestId) return; // a newer attempt superseded this one
         renderExplanationBox(explanation, lessons);
-        lastWrongState = { explanation, lessons };
+        wrongInfo = { isWrong: true, explanation, lessons };
         persistState();
       } catch {
         if (requestId !== explainRequestId) return;
         explanationEl.hidden = true;
-        lastWrongState = null;
+        // isWrong stays true - only the explanation itself failed/is
+        // unavailable (e.g. no Translation key configured), the wrong-
+        // answer state must still be restored if the learner navigates
+        // away and back.
+        wrongInfo = { isWrong: true, explanation: null, lessons: [] };
         persistState();
       }
     }
@@ -270,7 +295,7 @@ export function renderLessonPlayer(host, lesson) {
         feedback.textContent = t.correct;
         feedback.className = 'lessonFeedback lessonFeedback-correct';
         explanationEl.hidden = true;
-        lastWrongState = null;
+        wrongInfo = { isWrong: false, explanation: null, lessons: [] };
         hintBtn.hidden = true;
         micBtn.hidden = true;
         primaryBtn.textContent = t.continueBtn;
@@ -282,6 +307,7 @@ export function renderLessonPlayer(host, lesson) {
         feedback.className = 'lessonFeedback lessonFeedback-wrong';
         // Don't clear the input - the learner edits their existing attempt.
         recordVocabForStep(step, false);
+        wrongInfo = { isWrong: true, explanation: null, lessons: [] };
         persistState();
         requestMistakeExplanation(input.value);
       }
