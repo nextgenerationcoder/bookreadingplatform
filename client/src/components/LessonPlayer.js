@@ -73,8 +73,14 @@ export function renderLessonPlayer(host, lesson) {
   const { steps, storageKey, title, backHref, backLabel, registerHotwords = [], promptLang = 'fa' } = lesson;
   const promptDir = promptLang === 'en' ? 'ltr' : 'rtl';
   const t = UI_STRINGS[promptLang] || UI_STRINGS.fa;
-  const { currentStepIndex: startIndex } = loadLessonProgress(storageKey, steps.length);
+  const { currentStepIndex: startIndex, draftAnswer: startDraft, wrongState: startWrongState } = loadLessonProgress(storageKey, steps.length);
   let currentStepIndex = startIndex;
+  // Only relevant for the very first render (i.e. right after loading saved
+  // progress) - once the learner advances to a new step within this same
+  // session, there's nothing saved for it yet, so a fresh step is correctly
+  // blank rather than re-showing the previous step's leftover draft.
+  let pendingDraft = startDraft;
+  let pendingWrongState = startWrongState;
 
   render();
 
@@ -162,9 +168,50 @@ export function renderLessonPlayer(host, lesson) {
     let correct = false;
     let hintLevel = 0;
     let explainRequestId = 0;
+    let lastWrongState = null;
     const expectedWords = step.expectedAnswer.split(' ');
 
+    function persistState() {
+      saveLessonProgress(storageKey, { currentStepIndex, draftAnswer: input.value, wrongState: lastWrongState });
+    }
+
+    function renderExplanationBox(explanation, lessons) {
+      explanationEl.hidden = false;
+      explanationEl.className = 'mistakeExplanation';
+      explanationEl.innerHTML = '';
+      const p = document.createElement('p');
+      p.textContent = explanation;
+      explanationEl.appendChild(p);
+      for (const lesson of lessons) {
+        const link = document.createElement('a');
+        link.className = 'mistakeGrammarLink';
+        link.href = `#/grammar/${encodeURIComponent(lesson.id)}`;
+        link.textContent = `${t.grammarLinkLabel} ${lesson.topic}`;
+        explanationEl.appendChild(link);
+      }
+    }
+
+    // Restore whatever the learner had going on this step before they
+    // navigated away (e.g. to actually read a recommended grammar lesson -
+    // the whole point of that link - and came back) - their typed attempt,
+    // and the wrong-answer explanation/grammar links already fetched for
+    // it, so returning doesn't look like the attempt never happened.
+    if (pendingDraft || pendingWrongState) {
+      input.value = pendingDraft;
+      if (pendingWrongState) {
+        feedback.textContent = t.wrong;
+        feedback.className = 'lessonFeedback lessonFeedback-wrong';
+        lastWrongState = pendingWrongState;
+        renderExplanationBox(pendingWrongState.explanation, pendingWrongState.lessons);
+      }
+    }
+    pendingDraft = '';
+    pendingWrongState = null;
+
     input.focus();
+    input.addEventListener('input', () => {
+      if (!correct) persistState();
+    });
 
     hintBtn.onclick = () => {
       if (correct) return;
@@ -201,20 +248,14 @@ export function renderLessonPlayer(host, lesson) {
           promptLang,
         });
         if (requestId !== explainRequestId) return; // a newer attempt superseded this one
-        explanationEl.innerHTML = '';
-        const p = document.createElement('p');
-        p.textContent = explanation;
-        explanationEl.appendChild(p);
-        for (const lesson of lessons) {
-          const link = document.createElement('a');
-          link.className = 'mistakeGrammarLink';
-          link.href = `#/grammar/${encodeURIComponent(lesson.id)}`;
-          link.textContent = `${t.grammarLinkLabel} ${lesson.topic}`;
-          explanationEl.appendChild(link);
-        }
+        renderExplanationBox(explanation, lessons);
+        lastWrongState = { explanation, lessons };
+        persistState();
       } catch {
         if (requestId !== explainRequestId) return;
         explanationEl.hidden = true;
+        lastWrongState = null;
+        persistState();
       }
     }
 
@@ -229,16 +270,19 @@ export function renderLessonPlayer(host, lesson) {
         feedback.textContent = t.correct;
         feedback.className = 'lessonFeedback lessonFeedback-correct';
         explanationEl.hidden = true;
+        lastWrongState = null;
         hintBtn.hidden = true;
         micBtn.hidden = true;
         primaryBtn.textContent = t.continueBtn;
         input.setAttribute('readonly', 'readonly');
         recordVocabForStep(step, true);
+        persistState();
       } else {
         feedback.textContent = t.wrong;
         feedback.className = 'lessonFeedback lessonFeedback-wrong';
         // Don't clear the input - the learner edits their existing attempt.
         recordVocabForStep(step, false);
+        persistState();
         requestMistakeExplanation(input.value);
       }
     };
