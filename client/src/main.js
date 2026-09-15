@@ -28,12 +28,13 @@ import { lektion6 } from './lessons/lektion6.js';
 import { lektion7 } from './lessons/lektion7.js';
 import { lektion8 } from './lessons/lektion8.js';
 import { lektion9 } from './lessons/lektion9.js';
+import { lektion10 } from './lessons/lektion10.js';
 import { tuvNordFoodGpt } from './lessons/tuvNordFoodGpt.js';
 
 // Courses with an active-recall LessonPlayer instead of the plain reading
 // view - keyed by course id, so more lessons can be added here later
 // without touching the router again. lesson1/lektion2/lektion3/lektion4/
-// lektion5/lektion6/lektion7/lektion8/lektion9 (A1 Lektionen) stay under "Courses" - the whole A1 Speaking course is
+// lektion5/lektion6/lektion7/lektion8/lektion9/lektion10 (A1 Lektionen) stay under "Courses" - the whole A1 Speaking course is
 // being rebuilt lesson by lesson in this same interactive format (replacing
 // the old plain-reading Lektion 2-10 content, see seed.js's one-time
 // cleanup migration); the Interview section (formerly "Learning") starts
@@ -50,6 +51,7 @@ const INTERACTIVE_LESSONS = {
   [lektion7.courseId]: lektion7,
   [lektion8.courseId]: lektion8,
   [lektion9.courseId]: lektion9,
+  [lektion10.courseId]: lektion10,
 };
 const STATIC_INTERVIEW_LESSONS = [tuvNordFoodGpt];
 const STATIC_INTERVIEW_LESSONS_BY_ID = { [tuvNordFoodGpt.courseId]: tuvNordFoodGpt };

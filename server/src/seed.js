@@ -202,6 +202,7 @@ const REBUILT_A1_LEKTIONEN = [
   { id: 'deutsch-almani-lektion-7', title: 'Lektion 7 – Vergangenheit, Könnten, Dürfen und Lassen' },
   { id: 'deutsch-almani-lektion-8', title: 'Lektion 8 – Trennbare Verben, Bewegung, Um ... zu und Dass' },
   { id: 'deutsch-almani-lektion-9', title: 'Lektion 9 – Du-Form, Perfekt, Noch und Vergangenheit' },
+  { id: 'deutsch-almani-lektion-10', title: 'Lektion 10 – Perfekt, Reisen, Kommunikation und persönliche Angaben' },
 ];
 
 function cleanupOldA1Lektionen() {
