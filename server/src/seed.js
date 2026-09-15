@@ -199,6 +199,7 @@ const REBUILT_A1_LEKTIONEN = [
   { id: 'deutsch-almani-lektion-4', title: 'Lektion 4 – Möchte, Gern, Wissen und Weil' },
   { id: 'deutsch-almani-lektion-5', title: 'Lektion 5 – Fragen, Reflexive Verben, Interesse und zu + Infinitiv' },
   { id: 'deutsch-almani-lektion-6', title: 'Lektion 6 – Telefonieren, Sprechen, Würde, Ob und Seit' },
+  { id: 'deutsch-almani-lektion-7', title: 'Lektion 7 – Vergangenheit, Könnten, Dürfen und Lassen' },
 ];
 
 function cleanupOldA1Lektionen() {
