@@ -201,6 +201,7 @@ const REBUILT_A1_LEKTIONEN = [
   { id: 'deutsch-almani-lektion-6', title: 'Lektion 6 – Telefonieren, Sprechen, Würde, Ob und Seit' },
   { id: 'deutsch-almani-lektion-7', title: 'Lektion 7 – Vergangenheit, Könnten, Dürfen und Lassen' },
   { id: 'deutsch-almani-lektion-8', title: 'Lektion 8 – Trennbare Verben, Bewegung, Um ... zu und Dass' },
+  { id: 'deutsch-almani-lektion-9', title: 'Lektion 9 – Du-Form, Perfekt, Noch und Vergangenheit' },
 ];
 
 function cleanupOldA1Lektionen() {
