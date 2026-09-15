@@ -193,7 +193,10 @@ const OLD_A1_LEKTIONEN_TO_REMOVE = [
 // Lektionen from the list above that already have a new interactive
 // version (see main.js's INTERACTIVE_LESSONS) - re-added as an empty
 // course row (title/level only) purely so they show up as a card again.
-const REBUILT_A1_LEKTIONEN = [{ id: 'deutsch-almani-lektion-2', title: 'Lektion 2 – Haben, Bringen, Brauchen und Zukunft' }];
+const REBUILT_A1_LEKTIONEN = [
+  { id: 'deutsch-almani-lektion-2', title: 'Lektion 2 – Haben, Bringen, Brauchen und Zukunft' },
+  { id: 'deutsch-almani-lektion-3', title: 'Lektion 3 – Wohin, Warten, Imperativ und Zukunft' },
+];
 
 function cleanupOldA1Lektionen() {
   const del = db.prepare('DELETE FROM courses WHERE id = ?');
