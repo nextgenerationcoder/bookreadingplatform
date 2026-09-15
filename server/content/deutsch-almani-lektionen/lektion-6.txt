@@ -1,0 +1,191 @@
+COURSE: deutsch-almani-lektion-6
+TITLE: Lektion 6
+LEVEL: A1
+LANG: de -> fa
+
+PAGE 1
+CHAPTER: Lektion 6
+1: später
+دیرتر / بعدتر / بعدأ
+2: es ist sehr spät
+خیلی دیر است
+3: etwas
+یه چیزی / چیزی / یه خورده / کمی
+4: etwas später
+کمی دیرتر
+5: rufen
+صدا زدن
+6: anrufen
+تماس گرفتن
+7: wollen Sie mich später anrufen?
+می خواهید شما منرا بعدأ تماس بگیرید؟
+8: können Sie mich später anrufen?
+می توانید شما من را بعدأ تماس بگیرید ؟
+9: zu
+بسیار / خیلی
+10: nach
+به سمت
+11: fahren
+رفتن ( با وسیله نقلیه )
+12: ich fahre nach Berlin
+من میروم به سمت برلین
+13: Deutschland
+آلمان
+14: Deutsch
+زبان آلمانی
+15: ich fahre nach Deutschland
+من به سمت برلین میروم
+16: sprechen
+صحبت کردن
+17: Sie sprechen Englisch
+شما انگلیسی صحبت می کنید
+18: sprechen Sie Englisch?
+شما انگلیسی صحبت میکنید؟
+19: Sie sprechen Deutsch sehr gut
+شما آلمانی خیلی خوب صحبت میکنید
+20: auf Deutsch
+در آلمانی
+21: wie sagt man es auf Deutsch?
+چگونه آدم آن را در آلمانی می گوید؟
+22: wie sagen Sie es auf Deutsch?
+شما آن را در آلمانی چه می گویید؟
+23: man sagt es nicht so
+آدم آن را آنطور نمی گوید
+24: sagt man?
+آدم می گوید ؟
+25: sagt man es so?
+آن را آنطور میگوید ؟ (آدم )
+26: sagt man es so auf Deutsch?
+آدم آن را در آلمانی آنطور می گوید ؟
+27: wie sagt man es auf Deutsch?
+چگونه آدم آن را در آلمانی میگوید؟
+28: es ist zu spät
+بسیار دیر است
+29: es ist zu spät, es jetzt zu tun
+خیلی دیر است اکنون آن را انجام دادن
+30: ich werde es später tun
+من آن را بعدأ انجام خواهم داد
+31: es wird nicht möglich sein, es jetzt zu tun
+ممکن نخواهد بود، آن را اکنون انجام دادن
+32: ich werde es heute später tun
+من آن را امروز دیرتر (بعدأ) انجام خواهم داد
+33: er wird bald hier sein
+او سریعأ اینجا خواهد بود
+34: es wird sehr wichtig sein
+آن خیلی مهم خواهد بود
+35: es wird sehr wichtig sein, es zu tun
+انجام دادن آن خیلی مهم خواهد بود / (آن ) خیلی مهم خواهد بود، انجام دادن آن
+36: aber Ich habe keine Zeit, es jetzt zu tun
+اما من وقت ندارم، اکنون آن را انجام بدهم
+37: ich werde nicht die Zeit haben, heute es zu tun
+من وقت نخواهم داشت، امروز آن را انجام بدهم
+38: würden
+werden حالت التزامی
+39: ich würde es tun
+من آن را انجام دهم
+40: er würde es tun
+او آن را انجام دهد
+41: wir würden es nicht tun
+ما آن را انجام ندهیم
+42: wir werden es nicht tun
+ما آن را انجام نخواهیم داد
+43: es wird nicht so möglich sein
+آن آنطور ممکن نخواهد بود
+44: es würde nicht möglich sein
+ُ ُآن ممکن ن َب و د
+45: ich würde es kaufen
+من آن را بِخَرَم
+46: ich werde es nicht kaufen
+من آن را نخواهم خرید
+47: es würde nicht möglich sein, es zu tun
+ُممکن َنَب و د، انجام دادنش
+48: weil er heute sehr beschäftigt ist
+چون او امروز خیلی مشغول است
+49: weil ich es heute nicht tun kann
+چون من آن را امروز نمی توانم انجام دهم
+50: ich werde es heute nicht tun
+من آن را امروز انجام نخواهم داد
+51: weil ich es heute nicht tun werde
+چون من آن را امروز انجام نخواهم داد
+52: weil ich es heute nicht tun würde
+چون من آن را امروز انجام نَدَهَم
+53: weil ich keine Zeit haben würde, heute es zu tun
+چون مرا وقت نَبُوَد (چون مرا هیچ وقتی نبود)، امروز آن را انجام دادن
+54: wann wird er hier sein?
+چه زمانی او اینجا خواهد بود ؟
+55: ich möchte wissen, wann es fertig sein wird
+من دوست دارم بدانم، چه زمانی آن آ ماده خواهد بود؟
+56: es würde heute fertig sein
+آن امروز آماده بُوَد
+57: es kann heute fertig sein
+آن می تواند امروز آماده باشد
+58: es wird heute fertig sein
+آن امروز آماده خواهد بود
+59: weil es heute fertig sein wird
+چون آن امروز آ ماده خواهد بود
+60: weil es heute nicht fertig sein kann
+چون آن امروز نمی تواند آماده باشد
+61: ich will wissen, um wie viel Uhr es fertig sein wird
+من می خواهم بدانم، در چه ساعتی آن آماده خواهد بود؟
+62: ich möchte wissen, um wie viel Uhr es fertig sein wird
+من دوست دارم بدانم، در چه ساعتی آن آماده خواهد بود
+63: ich möchte wissen, warum es heute nicht fertig sein kann
+من مایلم بدانم، چرا آن امروز ن می تواند آماده باشد
+64: wenn
+اگر
+65: wenn Sie wollen
+اگر شما بخواهید
+66: wir wollen es heute nicht tun
+ما نمی خواهیم امروز آن را انجام دهیم
+67: ich möchte wissen, wann Sie es tun wollen
+من دوست دارم بدانم ، چه زمانی شما میخواهید آن را انجام دهید
+68: ich möchte wissen, um wie viel Uhr er es tun kann
+من مایلم بدانم ، در چه ساعتی او می تواند آن را انجام دهد
+69: ich werde hier warten, wenn Sie wollen
+من اینجا منتظر خواهم بود، اگر شما بخواهید
+70: ich werde hier auf Sie warten, wenn Sie wollen
+من اینجا منتظر شما خواهم بود ، اگر شما بخواهید
+71: ob
+که آیا ... یا نه
+72: versuchen
+تالش کردن
+73: suchen
+جستجو کردن
+74: ich weiß nicht, ob ich es tun kann, aber ich werde versuchen
+من نمی دانم که آیا من آن را می توانم انجام دهم، اما من تالش خواهم کرد
+75: ich weiß nicht, ob es möglich ist, es so zu tun, aber ich werde versuchen
+من نمی دانم ، که ایا آن ممکن است انجام دادنش ، اما من تالش خواهم کرد
+76: ich weiß nicht, ob es möglich sein wird, es zu tun
+من نمی دانم ، که آیا آن ممکن خواهد بود ، انجام دادنش
+77: aber ich werde versuchen
+اما من تالش خواهم کرد
+78: ich weiß nicht, ob ich die Gelegenheit haben werde, heute dorthin zu gehen
+من نمی دانم که آیا من فرصت خواهم داشت یا نه، امروز به آنجا بروم
+79: seit
+از ..... پیش
+80: zehn Minuten
+ده دقیقه ( ها )
+81: ich warte seit zehn Minuten
+من از ده دقیقه پیش منتظرم
+82: wohnen
+زندگی کردن
+83: zehn Jahren
+ده سال ( ها )
+84: ich wohne hier schon seit zehn Jahren
+من زندگی میکنم اینجا از ده سال پیش
+85: wie lange wohnen Sie schon hier?
+چه مدت است شما اینجا زندگی میکنید ؟
+86: wie lange sind Sie schon hier?
+چه مدت است شما اینجا هستید ؟
+87: arbeiten
+کار کردن
+88: die Arbeit
+کار
+89: er arbeitet
+او کار می کند
+90: er arbeitet hier schon seit langer Zeit
+او کار می کند اینجا از خیلی وقت پیش
+91: drei Tagen
+سه روز ( ها)
+92: wir sind hier schon seit drei Tagen
+ما اینجا هستیم از سه روز پیش

@@ -1,0 +1,239 @@
+COURSE: deutsch-almani-lektion-2
+TITLE: Lektion 2
+LEVEL: A1
+LANG: de -> fa
+
+PAGE 1
+CHAPTER: Lektion 2
+1: ich verstehe Sie sehr gut
+من شما را خیلی خوب می فهمم
+2: ich verstehe Sie nicht sehr gut
+من شما را خیلی خوب نمی فهمم
+3: ich kann Sie sehr gut nicht verstehen
+من نمی توانم شما را خیلی خوب بفهمم
+4: verstehen Sie mich?
+می فهمی شما من را؟
+5: wollen Sie es mir bringen?
+می خواهید شما آن را به من بیاورید؟
+6: können Sie es mir heute bringen?
+می توانید شما آن را امروز بیاورید؟
+7: haben
+داشتن
+8: wir haben
+ما داریم
+9: wir haben es
+ما آن را داریم
+10: wir haben es nicht
+ما آن را نداریم
+11: haben Sie?
+دارید شما؟
+12: haben Sie es?
+شما آن را دارید؟
+13: warum
+چرا؟
+14: warum haben Sie es nicht?
+چرا شما آن را ندارید؟
+15: mit mir
+با من
+16: Können Sie mit mir kommen?
+می توانید شما با من بیایید؟
+17: haben Sie es für mich?
+دارید شما آن را برای من؟
+18: was haben Sie für mich?
+چه چیزی شما برای من دارید؟
+19: Es ist für mich
+آن برای من است
+20: können Sie mich verstehen?
+می توانید شما من را بفهمید؟
+21: warum können Sie mich nicht verstehen?
+چرا نمیتونید شما من را بفهمید؟
+22: was
+چه چیزی ؟
+23: etwas
+یه چیزی ( چیزی )
+24: können Sie mir etwas jetzt bringen?
+میتونید شما به من یه چیزی االن بیاورید؟
+25: was können Sie mir bringen?
+چه چیزی شما میتوانید به من بیاورید؟
+26: warum können Sie es mir jetzt nicht bringen?
+چرا نمی توانید شما آن را اکنون به من بیاورید؟
+27: wir haben es
+ما آن را داریم
+28: wir haben es nicht
+ما آن را نداریم
+29: warum haben Sie es nicht für mich?
+چرا ندارید شما آن را برای من؟
+30: ich muss
+من باید
+31: ich muss es haben
+من باید آن را داشته باشم
+32: leider
+متاسفانه
+33: ich kann es leider jetzt nicht tun
+من نمی توانم آن را متأسفانه اکنون انجام دهم
+34: es tut mir leid, aber ich habe es nicht jetzt für Sie
+متأسفم، اما من ندارم آن را اکنون برای شما
+35: Sie
+شما
+36: Ihnen
+به شما
+37: ich kann es Ihnen jetzt nicht bringen
+من نمی توانم آن را اکنون به شما بیاورم
+38: denn
+چون
+39: denn ich habe es jetzt nicht
+چون من آن را االن ندارم
+40: was haben Sie für mich?
+چه چیزی شما برای من دارید؟
+41: was können Sie mir bringen?
+چه چیزی می توانید شما به من بیاورید؟
+42: für mich
+برای من
+43: mit mir
+با من
+44: mit Ihnen
+با شما
+45: für Sie
+برای شما
+46: ich kann es Ihnen heute nicht bringen, denn ich habe es nicht
+من نمی توانم آن را برای شما امروز بیاورم، چون من ندا ر م آن را
+47: ich muss es haben
+من باید آن را داشته باشم
+48: müssen
+باید
+49: können
+توانستن
+50: wir müssen
+ما باید
+51: Sie müssen
+شما باید
+52: Sie müssen mit mir kommen
+شما باید با من بیایید
+53: geben
+دادن
+54: ich gebe
+من می دهم
+55: ich gebe es Ihnen
+من آن را به شما می دهم
+56: aber Ich kann es Ihnen heute nicht geben, denn ich habe es nicht
+اما من نمی توانم آن را امروز به شما بدهم ، چون من آن را ندارم
+57: wann wollen Sie es haben?
+چه زمانی می خواهید شما آن را داشته باشید؟
+58: wann wollen Sie es für mich haben?
+چه زمانی می خواهید شما آن را برای من داشته باشید؟
+59: wann können Sie es für mich haben?
+چه زمانی می توانید شما آن را برای من داشته باشید؟
+60: rauchen
+سیگار کشیدن
+61: verboten
+ممنوع بودن
+62: auch
+همچنین
+63: ich auch
+من هم همینطور (همچنین من )
+64: ich rauche nicht
+من سیگار نمی کشم
+65: brauchen
+نیاز داشتن
+66: ich brauche es
+من آن را نیاز دارم
+67: ich brauche es nicht
+من آن را نیاز ندارم
+68: ich brauche es jetzt nicht
+من آن را اکنون نیاز ندارم
+69: sie
+آن ها
+70: brauchen sie es?
+نیاز دار ن د آن ها آن را ؟
+71: wann brauchen Sie es?
+چه زمانی شما نیاز دارید آن را؟
+72: wann wollen Sie es haben?
+چه زمانی می خواهید شما آن را داشته باشید؟
+73: ich kann es Ihnen heute bringen
+من می توانم آن را به شما امروز بیاورم
+74: ich will es haben
+من می خواهم آن را داشته باشم
+75: werden
+شدن
+76: . ساخته می شود
+زمان آینده در زبان آلمانی با فعل werden
+77: wir werden es haben
+ما آن را خواهیم داشت
+78: sie werden es haben
+آنها آن را خواه ن د داشت
+79: wann werden sie es für mich haben?
+کی آنها آن را برای من خواهند داشت؟
+80: ich werde es für Sie heute haben
+من آن را برای شما امروز خواهم داشت
+81: ich werde es heute haben
+من آن را امروز خواهم داشت
+82: ich werde es heute Abend sehen
+من آن را امروز عصر خواهم دید
+83: ich werde es Ihnen bringen
+من آن را به شما خواهم آورد
+84: wann können Sie es mir bringen?
+کی می توانید شما آن را به من بیاورید؟
+85: wann wollen Sie es mir bringen?
+کی می خواهید شما آن را به من بیاورید؟
+86: Wann werden Sie es mir bringen?
+کی شما آن را به من خواهید آورد ؟
+87: wann können Sie es mir bringen, denn ich brauche es heute
+کی میتوانید شما آن را به من بیاورید ، چون من نیاز دارم آن را امروز
+88: Wann brauchen Sie es?
+کی نیاز دارید شما آن را؟
+89: wann wollen Sie es haben?
+کی می خواهید شما آن را داشته باشید
+90: ich will es heute haben, denn ich brauche es heute
+من می خواهم آن را امروز داشته باشم، چون من آن را امروز نیاز دارم
+91: Um wie viel Uhr
+در چه ساعتی
+92: Um wie viel Uhr wollen Sie es haben?
+در چه ساعتی می خواهید شما آن را داشته باشید؟
+93: sein
+هستن ، بودن
+94: Um wie viel Uhr können Sie heute Abend hier sein?
+در چه ساعتی می توانید شما امروز عصر اینجا باشید؟
+95: Um wie viel Uhr wollen Sie hier sein?
+در چه ساعتی می خواهید شما اینجا باشید؟
+96: Um wie viel Uhr werden Sie hier sein?
+در چه ساعتی شما اینجا خواهید بود؟
+97: kommen
+آمدن
+98: ankommen
+رسیدن
+99: morgen
+فردا
+100: Um wie viel Uhr werden Sie morgen ankommen?
+در چه ساعتی شما فردا خواهید رسید؟
+101: Um wie viel Uhr können Sie morgen hier sein?
+در چه ساعتی می توانید شما فردا اینجا باشید؟
+102: wie lange?
+چه مدت؟
+103: wie lange können Sie heute hier bleiben?
+چه مدت می توانید شما امروز اینجا بمانید؟
+104: wie lange werden Sie hier bleiben?
+چه مدت شما اینجا خواهید ماند؟
+105: warten
+منتظر بودن / ماندن
+106: wollen Sie bitte es für mich tun?
+میشه لطفا آن را برای من انجام دهید؟
+107: wann werden Sie es für mich tun?
+کی شما آن را برای من انجام خواهید دهید؟
+108: wollen Sie bitte mit mir hier bleiben?
+میشه لطفا با من اینجا بمانید؟
+109: wie lange werden Sie bleiben?
+چه مدت شما خواهید ماند؟
+110: sagen
+گفتن
+111: wollen Sie mir sagen?
+می خواهید شما به من بگویید؟
+112: wann werden Sie mir sagen?
+کی شما به من خواهید گفت؟
+113: wo
+کجا
+114: wollen Sie mir sagen, wo es ist, denn ich kann es nicht finden
+می خواهید شما به من بگویید کجا است آن، چون من نمیتوانم را پیدا کنم
+115: ich weiß nicht
+من نمی دانم
+116: es tut mir leid, aber ich weiß nicht, wo es ist, ich kann es nicht finden
+متاسفم، اما من نمیدانم کجا است آن، من نمی توانم آن را پیدا کنم
