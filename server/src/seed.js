@@ -166,10 +166,53 @@ async function seedBooks() {
   }
 }
 
+// One-time content cleanup, not a seed: the A1 "Speaking" course is being
+// rebuilt lesson-by-lesson as interactive LessonPlayer content (same
+// pattern as client/src/lessons/lesson1.js/lektion2.js, intercepted via
+// main.js's INTERACTIVE_LESSONS map) instead of the old plain-reading
+// pages (server/content/deutsch-almani-lektionen/lektion-{2..10}.txt,
+// still on disk as reference material but no longer seeded/linked to
+// anything). Deletes those old course rows outright (cascades to their
+// pages/sentences) so the Courses grid doesn't show stale page counts for
+// content nobody can actually reach anymore, then re-creates a fresh,
+// contentless row for each Lektion that already has a new interactive
+// version, so it reappears as a card. Runs unconditionally on every boot,
+// not just against an empty database - a no-op once done, since the
+// DELETE simply matches nothing on the next run.
+const OLD_A1_LEKTIONEN_TO_REMOVE = [
+  'deutsch-almani-lektion-2',
+  'deutsch-almani-lektion-3',
+  'deutsch-almani-lektion-4',
+  'deutsch-almani-lektion-5',
+  'deutsch-almani-lektion-6',
+  'deutsch-almani-lektion-7',
+  'deutsch-almani-lektion-8',
+  'deutsch-almani-lektion-9',
+  'deutsch-almani-lektion-10',
+];
+// Lektionen from the list above that already have a new interactive
+// version (see main.js's INTERACTIVE_LESSONS) - re-added as an empty
+// course row (title/level only) purely so they show up as a card again.
+const REBUILT_A1_LEKTIONEN = [{ id: 'deutsch-almani-lektion-2', title: 'Lektion 2 – Haben, Bringen, Brauchen und Zukunft' }];
+
+function cleanupOldA1Lektionen() {
+  const del = db.prepare('DELETE FROM courses WHERE id = ?');
+  const insert = db.prepare(
+    `INSERT INTO courses (id, level, title, source_lang, target_lang) VALUES (?, 'A1', ?, 'de', 'fa')
+     ON CONFLICT(id) DO UPDATE SET title = excluded.title`
+  );
+  const tx = db.transaction(() => {
+    for (const id of OLD_A1_LEKTIONEN_TO_REMOVE) del.run(id);
+    for (const { id, title } of REBUILT_A1_LEKTIONEN) insert.run(id, title);
+  });
+  tx();
+}
+
 export async function seedIfEmpty() {
   await seedDictionary();
   await seedWikidict();
   await seedWordFrequency();
   await seedGrammarLessons();
   await seedBooks();
+  cleanupOldA1Lektionen();
 }

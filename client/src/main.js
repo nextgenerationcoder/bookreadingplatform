@@ -20,16 +20,20 @@ import { renderInterviewHome } from './views/interviewHome.js';
 import { renderAddInterviewLesson } from './views/addInterviewLesson.js';
 import { renderInterviewShell, teardownInterviewShell } from './components/interviewSidebar.js';
 import { lesson1 } from './lessons/lesson1.js';
+import { lektion2 } from './lessons/lektion2.js';
 import { tuvNordFoodGpt } from './lessons/tuvNordFoodGpt.js';
 
 // Courses with an active-recall LessonPlayer instead of the plain reading
 // view - keyed by course id, so more lessons can be added here later
-// without touching the router again. lesson1 (A1 Lektion 1) stays under
-// "Courses"; the Interview section (formerly "Learning") starts with just
-// tuvNordFoodGpt bundled at build time, plus whatever's imported later via
-// Add Lesson (server/src/interviewLessonImporter.js) - see
-// STATIC_INTERVIEW_LESSONS below for the ones that belong to that section.
-const INTERACTIVE_LESSONS = { [lesson1.courseId]: lesson1 };
+// without touching the router again. lesson1/lektion2 (A1 Lektionen) stay
+// under "Courses" - the whole A1 Speaking course is being rebuilt lesson by
+// lesson in this same interactive format (replacing the old plain-reading
+// Lektion 2-10 content, see db.js's one-time cleanup migration); the
+// Interview section (formerly "Learning") starts with just tuvNordFoodGpt
+// bundled at build time, plus whatever's imported later via Add Lesson
+// (server/src/interviewLessonImporter.js) - see STATIC_INTERVIEW_LESSONS
+// below for the ones that belong to that section.
+const INTERACTIVE_LESSONS = { [lesson1.courseId]: lesson1, [lektion2.courseId]: lektion2 };
 const STATIC_INTERVIEW_LESSONS = [tuvNordFoodGpt];
 const STATIC_INTERVIEW_LESSONS_BY_ID = { [tuvNordFoodGpt.courseId]: tuvNordFoodGpt };
 

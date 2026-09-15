@@ -87,7 +87,7 @@ function renderCourseCard(course) {
     <a class="bookCardTitle" href="#/course/${encodeURIComponent(course.id)}">${escapeHtml(course.title)}</a>
     <div class="bookCardMeta">
       ${course.language.source.toUpperCase()} → ${course.language.target.toUpperCase()}
-      · ${course.pageCount} pages (${course.firstPage}–${course.lastPage})
+      ${course.pageCount ? `· ${course.pageCount} pages (${course.firstPage}–${course.lastPage})` : ''}
     </div>
     <div class="bookCardActions">
       <button class="linkButton" data-action="rename">✏️ Edit name</button>
