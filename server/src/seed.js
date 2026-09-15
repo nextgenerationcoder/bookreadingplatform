@@ -196,6 +196,7 @@ const OLD_A1_LEKTIONEN_TO_REMOVE = [
 const REBUILT_A1_LEKTIONEN = [
   { id: 'deutsch-almani-lektion-2', title: 'Lektion 2 – Haben, Bringen, Brauchen und Zukunft' },
   { id: 'deutsch-almani-lektion-3', title: 'Lektion 3 – Wohin, Warten, Imperativ und Zukunft' },
+  { id: 'deutsch-almani-lektion-4', title: 'Lektion 4 – Möchte, Gern, Wissen und Weil' },
 ];
 
 function cleanupOldA1Lektionen() {
