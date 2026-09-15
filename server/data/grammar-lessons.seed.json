@@ -68,7 +68,8 @@
       "du-vs-sie",
       "pronoun-gender"
     ],
-    "bookReference": "Grammatik aktiv A1-B1 (Cornelsen) - unit numbers preserved for cross-reference only"
+    "bookReference": "Grammatik aktiv A1-B1 (Cornelsen) - unit numbers preserved for cross-reference only",
+    "importanceRank": 180
   },
   {
     "id": "BK1-2",
@@ -139,7 +140,8 @@
       "weak-verbs",
       "verb-conjugation"
     ],
-    "bookReference": "Grammatik aktiv A1-B1 (Cornelsen) - unit numbers preserved for cross-reference only"
+    "bookReference": "Grammatik aktiv A1-B1 (Cornelsen) - unit numbers preserved for cross-reference only",
+    "importanceRank": 185
   },
   {
     "id": "BK1-3",
@@ -215,7 +217,8 @@
       "irregular-verbs",
       "verb-conjugation"
     ],
-    "bookReference": "Grammatik aktiv A1-B1 (Cornelsen) - unit numbers preserved for cross-reference only"
+    "bookReference": "Grammatik aktiv A1-B1 (Cornelsen) - unit numbers preserved for cross-reference only",
+    "importanceRank": 186
   },
   {
     "id": "BK1-4",
@@ -287,7 +290,8 @@
       "e-i-verbs",
       "a-ä-verbs"
     ],
-    "bookReference": "Grammatik aktiv A1-B1 (Cornelsen) - unit numbers preserved for cross-reference only"
+    "bookReference": "Grammatik aktiv A1-B1 (Cornelsen) - unit numbers preserved for cross-reference only",
+    "importanceRank": 187
   },
   {
     "id": "BK1-5",
@@ -363,7 +367,8 @@
       "satzklammer",
       "infinitive-position"
     ],
-    "bookReference": "Grammatik aktiv A1-B1 (Cornelsen) - unit numbers preserved for cross-reference only"
+    "bookReference": "Grammatik aktiv A1-B1 (Cornelsen) - unit numbers preserved for cross-reference only",
+    "importanceRank": 1
   },
   {
     "id": "BK1-6",
@@ -438,7 +443,8 @@
       "müssen-vs-dürfen",
       "wollen-vs-möchten"
     ],
-    "bookReference": "Grammatik aktiv A1-B1 (Cornelsen) - unit numbers preserved for cross-reference only"
+    "bookReference": "Grammatik aktiv A1-B1 (Cornelsen) - unit numbers preserved for cross-reference only",
+    "importanceRank": 2
   },
   {
     "id": "BK1-7",
@@ -512,7 +518,8 @@
       "verb-prefix",
       "word-order"
     ],
-    "bookReference": "Grammatik aktiv A1-B1 (Cornelsen) - unit numbers preserved for cross-reference only"
+    "bookReference": "Grammatik aktiv A1-B1 (Cornelsen) - unit numbers preserved for cross-reference only",
+    "importanceRank": 46
   },
   {
     "id": "BK1-8",
@@ -583,7 +590,8 @@
       "commands",
       "du-ihr-sie-imperative"
     ],
-    "bookReference": "Grammatik aktiv A1-B1 (Cornelsen) - unit numbers preserved for cross-reference only"
+    "bookReference": "Grammatik aktiv A1-B1 (Cornelsen) - unit numbers preserved for cross-reference only",
+    "importanceRank": 182
   },
   {
     "id": "BK1-9",
@@ -656,7 +664,8 @@
       "wo-wohin-woher",
       "verb-second"
     ],
-    "bookReference": "Grammatik aktiv A1-B1 (Cornelsen) - unit numbers preserved for cross-reference only"
+    "bookReference": "Grammatik aktiv A1-B1 (Cornelsen) - unit numbers preserved for cross-reference only",
+    "importanceRank": 123
   },
   {
     "id": "BK1-10",
@@ -730,7 +739,8 @@
       "verb-first",
       "doch"
     ],
-    "bookReference": "Grammatik aktiv A1-B1 (Cornelsen) - unit numbers preserved for cross-reference only"
+    "bookReference": "Grammatik aktiv A1-B1 (Cornelsen) - unit numbers preserved for cross-reference only",
+    "importanceRank": 181
   },
   {
     "id": "BK1-11",
@@ -799,7 +809,8 @@
       "satzstellung",
       "word-order-basics"
     ],
-    "bookReference": "Grammatik aktiv A1-B1 (Cornelsen) - unit numbers preserved for cross-reference only"
+    "bookReference": "Grammatik aktiv A1-B1 (Cornelsen) - unit numbers preserved for cross-reference only",
+    "importanceRank": 176
   },
   {
     "id": "BK1-12",
@@ -858,7 +869,8 @@
       "sein-adjektiv",
       "verb-verb-kombination"
     ],
-    "bookReference": "Grammatik aktiv A1-B1 (Cornelsen) - unit numbers preserved for cross-reference only"
+    "bookReference": "Grammatik aktiv A1-B1 (Cornelsen) - unit numbers preserved for cross-reference only",
+    "importanceRank": 85
   },
   {
     "id": "BK1-13",
@@ -937,7 +949,8 @@
       "plural-endungen",
       "dative-plural-n"
     ],
-    "bookReference": "Grammatik aktiv A1-B1 (Cornelsen) - unit numbers preserved for cross-reference only"
+    "bookReference": "Grammatik aktiv A1-B1 (Cornelsen) - unit numbers preserved for cross-reference only",
+    "importanceRank": 135
   },
   {
     "id": "BK1-14",
@@ -1002,7 +1015,8 @@
       "kein-artikel",
       "articles"
     ],
-    "bookReference": "Grammatik aktiv A1-B1 (Cornelsen) - unit numbers preserved for cross-reference only"
+    "bookReference": "Grammatik aktiv A1-B1 (Cornelsen) - unit numbers preserved for cross-reference only",
+    "importanceRank": 175
   },
   {
     "id": "BK1-15",
@@ -1066,7 +1080,8 @@
       "negating-nouns",
       "nicht-position"
     ],
-    "bookReference": "Grammatik aktiv A1-B1 (Cornelsen) - unit numbers preserved for cross-reference only"
+    "bookReference": "Grammatik aktiv A1-B1 (Cornelsen) - unit numbers preserved for cross-reference only",
+    "importanceRank": 183
   },
   {
     "id": "BK1-16",
@@ -1137,7 +1152,8 @@
       "der-den",
       "masculine-accusative"
     ],
-    "bookReference": "Grammatik aktiv A1-B1 (Cornelsen) - unit numbers preserved for cross-reference only"
+    "bookReference": "Grammatik aktiv A1-B1 (Cornelsen) - unit numbers preserved for cross-reference only",
+    "importanceRank": 136
   },
   {
     "id": "BK1-17",
@@ -1201,7 +1217,8 @@
       "dative-verbs",
       "indirect-object"
     ],
-    "bookReference": "Grammatik aktiv A1-B1 (Cornelsen) - unit numbers preserved for cross-reference only"
+    "bookReference": "Grammatik aktiv A1-B1 (Cornelsen) - unit numbers preserved for cross-reference only",
+    "importanceRank": 137
   },
   {
     "id": "BK1-18",
@@ -1272,7 +1289,8 @@
       "ein-words",
       "mein-dein-sein"
     ],
-    "bookReference": "Grammatik aktiv A1-B1 (Cornelsen) - unit numbers preserved for cross-reference only"
+    "bookReference": "Grammatik aktiv A1-B1 (Cornelsen) - unit numbers preserved for cross-reference only",
+    "importanceRank": 162
   },
   {
     "id": "BK1-19",
@@ -1337,7 +1355,8 @@
       "interrogative-article",
       "demonstrative-article"
     ],
-    "bookReference": "Grammatik aktiv A1-B1 (Cornelsen) - unit numbers preserved for cross-reference only"
+    "bookReference": "Grammatik aktiv A1-B1 (Cornelsen) - unit numbers preserved for cross-reference only",
+    "importanceRank": 163
   },
   {
     "id": "BK1-20",
@@ -1410,7 +1429,8 @@
       "mir-dir-ihm",
       "pronoun-order"
     ],
-    "bookReference": "Grammatik aktiv A1-B1 (Cornelsen) - unit numbers preserved for cross-reference only"
+    "bookReference": "Grammatik aktiv A1-B1 (Cornelsen) - unit numbers preserved for cross-reference only",
+    "importanceRank": 138
   },
   {
     "id": "BK1-23",
@@ -1473,7 +1493,8 @@
       "simple-past",
       "war-hatte"
     ],
-    "bookReference": "Grammatik aktiv A1-B1 (Cornelsen) - unit numbers preserved for cross-reference only"
+    "bookReference": "Grammatik aktiv A1-B1 (Cornelsen) - unit numbers preserved for cross-reference only",
+    "importanceRank": 94
   },
   {
     "id": "BK1-24",
@@ -1540,7 +1561,8 @@
       "haben-perfekt",
       "past-participle"
     ],
-    "bookReference": "Grammatik aktiv A1-B1 (Cornelsen) - unit numbers preserved for cross-reference only"
+    "bookReference": "Grammatik aktiv A1-B1 (Cornelsen) - unit numbers preserved for cross-reference only",
+    "importanceRank": 95
   },
   {
     "id": "BK1-30",
@@ -1611,7 +1633,8 @@
       "im-am-um",
       "von-bis"
     ],
-    "bookReference": "Grammatik aktiv A1-B1 (Cornelsen) - unit numbers preserved for cross-reference only"
+    "bookReference": "Grammatik aktiv A1-B1 (Cornelsen) - unit numbers preserved for cross-reference only",
+    "importanceRank": 149
   },
   {
     "id": "BK1-31",
@@ -1682,7 +1705,8 @@
       "aus-bei-mit-nach-seit-von-zu",
       "nach-vs-zu"
     ],
-    "bookReference": "Grammatik aktiv A1-B1 (Cornelsen) - unit numbers preserved for cross-reference only"
+    "bookReference": "Grammatik aktiv A1-B1 (Cornelsen) - unit numbers preserved for cross-reference only",
+    "importanceRank": 139
   },
   {
     "id": "BK1-32",
@@ -1748,7 +1772,8 @@
       "accusative-prepositions",
       "für-um-durch-ohne-gegen"
     ],
-    "bookReference": "Grammatik aktiv A1-B1 (Cornelsen) - unit numbers preserved for cross-reference only"
+    "bookReference": "Grammatik aktiv A1-B1 (Cornelsen) - unit numbers preserved for cross-reference only",
+    "importanceRank": 140
   },
   {
     "id": "BK1-33",
@@ -1812,7 +1837,8 @@
       "wo-dativ",
       "an-auf-in-dative"
     ],
-    "bookReference": "Grammatik aktiv A1-B1 (Cornelsen) - unit numbers preserved for cross-reference only"
+    "bookReference": "Grammatik aktiv A1-B1 (Cornelsen) - unit numbers preserved for cross-reference only",
+    "importanceRank": 122
   },
   {
     "id": "BK1-45",
@@ -1879,7 +1905,8 @@
       "gender-of-compounds",
       "grundwort"
     ],
-    "bookReference": "Grammatik aktiv A1-B1 (Cornelsen) - unit numbers preserved for cross-reference only"
+    "bookReference": "Grammatik aktiv A1-B1 (Cornelsen) - unit numbers preserved for cross-reference only",
+    "importanceRank": 102
   },
   {
     "id": "BK1-47",
@@ -1954,7 +1981,8 @@
       "los-sein",
       "state-idioms"
     ],
-    "bookReference": "Grammatik aktiv A1-B1 (Cornelsen) - unit numbers preserved for cross-reference only"
+    "bookReference": "Grammatik aktiv A1-B1 (Cornelsen) - unit numbers preserved for cross-reference only",
+    "importanceRank": 119
   },
   {
     "id": "BK1-48",
@@ -2026,7 +2054,8 @@
       "chen-lein-neuter",
       "ung-heit-feminine"
     ],
-    "bookReference": "Grammatik aktiv A1-B1 (Cornelsen) - unit numbers preserved for cross-reference only"
+    "bookReference": "Grammatik aktiv A1-B1 (Cornelsen) - unit numbers preserved for cross-reference only",
+    "importanceRank": 103
   },
   {
     "id": "BK1-21",
@@ -2092,7 +2121,8 @@
       "dative-accusative-verbs",
       "geben-verben"
     ],
-    "bookReference": "Grammatik aktiv A1-B1 (Cornelsen) - unit numbers preserved for cross-reference only"
+    "bookReference": "Grammatik aktiv A1-B1 (Cornelsen) - unit numbers preserved for cross-reference only",
+    "importanceRank": 141
   },
   {
     "id": "BK1-22",
@@ -2164,7 +2194,8 @@
       "gefallen-gehören-schmecken",
       "helfen-danken-antworten"
     ],
-    "bookReference": "Grammatik aktiv A1-B1 (Cornelsen) - unit numbers preserved for cross-reference only"
+    "bookReference": "Grammatik aktiv A1-B1 (Cornelsen) - unit numbers preserved for cross-reference only",
+    "importanceRank": 142
   },
   {
     "id": "BK1-25",
@@ -2231,7 +2262,8 @@
       "bewegungsverben",
       "zustandsverben"
     ],
-    "bookReference": "Grammatik aktiv A1-B1 (Cornelsen) - unit numbers preserved for cross-reference only"
+    "bookReference": "Grammatik aktiv A1-B1 (Cornelsen) - unit numbers preserved for cross-reference only",
+    "importanceRank": 96
   },
   {
     "id": "BK1-26",
@@ -2299,7 +2331,8 @@
       "trennbar-untrennbar-partizip",
       "mischverben"
     ],
-    "bookReference": "Grammatik aktiv A1-B1 (Cornelsen) - unit numbers preserved for cross-reference only"
+    "bookReference": "Grammatik aktiv A1-B1 (Cornelsen) - unit numbers preserved for cross-reference only",
+    "importanceRank": 47
   },
   {
     "id": "BK1-27",
@@ -2359,7 +2392,8 @@
       "konnte-musste-durfte",
       "möchten-vergangenheit"
     ],
-    "bookReference": "Grammatik aktiv A1-B1 (Cornelsen) - unit numbers preserved for cross-reference only"
+    "bookReference": "Grammatik aktiv A1-B1 (Cornelsen) - unit numbers preserved for cross-reference only",
+    "importanceRank": 3
   },
   {
     "id": "BK1-28",
@@ -2428,7 +2462,8 @@
       "tense-choice",
       "zukunft-mit-präsens"
     ],
-    "bookReference": "Grammatik aktiv A1-B1 (Cornelsen) - unit numbers preserved for cross-reference only"
+    "bookReference": "Grammatik aktiv A1-B1 (Cornelsen) - unit numbers preserved for cross-reference only",
+    "importanceRank": 97
   },
   {
     "id": "BK1-29",
@@ -2496,7 +2531,8 @@
       "sich",
       "reziproke-verben"
     ],
-    "bookReference": "Grammatik aktiv A1-B1 (Cornelsen) - unit numbers preserved for cross-reference only"
+    "bookReference": "Grammatik aktiv A1-B1 (Cornelsen) - unit numbers preserved for cross-reference only",
+    "importanceRank": 107
   },
   {
     "id": "BK1-34",
@@ -2560,7 +2596,8 @@
       "direction-prepositions",
       "ins-ans"
     ],
-    "bookReference": "Grammatik aktiv A1-B1 (Cornelsen) - unit numbers preserved for cross-reference only"
+    "bookReference": "Grammatik aktiv A1-B1 (Cornelsen) - unit numbers preserved for cross-reference only",
+    "importanceRank": 124
   },
   {
     "id": "BK1-35",
@@ -2635,7 +2672,8 @@
       "zu-hause-nach-hause",
       "in-an-auf-bei-nach-zu-aus-von"
     ],
-    "bookReference": "Grammatik aktiv A1-B1 (Cornelsen) - unit numbers preserved for cross-reference only"
+    "bookReference": "Grammatik aktiv A1-B1 (Cornelsen) - unit numbers preserved for cross-reference only",
+    "importanceRank": 125
   },
   {
     "id": "BK1-36",
@@ -2700,7 +2738,8 @@
       "signal-endung",
       "nominativ-akkusativ-adjektiv"
     ],
-    "bookReference": "Grammatik aktiv A1-B1 (Cornelsen) - unit numbers preserved for cross-reference only"
+    "bookReference": "Grammatik aktiv A1-B1 (Cornelsen) - unit numbers preserved for cross-reference only",
+    "importanceRank": 128
   },
   {
     "id": "BK1-37",
@@ -2766,7 +2805,8 @@
       "adjective-dative-endings",
       "n-oder-m-regel"
     ],
-    "bookReference": "Grammatik aktiv A1-B1 (Cornelsen) - unit numbers preserved for cross-reference only"
+    "bookReference": "Grammatik aktiv A1-B1 (Cornelsen) - unit numbers preserved for cross-reference only",
+    "importanceRank": 129
   },
   {
     "id": "BK1-38",
@@ -2836,7 +2876,8 @@
       "wie-vs-als",
       "besser-mehr-lieber"
     ],
-    "bookReference": "Grammatik aktiv A1-B1 (Cornelsen) - unit numbers preserved for cross-reference only"
+    "bookReference": "Grammatik aktiv A1-B1 (Cornelsen) - unit numbers preserved for cross-reference only",
+    "importanceRank": 110
   },
   {
     "id": "BK1-40",
@@ -2895,7 +2936,8 @@
       "hauptsätze-verbinden",
       "coordinating-conjunctions"
     ],
-    "bookReference": "Grammatik aktiv A1-B1 (Cornelsen) - unit numbers preserved for cross-reference only"
+    "bookReference": "Grammatik aktiv A1-B1 (Cornelsen) - unit numbers preserved for cross-reference only",
+    "importanceRank": 16
   },
   {
     "id": "BK1-41",
@@ -2953,7 +2995,8 @@
       "deshalb-sonst-dann-danach",
       "wortstellung-inversion"
     ],
-    "bookReference": "Grammatik aktiv A1-B1 (Cornelsen) - unit numbers preserved for cross-reference only"
+    "bookReference": "Grammatik aktiv A1-B1 (Cornelsen) - unit numbers preserved for cross-reference only",
+    "importanceRank": 177
   },
   {
     "id": "BK1-42",
@@ -3022,7 +3065,8 @@
       "verb-am-ende",
       "weil-dass-wenn"
     ],
-    "bookReference": "Grammatik aktiv A1-B1 (Cornelsen) - unit numbers preserved for cross-reference only"
+    "bookReference": "Grammatik aktiv A1-B1 (Cornelsen) - unit numbers preserved for cross-reference only",
+    "importanceRank": 17
   },
   {
     "id": "BK1-43",
@@ -3086,7 +3130,8 @@
       "da-dort-dahin-dorthin",
       "nach-oben-unten"
     ],
-    "bookReference": "Grammatik aktiv A1-B1 (Cornelsen) - unit numbers preserved for cross-reference only"
+    "bookReference": "Grammatik aktiv A1-B1 (Cornelsen) - unit numbers preserved for cross-reference only",
+    "importanceRank": 65
   },
   {
     "id": "BK1-44",
@@ -3149,7 +3194,8 @@
       "denn-doch-mal",
       "abtönungspartikeln"
     ],
-    "bookReference": "Grammatik aktiv A1-B1 (Cornelsen) - unit numbers preserved for cross-reference only"
+    "bookReference": "Grammatik aktiv A1-B1 (Cornelsen) - unit numbers preserved for cross-reference only",
+    "importanceRank": 171
   },
   {
     "id": "BK1-46",
@@ -3234,7 +3280,8 @@
       "ung-suffix",
       "infinitiv-als-nomen"
     ],
-    "bookReference": "Grammatik aktiv A1-B1 (Cornelsen) - unit numbers preserved for cross-reference only"
+    "bookReference": "Grammatik aktiv A1-B1 (Cornelsen) - unit numbers preserved for cross-reference only",
+    "importanceRank": 104
   },
   {
     "id": "BK1-39",
@@ -3299,7 +3346,8 @@
       "am-sten",
       "der-die-das-ste"
     ],
-    "bookReference": "Grammatik aktiv A1-B1 (Cornelsen) - unit numbers preserved for cross-reference only"
+    "bookReference": "Grammatik aktiv A1-B1 (Cornelsen) - unit numbers preserved for cross-reference only",
+    "importanceRank": 111
   },
   {
     "id": "BK1-49",
@@ -3368,7 +3416,8 @@
       "regelmäßige-unregelmäßige-verben",
       "mischverben-präteritum"
     ],
-    "bookReference": "Grammatik aktiv A1-B1 (Cornelsen) - unit numbers preserved for cross-reference only"
+    "bookReference": "Grammatik aktiv A1-B1 (Cornelsen) - unit numbers preserved for cross-reference only",
+    "importanceRank": 98
   },
   {
     "id": "BK1-50",
@@ -3422,7 +3471,8 @@
       "vorzeitigkeit",
       "nachdem-plusquamperfekt"
     ],
-    "bookReference": "Grammatik aktiv A1-B1 (Cornelsen) - unit numbers preserved for cross-reference only"
+    "bookReference": "Grammatik aktiv A1-B1 (Cornelsen) - unit numbers preserved for cross-reference only",
+    "importanceRank": 99
   },
   {
     "id": "BK1-51",
@@ -3481,7 +3531,8 @@
       "sich-waschen",
       "mir-vs-mich"
     ],
-    "bookReference": "Grammatik aktiv A1-B1 (Cornelsen) - unit numbers preserved for cross-reference only"
+    "bookReference": "Grammatik aktiv A1-B1 (Cornelsen) - unit numbers preserved for cross-reference only",
+    "importanceRank": 108
   },
   {
     "id": "BK1-52",
@@ -3548,7 +3599,8 @@
       "separable-inseparable-summary",
       "zu-infinitiv-trennbar"
     ],
-    "bookReference": "Grammatik aktiv A1-B1 (Cornelsen) - unit numbers preserved for cross-reference only"
+    "bookReference": "Grammatik aktiv A1-B1 (Cornelsen) - unit numbers preserved for cross-reference only",
+    "importanceRank": 48
   },
   {
     "id": "BK1-53",
@@ -3619,7 +3671,8 @@
       "wo-fragewörter",
       "worauf-wofür"
     ],
-    "bookReference": "Grammatik aktiv A1-B1 (Cornelsen) - unit numbers preserved for cross-reference only"
+    "bookReference": "Grammatik aktiv A1-B1 (Cornelsen) - unit numbers preserved for cross-reference only",
+    "importanceRank": 66
   },
   {
     "id": "BK1-54",
@@ -3678,7 +3731,8 @@
       "dafür-daran-darauf",
       "preposition-pronoun-for-things"
     ],
-    "bookReference": "Grammatik aktiv A1-B1 (Cornelsen) - unit numbers preserved for cross-reference only"
+    "bookReference": "Grammatik aktiv A1-B1 (Cornelsen) - unit numbers preserved for cross-reference only",
+    "importanceRank": 67
   },
   {
     "id": "BK1-55",
@@ -3743,7 +3797,8 @@
       "wäre-hätte-könnte",
       "subjunctive-forms"
     ],
-    "bookReference": "Grammatik aktiv A1-B1 (Cornelsen) - unit numbers preserved for cross-reference only"
+    "bookReference": "Grammatik aktiv A1-B1 (Cornelsen) - unit numbers preserved for cross-reference only",
+    "importanceRank": 38
   },
   {
     "id": "BK1-56",
@@ -3808,7 +3863,8 @@
       "höflichkeit",
       "ratschlag-vorschlag"
     ],
-    "bookReference": "Grammatik aktiv A1-B1 (Cornelsen) - unit numbers preserved for cross-reference only"
+    "bookReference": "Grammatik aktiv A1-B1 (Cornelsen) - unit numbers preserved for cross-reference only",
+    "importanceRank": 39
   },
   {
     "id": "BK1-57",
@@ -3875,7 +3931,8 @@
       "werden-partizip",
       "akkusativ-wird-subjekt"
     ],
-    "bookReference": "Grammatik aktiv A1-B1 (Cornelsen) - unit numbers preserved for cross-reference only"
+    "bookReference": "Grammatik aktiv A1-B1 (Cornelsen) - unit numbers preserved for cross-reference only",
+    "importanceRank": 71
   },
   {
     "id": "BK1-58",
@@ -3942,7 +3999,8 @@
       "worden-vs-geworden",
       "passive-past-tenses"
     ],
-    "bookReference": "Grammatik aktiv A1-B1 (Cornelsen) - unit numbers preserved for cross-reference only"
+    "bookReference": "Grammatik aktiv A1-B1 (Cornelsen) - unit numbers preserved for cross-reference only",
+    "importanceRank": 72
   },
   {
     "id": "BK1-59",
@@ -3996,7 +4054,8 @@
       "vermutung",
       "werden-infinitiv-zukunft"
     ],
-    "bookReference": "Grammatik aktiv A1-B1 (Cornelsen) - unit numbers preserved for cross-reference only"
+    "bookReference": "Grammatik aktiv A1-B1 (Cornelsen) - unit numbers preserved for cross-reference only",
+    "importanceRank": 4
   },
   {
     "id": "BK1-60",
@@ -4057,7 +4116,8 @@
       "geworden-vs-worden",
       "werden-passiv-futur"
     ],
-    "bookReference": "Grammatik aktiv A1-B1 (Cornelsen) - unit numbers preserved for cross-reference only"
+    "bookReference": "Grammatik aktiv A1-B1 (Cornelsen) - unit numbers preserved for cross-reference only",
+    "importanceRank": 14
   },
   {
     "id": "BK1-61",
@@ -4118,7 +4178,8 @@
       "doppelinfinitiv",
       "erlauben-machen-lassen"
     ],
-    "bookReference": "Grammatik aktiv A1-B1 (Cornelsen) - unit numbers preserved for cross-reference only"
+    "bookReference": "Grammatik aktiv A1-B1 (Cornelsen) - unit numbers preserved for cross-reference only",
+    "importanceRank": 90
   },
   {
     "id": "BK1-62",
@@ -4180,7 +4241,8 @@
       "legen-liegen",
       "hängen"
     ],
-    "bookReference": "Grammatik aktiv A1-B1 (Cornelsen) - unit numbers preserved for cross-reference only"
+    "bookReference": "Grammatik aktiv A1-B1 (Cornelsen) - unit numbers preserved for cross-reference only",
+    "importanceRank": 150
   },
   {
     "id": "BK1-63",
@@ -4244,7 +4306,8 @@
       "des-eines",
       "genitiv-s-bei-namen"
     ],
-    "bookReference": "Grammatik aktiv A1-B1 (Cornelsen) - unit numbers preserved for cross-reference only"
+    "bookReference": "Grammatik aktiv A1-B1 (Cornelsen) - unit numbers preserved for cross-reference only",
+    "importanceRank": 159
   },
   {
     "id": "BK1-64",
@@ -4308,7 +4371,8 @@
       "schwache-maskulina",
       "masculine-weak-nouns"
     ],
-    "bookReference": "Grammatik aktiv A1-B1 (Cornelsen) - unit numbers preserved for cross-reference only"
+    "bookReference": "Grammatik aktiv A1-B1 (Cornelsen) - unit numbers preserved for cross-reference only",
+    "importanceRank": 167
   },
   {
     "id": "BK1-65",
@@ -4362,7 +4426,8 @@
       "substantivierte-adjektive",
       "der-kranke-ein-kranker"
     ],
-    "bookReference": "Grammatik aktiv A1-B1 (Cornelsen) - unit numbers preserved for cross-reference only"
+    "bookReference": "Grammatik aktiv A1-B1 (Cornelsen) - unit numbers preserved for cross-reference only",
+    "importanceRank": 130
   },
   {
     "id": "BK1-66",
@@ -4423,7 +4488,8 @@
       "etwas-gutes",
       "nominalisierte-adjektive"
     ],
-    "bookReference": "Grammatik aktiv A1-B1 (Cornelsen) - unit numbers preserved for cross-reference only"
+    "bookReference": "Grammatik aktiv A1-B1 (Cornelsen) - unit numbers preserved for cross-reference only",
+    "importanceRank": 131
   },
   {
     "id": "BK1-67",
@@ -4490,7 +4556,8 @@
       "ob-satz",
       "w-frage-indirekt"
     ],
-    "bookReference": "Grammatik aktiv A1-B1 (Cornelsen) - unit numbers preserved for cross-reference only"
+    "bookReference": "Grammatik aktiv A1-B1 (Cornelsen) - unit numbers preserved for cross-reference only",
+    "importanceRank": 86
   },
   {
     "id": "BK1-68",
@@ -4557,7 +4624,8 @@
       "zu-position",
       "trennbare-verben-zu"
     ],
-    "bookReference": "Grammatik aktiv A1-B1 (Cornelsen) - unit numbers preserved for cross-reference only"
+    "bookReference": "Grammatik aktiv A1-B1 (Cornelsen) - unit numbers preserved for cross-reference only",
+    "importanceRank": 49
   },
   {
     "id": "BK1-69",
@@ -4623,7 +4691,8 @@
       "bare-infinitive",
       "lassen-gehen-sehen-hören-bleiben"
     ],
-    "bookReference": "Grammatik aktiv A1-B1 (Cornelsen) - unit numbers preserved for cross-reference only"
+    "bookReference": "Grammatik aktiv A1-B1 (Cornelsen) - unit numbers preserved for cross-reference only",
+    "importanceRank": 92
   },
   {
     "id": "BK1-70",
@@ -4685,7 +4754,8 @@
       "relativpronomen",
       "bezugswort"
     ],
-    "bookReference": "Grammatik aktiv A1-B1 (Cornelsen) - unit numbers preserved for cross-reference only"
+    "bookReference": "Grammatik aktiv A1-B1 (Cornelsen) - unit numbers preserved for cross-reference only",
+    "importanceRank": 56
   },
   {
     "id": "BK1-71",
@@ -4750,7 +4820,8 @@
       "denen-dativ-plural",
       "relative-clause-preposition"
     ],
-    "bookReference": "Grammatik aktiv A1-B1 (Cornelsen) - unit numbers preserved for cross-reference only"
+    "bookReference": "Grammatik aktiv A1-B1 (Cornelsen) - unit numbers preserved for cross-reference only",
+    "importanceRank": 57
   },
   {
     "id": "BK1-72",
@@ -4809,7 +4880,8 @@
       "einmaliges-ereignis",
       "wiederholtes-ereignis"
     ],
-    "bookReference": "Grammatik aktiv A1-B1 (Cornelsen) - unit numbers preserved for cross-reference only"
+    "bookReference": "Grammatik aktiv A1-B1 (Cornelsen) - unit numbers preserved for cross-reference only",
+    "importanceRank": 18
   },
   {
     "id": "BK1-73",
@@ -4868,7 +4940,8 @@
       "nachdem-zeitenfolge",
       "temporale-nebensätze-2"
     ],
-    "bookReference": "Grammatik aktiv A1-B1 (Cornelsen) - unit numbers preserved for cross-reference only"
+    "bookReference": "Grammatik aktiv A1-B1 (Cornelsen) - unit numbers preserved for cross-reference only",
+    "importanceRank": 19
   },
   {
     "id": "BK1-74",
@@ -4929,7 +5002,8 @@
       "purpose-clauses",
       "wozu"
     ],
-    "bookReference": "Grammatik aktiv A1-B1 (Cornelsen) - unit numbers preserved for cross-reference only"
+    "bookReference": "Grammatik aktiv A1-B1 (Cornelsen) - unit numbers preserved for cross-reference only",
+    "importanceRank": 20
   },
   {
     "id": "BK1-75",
@@ -4996,7 +5070,8 @@
       "entweder-oder",
       "nicht-nur-sondern-auch"
     ],
-    "bookReference": "Grammatik aktiv A1-B1 (Cornelsen) - unit numbers preserved for cross-reference only"
+    "bookReference": "Grammatik aktiv A1-B1 (Cornelsen) - unit numbers preserved for cross-reference only",
+    "importanceRank": 115
   },
   {
     "id": "BK1-76",
@@ -5058,7 +5133,8 @@
       "vergleichssätze",
       "proportional-comparison"
     ],
-    "bookReference": "Grammatik aktiv A1-B1 (Cornelsen) - unit numbers preserved for cross-reference only"
+    "bookReference": "Grammatik aktiv A1-B1 (Cornelsen) - unit numbers preserved for cross-reference only",
+    "importanceRank": 116
   },
   {
     "id": "BK1-77",
@@ -5124,7 +5200,8 @@
       "während-wegen-trotz",
       "innerhalb-außerhalb"
     ],
-    "bookReference": "Grammatik aktiv A1-B1 (Cornelsen) - unit numbers preserved for cross-reference only"
+    "bookReference": "Grammatik aktiv A1-B1 (Cornelsen) - unit numbers preserved for cross-reference only",
+    "importanceRank": 151
   },
   {
     "id": "BK1-78",
@@ -5193,7 +5270,8 @@
       "vor-vs-seit",
       "bei-während"
     ],
-    "bookReference": "Grammatik aktiv A1-B1 (Cornelsen) - unit numbers preserved for cross-reference only"
+    "bookReference": "Grammatik aktiv A1-B1 (Cornelsen) - unit numbers preserved for cross-reference only",
+    "importanceRank": 152
   },
   {
     "id": "BK1-79",
@@ -5252,7 +5330,8 @@
       "starke-endung",
       "genitiv-ausnahme-adjektiv"
     ],
-    "bookReference": "Grammatik aktiv A1-B1 (Cornelsen) - unit numbers preserved for cross-reference only"
+    "bookReference": "Grammatik aktiv A1-B1 (Cornelsen) - unit numbers preserved for cross-reference only",
+    "importanceRank": 132
   },
   {
     "id": "BK1-80",
@@ -5316,7 +5395,8 @@
       "bellender-hund",
       "aktiv-gleichzeitig"
     ],
-    "bookReference": "Grammatik aktiv A1-B1 (Cornelsen) - unit numbers preserved for cross-reference only"
+    "bookReference": "Grammatik aktiv A1-B1 (Cornelsen) - unit numbers preserved for cross-reference only",
+    "importanceRank": 113
   },
   {
     "id": "BK2-1",
@@ -5378,7 +5458,8 @@
       "position-1-regeln",
       "reflexivpronomen-vor-subjekt"
     ],
-    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved for cross-reference only (BK2-n)"
+    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved for cross-reference only (BK2-n)",
+    "importanceRank": 109
   },
   {
     "id": "BK2-2",
@@ -5441,7 +5522,8 @@
       "position-1-adverbien",
       "aduso"
     ],
-    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved for cross-reference only (BK2-n)"
+    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved for cross-reference only (BK2-n)",
+    "importanceRank": 21
   },
   {
     "id": "BK2-3",
@@ -5510,7 +5592,8 @@
       "pronomen-vor-nomen",
       "akkusativ-dativ-pronomen-reihenfolge"
     ],
-    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved for cross-reference only (BK2-n)"
+    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved for cross-reference only (BK2-n)",
+    "importanceRank": 143
   },
   {
     "id": "BK2-4",
@@ -5566,7 +5649,8 @@
       "temporal-kausal-modal-lokal",
       "mehrere-angaben-gleicher-typ"
     ],
-    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved for cross-reference only (BK2-n)"
+    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved for cross-reference only (BK2-n)",
+    "importanceRank": 178
   },
   {
     "id": "BK2-5",
@@ -5627,7 +5711,8 @@
       "nomen-verb-kombination",
       "funktionsverbgefüge-vorschau"
     ],
-    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved for cross-reference only (BK2-n)"
+    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved for cross-reference only (BK2-n)",
+    "importanceRank": 120
   },
   {
     "id": "BK2-6",
@@ -5677,7 +5762,8 @@
       "teilnegation",
       "negation-stellung"
     ],
-    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved for cross-reference only (BK2-n)"
+    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved for cross-reference only (BK2-n)",
+    "importanceRank": 184
   },
   {
     "id": "BK2-9",
@@ -5742,7 +5828,8 @@
       "würde-passiv",
       "es-gäbe-ich-fände"
     ],
-    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved for cross-reference only (BK2-n)"
+    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved for cross-reference only (BK2-n)",
+    "importanceRank": 44
   },
   {
     "id": "BK2-10",
@@ -5804,7 +5891,8 @@
       "hätte-wäre-partizip",
       "doppelinfinitiv-konjunktiv"
     ],
-    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved for cross-reference only (BK2-n)"
+    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved for cross-reference only (BK2-n)",
+    "importanceRank": 40
   },
   {
     "id": "BK2-11",
@@ -5864,7 +5952,8 @@
       "vorwurf",
       "an-deiner-stelle"
     ],
-    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved for cross-reference only (BK2-n)"
+    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved for cross-reference only (BK2-n)",
+    "importanceRank": 41
   },
   {
     "id": "BK2-12",
@@ -5926,7 +6015,8 @@
       "wunschsatz-partikel",
       "sonst-ohne-hätte"
     ],
-    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved for cross-reference only (BK2-n)"
+    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved for cross-reference only (BK2-n)",
+    "importanceRank": 42
   },
   {
     "id": "BK2-13",
@@ -5980,7 +6070,8 @@
       "als-wortstellung",
       "hypothetical-comparison"
     ],
-    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved for cross-reference only (BK2-n)"
+    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved for cross-reference only (BK2-n)",
+    "importanceRank": 43
   },
   {
     "id": "BK2-14",
@@ -6046,7 +6137,8 @@
       "passiv-perfekt-worden",
       "passive-agent"
     ],
-    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved for cross-reference only (BK2-n)"
+    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved for cross-reference only (BK2-n)",
+    "importanceRank": 73
   },
   {
     "id": "BK2-15",
@@ -6103,7 +6195,8 @@
       "passive-with-modals",
       "passiv-präteritum-bevorzugt"
     ],
-    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved for cross-reference only (BK2-n)"
+    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved for cross-reference only (BK2-n)",
+    "importanceRank": 5
   },
   {
     "id": "BK2-16",
@@ -6168,7 +6261,8 @@
       "sein-zu-infinitiv",
       "bar-abel-lich-suffixe"
     ],
-    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved for cross-reference only (BK2-n)"
+    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved for cross-reference only (BK2-n)",
+    "importanceRank": 74
   },
   {
     "id": "BK2-20",
@@ -6222,7 +6316,8 @@
       "aktivität-vs-richtung",
       "wo-trotz-bewegung"
     ],
-    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved for cross-reference only (BK2-n)"
+    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved for cross-reference only (BK2-n)",
+    "importanceRank": 126
   },
   {
     "id": "BK2-21",
@@ -6284,7 +6379,8 @@
       "himmelsrichtungen",
       "nach-vs-in-länder"
     ],
-    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved for cross-reference only (BK2-n)"
+    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved for cross-reference only (BK2-n)",
+    "importanceRank": 127
   },
   {
     "id": "BK2-22",
@@ -6343,7 +6439,8 @@
       "gegenüber",
       "ab-von-aus-bis-zu"
     ],
-    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved for cross-reference only (BK2-n)"
+    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved for cross-reference only (BK2-n)",
+    "importanceRank": 153
   },
   {
     "id": "BK2-23",
@@ -6402,7 +6499,8 @@
       "auf-bei-zeit",
       "kein-präposition-relative-zeit"
     ],
-    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved for cross-reference only (BK2-n)"
+    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved for cross-reference only (BK2-n)",
+    "importanceRank": 58
   },
   {
     "id": "BK2-24",
@@ -6461,7 +6559,8 @@
       "als-status",
       "lang-dauer"
     ],
-    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved for cross-reference only (BK2-n)"
+    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved for cross-reference only (BK2-n)",
+    "importanceRank": 154
   },
   {
     "id": "BK2-25",
@@ -6520,7 +6619,8 @@
       "wegen-aufgrund-infolge",
       "dank-anlässlich-kraft-mangels"
     ],
-    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved for cross-reference only (BK2-n)"
+    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved for cross-reference only (BK2-n)",
+    "importanceRank": 155
   },
   {
     "id": "BK2-27",
@@ -6575,7 +6675,8 @@
       "zuliebe-zufolge-halber",
       "seiner-meinung-nach"
     ],
-    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved for cross-reference only (BK2-n)"
+    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved for cross-reference only (BK2-n)",
+    "importanceRank": 156
   },
   {
     "id": "BK2-31",
@@ -6636,7 +6737,8 @@
       "nominativ-dativ-akkusativ-verben",
       "feste-präposition-verben"
     ],
-    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved for cross-reference only (BK2-n)"
+    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved for cross-reference only (BK2-n)",
+    "importanceRank": 144
   },
   {
     "id": "BK2-33",
@@ -6698,7 +6800,8 @@
       "wo-fragewörter-erweitert",
       "da-pronomen-nebensatz"
     ],
-    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved for cross-reference only (BK2-n)"
+    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved for cross-reference only (BK2-n)",
+    "importanceRank": 22
   },
   {
     "id": "BK2-34",
@@ -6760,7 +6863,8 @@
       "auf-für-gegen-über-um-an",
       "verb-präposition-merkregel"
     ],
-    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved for cross-reference only (BK2-n)"
+    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved for cross-reference only (BK2-n)",
+    "importanceRank": 145
   },
   {
     "id": "BK2-35",
@@ -6820,7 +6924,8 @@
       "mit-bei-nach-von-vor-zu",
       "verb-präposition-merkregel-dativ"
     ],
-    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved for cross-reference only (BK2-n)"
+    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved for cross-reference only (BK2-n)",
+    "importanceRank": 146
   },
   {
     "id": "BK2-36",
@@ -6888,7 +6993,8 @@
       "akkusativobjekt-entscheidet",
       "gleiches-verb-sein-haben"
     ],
-    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved for cross-reference only (BK2-n)"
+    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved for cross-reference only (BK2-n)",
+    "importanceRank": 100
   },
   {
     "id": "BK2-37",
@@ -6953,7 +7059,8 @@
       "doppelinfinitiv-bedingung",
       "modalverb-allein-partizip"
     ],
-    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved for cross-reference only (BK2-n)"
+    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved for cross-reference only (BK2-n)",
+    "importanceRank": 6
   },
   {
     "id": "BK2-38",
@@ -7004,7 +7111,8 @@
       "nachdem-obligatorisch",
       "zeitengebrauch-b2"
     ],
-    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved for cross-reference only (BK2-n)"
+    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved for cross-reference only (BK2-n)",
+    "importanceRank": 101
   },
   {
     "id": "BK2-39",
@@ -7065,7 +7173,8 @@
       "vermutung-vs-zukunft",
       "informelle-vs-formelle-sprache"
     ],
-    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved for cross-reference only (BK2-n)"
+    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved for cross-reference only (BK2-n)",
+    "importanceRank": 7
   },
   {
     "id": "BK2-41",
@@ -7126,7 +7235,8 @@
       "nicht-brauchen-zu",
       "möchten-mögen-unterschied"
     ],
-    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved for cross-reference only (BK2-n)"
+    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved for cross-reference only (BK2-n)",
+    "importanceRank": 8
   },
   {
     "id": "BK2-42",
@@ -7180,7 +7290,8 @@
       "modalverben-vermutungsskala",
       "müsste-dürfte-könnte"
     ],
-    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved for cross-reference only (BK2-n)"
+    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved for cross-reference only (BK2-n)",
+    "importanceRank": 9
   },
   {
     "id": "BK2-44",
@@ -7240,7 +7351,8 @@
       "lassen-aufhören",
       "lassen-ursache"
     ],
-    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved for cross-reference only (BK2-n)"
+    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved for cross-reference only (BK2-n)",
+    "importanceRank": 91
   },
   {
     "id": "BK2-45",
@@ -7300,7 +7412,8 @@
       "acht-untrennbare-präfixe",
       "ab-an-aus-ein-bedeutung"
     ],
-    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved for cross-reference only (BK2-n)"
+    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved for cross-reference only (BK2-n)",
+    "importanceRank": 50
   },
   {
     "id": "BK2-47",
@@ -7368,7 +7481,8 @@
       "ismus-ist-ung-tät",
       "komposita-abkürzungen-genus"
     ],
-    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved for cross-reference only (BK2-n)"
+    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved for cross-reference only (BK2-n)",
+    "importanceRank": 105
   },
   {
     "id": "BK2-48",
@@ -7426,7 +7540,8 @@
       "artikel-bei-namen-mit-adjektiv",
       "zeit-plural-bedeutung"
     ],
-    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved for cross-reference only (BK2-n)"
+    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved for cross-reference only (BK2-n)",
+    "importanceRank": 168
   },
   {
     "id": "BK2-49",
@@ -7490,7 +7605,8 @@
       "kein-artikel-kein-genitiv",
       "geografische-namen-genitiv"
     ],
-    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved for cross-reference only (BK2-n)"
+    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved for cross-reference only (BK2-n)",
+    "importanceRank": 160
   },
   {
     "id": "BK2-50",
@@ -7549,7 +7665,8 @@
       "der-herr-sonderfall",
       "das-herz-deklination"
     ],
-    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved for cross-reference only (BK2-n)"
+    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved for cross-reference only (BK2-n)",
+    "importanceRank": 169
   },
   {
     "id": "BK2-51",
@@ -7607,7 +7724,8 @@
       "indefinit-plural-genitiv-lücke",
       "adjektiv-als-nomen-dativ-em"
     ],
-    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved for cross-reference only (BK2-n)"
+    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved for cross-reference only (BK2-n)",
+    "importanceRank": 147
   },
   {
     "id": "BK2-52",
@@ -7665,7 +7783,8 @@
       "einer-keiner-welcher-meiner",
       "man-deklination"
     ],
-    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved for cross-reference only (BK2-n)"
+    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved for cross-reference only (BK2-n)",
+    "importanceRank": 170
   },
   {
     "id": "BK2-53",
@@ -7725,7 +7844,8 @@
       "man-alle-jeder",
       "jemand-niemand"
     ],
-    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved for cross-reference only (BK2-n)"
+    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved for cross-reference only (BK2-n)",
+    "importanceRank": 164
   },
   {
     "id": "BK2-54",
@@ -7784,7 +7904,8 @@
       "alles-vs-alle",
       "beides-vs-beide"
     ],
-    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved for cross-reference only (BK2-n)"
+    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved for cross-reference only (BK2-n)",
+    "importanceRank": 165
   },
   {
     "id": "BK2-55",
@@ -7849,7 +7970,8 @@
       "genitiv-ausnahme-nur-n",
       "viel-wenig-mehr-el-adjektive"
     ],
-    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved for cross-reference only (BK2-n)"
+    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved for cross-reference only (BK2-n)",
+    "importanceRank": 133
   },
   {
     "id": "BK2-57",
@@ -7909,7 +8031,8 @@
       "aller-superlativ",
       "superlativ-adverbien"
     ],
-    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved for cross-reference only (BK2-n)"
+    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved for cross-reference only (BK2-n)",
+    "importanceRank": 112
   },
   {
     "id": "BK2-58",
@@ -7969,7 +8092,8 @@
       "zustandspassiv",
       "reflexivpronomen-partizip"
     ],
-    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved for cross-reference only (BK2-n)"
+    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved for cross-reference only (BK2-n)",
+    "importanceRank": 75
   },
   {
     "id": "BK2-59",
@@ -8029,7 +8153,8 @@
       "wir-sie-ersatzform",
       "sein-konjunktiv-1"
     ],
-    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved for cross-reference only (BK2-n)"
+    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved for cross-reference only (BK2-n)",
+    "importanceRank": 87
   },
   {
     "id": "BK2-60",
@@ -8095,7 +8220,8 @@
       "doppelinfinitiv-indirekte-rede",
       "passiv-indirekte-rede"
     ],
-    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved for cross-reference only (BK2-n)"
+    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved for cross-reference only (BK2-n)",
+    "importanceRank": 76
   },
   {
     "id": "BK2-62",
@@ -8153,7 +8279,8 @@
       "bis-ehe-solange",
       "sobald-sowie-sooft"
     ],
-    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved for cross-reference only (BK2-n)"
+    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved for cross-reference only (BK2-n)",
+    "importanceRank": 23
   },
   {
     "id": "BK2-63",
@@ -8200,7 +8327,8 @@
       "konzessive-nebensätze-obwohl",
       "da-nicht-als-antwort"
     ],
-    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved for cross-reference only (BK2-n)"
+    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved for cross-reference only (BK2-n)",
+    "importanceRank": 24
   },
   {
     "id": "BK2-64",
@@ -8252,7 +8380,8 @@
       "sodass",
       "so-dermaßen-derart-dass"
     ],
-    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved for cross-reference only (BK2-n)"
+    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved for cross-reference only (BK2-n)",
+    "importanceRank": 25
   },
   {
     "id": "BK2-65",
@@ -8299,7 +8428,8 @@
       "wenn-falls-nur-sogar-außer",
       "adversative-nebensätze-während-wohingegen"
     ],
-    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved for cross-reference only (BK2-n)"
+    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved for cross-reference only (BK2-n)",
+    "importanceRank": 26
   },
   {
     "id": "BK2-66",
@@ -8351,7 +8481,8 @@
       "dadurch-dass",
       "methode-vs-grund"
     ],
-    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved for cross-reference only (BK2-n)"
+    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved for cross-reference only (BK2-n)",
+    "importanceRank": 27
   },
   {
     "id": "BK2-67",
@@ -8399,7 +8530,8 @@
       "perfekt-infinitiv",
       "passiv-infinitiv"
     ],
-    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved for cross-reference only (BK2-n)"
+    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved for cross-reference only (BK2-n)",
+    "importanceRank": 77
   },
   {
     "id": "BK2-68",
@@ -8459,7 +8591,8 @@
       "gleiches-subjekt-regel",
       "dabei-sein-zu"
     ],
-    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved for cross-reference only (BK2-n)"
+    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved for cross-reference only (BK2-n)",
+    "importanceRank": 28
   },
   {
     "id": "BK2-69",
@@ -8512,7 +8645,8 @@
       "anstatt-zu",
       "ohne-zu"
     ],
-    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved for cross-reference only (BK2-n)"
+    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved for cross-reference only (BK2-n)",
+    "importanceRank": 29
   },
   {
     "id": "BK2-70",
@@ -8560,7 +8694,8 @@
       "bezugswort-genus-verb-kasus",
       "welcher-als-relativpronomen"
     ],
-    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved for cross-reference only (BK2-n)"
+    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved for cross-reference only (BK2-n)",
+    "importanceRank": 59
   },
   {
     "id": "BK2-71",
@@ -8611,7 +8746,8 @@
       "dessen-deren",
       "nomen-ohne-artikel-nach-genitiv-relativ"
     ],
-    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved for cross-reference only (BK2-n)"
+    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved for cross-reference only (BK2-n)",
+    "importanceRank": 60
   },
   {
     "id": "BK2-72",
@@ -8670,7 +8806,8 @@
       "als-relativ-zeitpunkt",
       "was-relativ-indefinitpronomen"
     ],
-    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved for cross-reference only (BK2-n)"
+    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved for cross-reference only (BK2-n)",
+    "importanceRank": 61
   },
   {
     "id": "BK2-73",
@@ -8732,7 +8869,8 @@
       "zwar-aber",
       "einerseits-andererseits"
     ],
-    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved for cross-reference only (BK2-n)"
+    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved for cross-reference only (BK2-n)",
+    "importanceRank": 117
   },
   {
     "id": "BK2-74",
@@ -8791,7 +8929,8 @@
       "noch-kein-noch-nie",
       "un-in-los-präfixe"
     ],
-    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved for cross-reference only (BK2-n)"
+    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved for cross-reference only (BK2-n)",
+    "importanceRank": 51
   },
   {
     "id": "BK2-75",
@@ -8847,7 +8986,8 @@
       "irgendjemand-irgendwas-irgendwo",
       "irgendein-irgendwelche"
     ],
-    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved for cross-reference only (BK2-n)"
+    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved for cross-reference only (BK2-n)",
+    "importanceRank": 52
   },
   {
     "id": "BK2-76",
@@ -8894,7 +9034,8 @@
       "rauf-runter-rein-raus",
       "positions-direktionsverben-review"
     ],
-    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved for cross-reference only (BK2-n)"
+    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved for cross-reference only (BK2-n)",
+    "importanceRank": 157
   },
   {
     "id": "BK2-77",
@@ -8954,7 +9095,8 @@
       "es-platzhalter",
       "es-verschwindet"
     ],
-    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved for cross-reference only (BK2-n)"
+    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved for cross-reference only (BK2-n)",
+    "importanceRank": 172
   },
   {
     "id": "BK2-78",
@@ -9015,7 +9157,8 @@
       "nomen-verb-einheit",
       "negation-funktionsverbgefüge"
     ],
-    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved for cross-reference only (BK2-n)"
+    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved for cross-reference only (BK2-n)",
+    "importanceRank": 121
   },
   {
     "id": "BK2-80",
@@ -9074,7 +9217,8 @@
       "dabei-gleichzeitigkeit",
       "da-als-konjunktion"
     ],
-    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved for cross-reference only (BK2-n)"
+    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved for cross-reference only (BK2-n)",
+    "importanceRank": 68
   },
   {
     "id": "BK2-81",
@@ -9132,7 +9276,8 @@
       "aber-auch-bloß-denn-doch-eben",
       "partikeln-kontextabhängig"
     ],
-    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved for cross-reference only (BK2-n)"
+    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved for cross-reference only (BK2-n)",
+    "importanceRank": 173
   },
   {
     "id": "BK2-87",
@@ -9191,7 +9336,8 @@
       "komma-hauptsatz-hauptsatz",
       "komma-aufzählung-apposition"
     ],
-    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved for cross-reference only (BK2-n)"
+    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved for cross-reference only (BK2-n)",
+    "importanceRank": 30
   },
   {
     "id": "BK2C1-7",
@@ -9250,7 +9396,8 @@
       "fokuspartikeln",
       "ebenfalls-nur-sogar-gerade"
     ],
-    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved in ID where applicable (BK2C1-n)"
+    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved in ID where applicable (BK2C1-n)",
+    "importanceRank": 174
   },
   {
     "id": "BK2C1-8",
@@ -9302,7 +9449,8 @@
       "position-1-nicht-möglich",
       "textstruktur-position-1"
     ],
-    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved in ID where applicable (BK2C1-n)"
+    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved in ID where applicable (BK2C1-n)",
+    "importanceRank": 179
   },
   {
     "id": "BK2C1-10",
@@ -9355,7 +9503,8 @@
       "passiv-modalverb-konjunktiv",
       "vierteilige-verbkette"
     ],
-    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved in ID where applicable (BK2C1-n)"
+    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved in ID where applicable (BK2C1-n)",
+    "importanceRank": 10
   },
   {
     "id": "BK2C1-13",
@@ -9405,7 +9554,8 @@
       "zu-als-dass",
       "beinahe-fast-konjunktiv"
     ],
-    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved in ID where applicable (BK2C1-n)"
+    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved in ID where applicable (BK2C1-n)",
+    "importanceRank": 45
   },
   {
     "id": "BK2C1-14",
@@ -9455,7 +9605,8 @@
       "futur-2-passiv",
       "konjunktiv-1-passiv"
     ],
-    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved in ID where applicable (BK2C1-n)"
+    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved in ID where applicable (BK2C1-n)",
+    "importanceRank": 15
   },
   {
     "id": "BK2C1-15",
@@ -9495,7 +9646,8 @@
       "passiv-modalverben-seltene-zeiten",
       "wollen-wird-sollen-passiv"
     ],
-    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved in ID where applicable (BK2C1-n)"
+    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved in ID where applicable (BK2C1-n)",
+    "importanceRank": 11
   },
   {
     "id": "BK2C1-17",
@@ -9564,7 +9716,8 @@
       "modales-partizip-gerundiv",
       "gehören-bekommen-passiv"
     ],
-    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved in ID where applicable (BK2C1-n)"
+    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved in ID where applicable (BK2C1-n)",
+    "importanceRank": 78
   },
   {
     "id": "BK2C1-18",
@@ -9626,7 +9779,8 @@
       "es-entfällt-nebensatz",
       "reflexive-verben-passiv"
     ],
-    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved in ID where applicable (BK2C1-n)"
+    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved in ID where applicable (BK2C1-n)",
+    "importanceRank": 31
   },
   {
     "id": "BK2C1-19",
@@ -9684,7 +9838,8 @@
       "transitive-verben-passiv",
       "verben-ohne-passiv"
     ],
-    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved in ID where applicable (BK2C1-n)"
+    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved in ID where applicable (BK2C1-n)",
+    "importanceRank": 79
   },
   {
     "id": "BK2C1-26",
@@ -9731,7 +9886,8 @@
       "laut-zufolge-gemäß",
       "hinsichtlich-bezüglich-entsprechend"
     ],
-    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved in ID where applicable (BK2C1-n)"
+    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved in ID where applicable (BK2C1-n)",
+    "importanceRank": 88
   },
   {
     "id": "BK2C1-28",
@@ -9790,7 +9946,8 @@
       "mittels-mithilfe-anhand-zwecks",
       "entgegen-ungeachtet-seitens"
     ],
-    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved in ID where applicable (BK2C1-n)"
+    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved in ID where applicable (BK2C1-n)",
+    "importanceRank": 158
   },
   {
     "id": "BK2C1-29",
@@ -9850,7 +10007,8 @@
       "über-mehr-als",
       "unter-bedingung"
     ],
-    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved in ID where applicable (BK2C1-n)"
+    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved in ID where applicable (BK2C1-n)",
+    "importanceRank": 69
   },
   {
     "id": "BK2C1-30",
@@ -9909,7 +10067,8 @@
       "meiner-meinung-nach",
       "zu-zweit-zu-dritt"
     ],
-    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved in ID where applicable (BK2C1-n)"
+    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved in ID where applicable (BK2C1-n)",
+    "importanceRank": 70
   },
   {
     "id": "BK2C1-31",
@@ -9959,7 +10118,8 @@
       "verben-zwei-akkusative",
       "nennen-kosten-lehren"
     ],
-    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved in ID where applicable (BK2C1-n)"
+    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved in ID where applicable (BK2C1-n)",
+    "importanceRank": 148
   },
   {
     "id": "BK2C1-32",
@@ -10012,7 +10172,8 @@
       "bedürfen-sich-schämen",
       "anklagen-verdächtigen-genitiv"
     ],
-    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved in ID where applicable (BK2C1-n)"
+    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved in ID where applicable (BK2C1-n)",
+    "importanceRank": 161
   },
   {
     "id": "BK2C1-37",
@@ -10056,7 +10217,8 @@
       "nebensatz-drei-verben",
       "wortstellung-doppelinfinitiv-nebensatz"
     ],
-    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved in ID where applicable (BK2C1-n)"
+    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved in ID where applicable (BK2C1-n)",
+    "importanceRank": 32
   },
   {
     "id": "BK2C1-39",
@@ -10109,7 +10271,8 @@
       "werden-perfekt-infinitiv",
       "vermutung-vergangenheit-futur"
     ],
-    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved in ID where applicable (BK2C1-n)"
+    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved in ID where applicable (BK2C1-n)",
+    "importanceRank": 12
   },
   {
     "id": "BK2C1-40",
@@ -10161,7 +10324,8 @@
       "alle-zeiten-tabelle",
       "zeiten-passiv-konjunktiv-übersicht"
     ],
-    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved in ID where applicable (BK2C1-n)"
+    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved in ID where applicable (BK2C1-n)",
+    "importanceRank": 80
   },
   {
     "id": "BK2C1-43",
@@ -10214,7 +10378,8 @@
       "modal-perfekt-infinitiv",
       "passiv-vermutung-vergangenheit"
     ],
-    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved in ID where applicable (BK2C1-n)"
+    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved in ID where applicable (BK2C1-n)",
+    "importanceRank": 13
   },
   {
     "id": "BK2C1-45",
@@ -10271,7 +10436,8 @@
       "untrennbare-präfixe-bedeutung",
       "be-ent-er-ver-zer"
     ],
-    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved in ID where applicable (BK2C1-n)"
+    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved in ID where applicable (BK2C1-n)",
+    "importanceRank": 53
   },
   {
     "id": "BK2C1-46",
@@ -10335,7 +10501,8 @@
       "konkret-vs-metaphorisch-präfix",
       "mehrere-präfixe-zu-ge"
     ],
-    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved in ID where applicable (BK2C1-n)"
+    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved in ID where applicable (BK2C1-n)",
+    "importanceRank": 54
   },
   {
     "id": "BK2C1-49",
@@ -10374,7 +10541,8 @@
       "derer-alternative",
       "genitivrelativpronomen-ohne-nomen"
     ],
-    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved in ID where applicable (BK2C1-n)"
+    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved in ID where applicable (BK2C1-n)",
+    "importanceRank": 62
   },
   {
     "id": "BK2C1-53",
@@ -10420,7 +10588,8 @@
       "folgepronomen-indefinitpronomen",
       "man-jeder-jemand-niemand-alle-pronomen"
     ],
-    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved in ID where applicable (BK2C1-n)"
+    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved in ID where applicable (BK2C1-n)",
+    "importanceRank": 166
   },
   {
     "id": "BK2C1-56",
@@ -10481,7 +10650,8 @@
       "dieser-jener-mancher-solcher",
       "wenige-einige-mehrere-etliche-lauter"
     ],
-    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved in ID where applicable (BK2C1-n)"
+    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved in ID where applicable (BK2C1-n)",
+    "importanceRank": 134
   },
   {
     "id": "BK2C1-61",
@@ -10541,7 +10711,8 @@
       "sollen-gerüchte",
       "wollen-selbstaussage"
     ],
-    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved in ID where applicable (BK2C1-n)"
+    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved in ID where applicable (BK2C1-n)",
+    "importanceRank": 89
   },
   {
     "id": "BK2C1-63",
@@ -10577,7 +10748,8 @@
       "zusätzlicher-grund",
       "weiterführender-nebensatz"
     ],
-    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved in ID where applicable (BK2C1-n)"
+    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved in ID where applicable (BK2C1-n)",
+    "importanceRank": 33
   },
   {
     "id": "BK2C1-64",
@@ -10626,7 +10798,8 @@
       "zu-als-dass-konsequenz",
       "weiterführende-kausalsätze"
     ],
-    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved in ID where applicable (BK2C1-n)"
+    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved in ID where applicable (BK2C1-n)",
+    "importanceRank": 34
   },
   {
     "id": "BK2C1-65",
@@ -10673,7 +10846,8 @@
       "sofern-vorausgesetzt-gesetzt-den-fall",
       "uneingeleiteter-konditionalsatz"
     ],
-    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved in ID where applicable (BK2C1-n)"
+    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved in ID where applicable (BK2C1-n)",
+    "importanceRank": 35
   },
   {
     "id": "BK2C1-66",
@@ -10708,7 +10882,8 @@
       "wodurch",
       "weiterführender-modalsatz"
     ],
-    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved in ID where applicable (BK2C1-n)"
+    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved in ID where applicable (BK2C1-n)",
+    "importanceRank": 36
   },
   {
     "id": "BK2C1-67",
@@ -10757,7 +10932,8 @@
       "doppelinfinitiv-vs-partizip",
       "bleiben-gehen-lernen-perfekt"
     ],
-    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved in ID where applicable (BK2C1-n)"
+    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved in ID where applicable (BK2C1-n)",
+    "importanceRank": 93
   },
   {
     "id": "BK2C1-68",
@@ -10801,7 +10977,8 @@
       "infinitivsatz-subjekt-objekt",
       "zu-infinitiv-objektbezug"
     ],
-    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved in ID where applicable (BK2C1-n)"
+    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved in ID where applicable (BK2C1-n)",
+    "importanceRank": 37
   },
   {
     "id": "BK2C1-71",
@@ -10836,7 +11013,8 @@
       "genitivrelativpronomen-details",
       "dessen-deren-unveränderlich"
     ],
-    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved in ID where applicable (BK2C1-n)"
+    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved in ID where applicable (BK2C1-n)",
+    "importanceRank": 63
   },
   {
     "id": "BK2C1-72",
@@ -10889,7 +11067,8 @@
       "wer-der",
       "was-das-generalisierend"
     ],
-    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved in ID where applicable (BK2C1-n)"
+    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved in ID where applicable (BK2C1-n)",
+    "importanceRank": 64
   },
   {
     "id": "BK2C1-73",
@@ -10931,7 +11110,8 @@
       "nicht-nur-sondern-auch-subjekt",
       "je-desto-artikel"
     ],
-    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved in ID where applicable (BK2C1-n)"
+    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved in ID where applicable (BK2C1-n)",
+    "importanceRank": 118
   },
   {
     "id": "BK2C1-79",
@@ -10991,7 +11171,8 @@
       "aktivisch-passivisch-prozess-zustand",
       "funktionsverbgefüge-vs-einfaches-verb"
     ],
-    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved in ID where applicable (BK2C1-n)"
+    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved in ID where applicable (BK2C1-n)",
+    "importanceRank": 81
   },
   {
     "id": "BK2C1-82",
@@ -11049,7 +11230,8 @@
       "verdichtung",
       "subjekt-objekt-zu-genitiv-durch"
     ],
-    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved in ID where applicable (BK2C1-n)"
+    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved in ID where applicable (BK2C1-n)",
+    "importanceRank": 106
   },
   {
     "id": "BK2C1-83",
@@ -11098,7 +11280,8 @@
       "erweiterte-partizipien",
       "bezugswort-erkennen"
     ],
-    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved in ID where applicable (BK2C1-n)"
+    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved in ID where applicable (BK2C1-n)",
+    "importanceRank": 114
   },
   {
     "id": "BK2C1-84",
@@ -11156,7 +11339,8 @@
       "drei-sprachliche-mittel",
       "während-nachdem-bevor-system"
     ],
-    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved in ID where applicable (BK2C1-n)"
+    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved in ID where applicable (BK2C1-n)",
+    "importanceRank": 82
   },
   {
     "id": "BK2C1-85",
@@ -11214,7 +11398,8 @@
       "konsekutiv-synonyme",
       "adversativ-system"
     ],
-    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved in ID where applicable (BK2C1-n)"
+    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved in ID where applicable (BK2C1-n)",
+    "importanceRank": 83
   },
   {
     "id": "BK2C1-86",
@@ -11272,7 +11457,8 @@
       "method-instrument-alternative",
       "vergleich-bedingung-zweck"
     ],
-    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved in ID where applicable (BK2C1-n)"
+    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved in ID where applicable (BK2C1-n)",
+    "importanceRank": 84
   },
   {
     "id": "BK2C1-88",
@@ -11329,6 +11515,7 @@
       "da-verdoppelung",
       "trennbares-präfix-nicht-am-ende"
     ],
-    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved in ID where applicable (BK2C1-n)"
+    "bookReference": "Grammatik aktiv B2-C1 (Cornelsen) - unit numbers preserved in ID where applicable (BK2C1-n)",
+    "importanceRank": 55
   }
 ]

@@ -99,6 +99,10 @@ export const api = {
   getGrammarLesson: (id) => get(`/api/grammar/lesson/${encodeURIComponent(id)}`),
   explainMistake: (body) => post('/api/grammar/explain-mistake', body),
 
+  listPracticeCourses: () => get('/api/practice/courses'),
+  getPracticeCourse: (courseId) => get(`/api/practice/courses/${encodeURIComponent(courseId)}`),
+  generatePracticeCourse: (title) => post('/api/practice/generate', { title }),
+
   getDictionary: () => get('/api/dictionary'),
   importDictionary: (text) => post('/api/dictionary/import', { text }),
   lookupWord: (word) => get(`/api/dictionary/lookup/${encodeURIComponent(word)}`),

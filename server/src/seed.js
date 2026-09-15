@@ -110,8 +110,8 @@ async function seedGrammarLessons() {
   const lessons = JSON.parse(raw);
   const upsert = db.prepare(`
     INSERT INTO grammar_lessons
-      (id, level, order_index, topic, summary, explanation, rules_json, examples_json, common_mistakes_json, error_tags_json, book_reference)
-    VALUES (@id, @level, @orderIndex, @topic, @summary, @explanation, @rules, @examples, @commonMistakes, @errorTags, @bookReference)
+      (id, level, order_index, topic, summary, explanation, rules_json, examples_json, common_mistakes_json, error_tags_json, book_reference, importance_rank)
+    VALUES (@id, @level, @orderIndex, @topic, @summary, @explanation, @rules, @examples, @commonMistakes, @errorTags, @bookReference, @importanceRank)
     ON CONFLICT(id) DO UPDATE SET
       level = excluded.level,
       order_index = excluded.order_index,
@@ -122,7 +122,8 @@ async function seedGrammarLessons() {
       examples_json = excluded.examples_json,
       common_mistakes_json = excluded.common_mistakes_json,
       error_tags_json = excluded.error_tags_json,
-      book_reference = excluded.book_reference
+      book_reference = excluded.book_reference,
+      importance_rank = excluded.importance_rank
   `);
   const tx = db.transaction(() => {
     for (const lesson of lessons) {
@@ -138,6 +139,7 @@ async function seedGrammarLessons() {
         commonMistakes: JSON.stringify(lesson.commonMistakes),
         errorTags: JSON.stringify(lesson.errorTags),
         bookReference: lesson.bookReference || null,
+        importanceRank: Number.isInteger(lesson.importanceRank) ? lesson.importanceRank : null,
       });
     }
   });

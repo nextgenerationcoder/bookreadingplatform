@@ -4,7 +4,7 @@ import { renderAuth } from './views/auth.js';
 import { renderLibrary } from './views/library.js';
 import { renderCourseLevels, renderCourseList } from './views/courses.js';
 import { renderGrammarList, renderGrammarLesson } from './views/grammar.js';
-import { renderPractice } from './views/practice.js';
+import { renderPractice, renderPracticeCourse, loadPracticeLesson } from './views/practice.js';
 import { renderReader } from './views/reader.js';
 import { renderAddBook } from './views/addBook.js';
 import { renderAddCourse } from './views/addCourse.js';
@@ -78,6 +78,12 @@ function parseRoute() {
     const params = new URLSearchParams(query || '');
     return { view: 'addCourse', level: params.get('level') };
   }
+  const practiceLessonMatch = hash.match(/^\/practice\/([^/]+)\/([^/]+)$/);
+  if (practiceLessonMatch) {
+    return { view: 'practiceLesson', courseId: decodeURIComponent(practiceLessonMatch[1]), lessonId: decodeURIComponent(practiceLessonMatch[2]) };
+  }
+  const practiceCourseMatch = hash.match(/^\/practice\/([^/]+)$/);
+  if (practiceCourseMatch) return { view: 'practiceCourse', courseId: decodeURIComponent(practiceCourseMatch[1]) };
   if (hash === '/practice') return { view: 'practice' };
 
   if (hash === '/add') return { view: 'add' };
@@ -188,7 +194,7 @@ function setActiveNav(view) {
   if (bookViews.includes(view)) group = 'books';
   else if (courseViews.includes(view)) group = 'courses';
   else if (interviewViews.includes(view)) group = 'learning';
-  else if (view === 'practice') group = 'practice';
+  else if (view === 'practice' || view === 'practiceCourse' || view === 'practiceLesson') group = 'practice';
   else if (view === 'words') group = 'words';
   else if (view === 'importUrl') group = 'importUrl';
   if (group) links[map[group]]?.classList.add('active');
@@ -219,7 +225,7 @@ async function renderInterviewLesson(host, courseId) {
 }
 
 async function route() {
-  const { view, kind, bookId, pageNumber, level, lessonId } = parseRoute();
+  const { view, kind, bookId, pageNumber, level, lessonId, courseId } = parseRoute();
   const navKey = kind ? `${view}:${kind}` : view;
   setActiveNav(navKey);
   const host = document.getElementById('viewHost');
@@ -255,7 +261,16 @@ async function route() {
   } else if (view === 'grammarLesson') {
     await renderGrammarLesson(host, lessonId);
   } else if (view === 'practice') {
-    renderPractice(host);
+    await renderPractice(host);
+  } else if (view === 'practiceCourse') {
+    await renderPracticeCourse(host, courseId);
+  } else if (view === 'practiceLesson') {
+    try {
+      const lesson = await loadPracticeLesson(courseId, lessonId);
+      renderInteractiveLessonPlayer(host, lesson);
+    } catch (err) {
+      host.innerHTML = `<div class="error">Failed to load lesson.<br><small>${err.message}</small></div>`;
+    }
   } else if (view === 'addWords') {
     renderAddWords(host);
   } else if (view === 'words') {

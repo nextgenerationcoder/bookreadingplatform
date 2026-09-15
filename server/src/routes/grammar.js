@@ -19,6 +19,7 @@ function parseLesson(row) {
     commonMistakes: JSON.parse(row.common_mistakes_json),
     errorTags: JSON.parse(row.error_tags_json),
     bookReference: row.book_reference,
+    importanceRank: row.importance_rank,
   };
 }
 

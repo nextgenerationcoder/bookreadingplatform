@@ -271,13 +271,11 @@ db.exec(`
 
   -- Grammar lessons (rules/examples/common mistakes for a CEFR level+topic),
   -- seeded from server/data/grammar-lessons.seed.json - see seed.js. Used in
-  -- the Grammar tab under Courses (client/src/views/grammar.js). error_tags
-  -- (a JSON array of short slugs like "akkusativ", "trennbare-verben") is
-  -- the link between a grammar lesson and a specific mistake a learner
-  -- makes elsewhere in the app - e.g. Practice can look up "which lesson
-  -- explains this" by tag once it tags exercises the same way (see
-  -- routes/grammar.js's /by-tag endpoint and the TODO in
-  -- grammarExerciseGenerator.js for the planned third use).
+  -- the Grammar tab under Courses (client/src/views/grammar.js), the
+  -- explain-mistake feature's grammar-lesson links (routes/grammar.js's
+  -- /by-tag endpoint, error_tags is the link between a mistake and a
+  -- lesson), and as the ranked grammar targets fed into practiceCourse-
+  -- Generator.js's course generation (importance_rank).
   CREATE TABLE IF NOT EXISTS grammar_lessons (
     id TEXT PRIMARY KEY,
     level TEXT NOT NULL,
@@ -289,10 +287,32 @@ db.exec(`
     examples_json TEXT NOT NULL,
     common_mistakes_json TEXT NOT NULL,
     error_tags_json TEXT NOT NULL,
-    book_reference TEXT
+    book_reference TEXT,
+    importance_rank INTEGER
   );
 
   CREATE INDEX IF NOT EXISTS idx_grammar_lessons_level ON grammar_lessons(level, order_index);
+
+  -- A personalized practice course generated for one account (see
+  -- server/src/practiceCourseGenerator.js and routes/practice.js) - a
+  -- multi-lesson course in the same {lessonId, title, steps} shape
+  -- LessonPlayer.js already renders (client/src/lessons/*.js,
+  -- interview_lessons), just scoped to a single user and produced by an AI
+  -- call using that user's own known/learning vocabulary + grammar targets
+  -- instead of hand-authored. lessons_json holds the whole array of
+  -- lessons; there is no per-lesson row because a course is regenerated as
+  -- a unit, not edited lesson-by-lesson.
+  CREATE TABLE IF NOT EXISTS practice_courses (
+    id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    title TEXT NOT NULL,
+    prompt_lang TEXT NOT NULL DEFAULT 'fa',
+    lessons_json TEXT NOT NULL,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_practice_courses_user ON practice_courses(user_id);
 
   -- German word frequency, from a Leipzig Corpora Collection word list (see
   -- scripts/import-word-frequency.js) - shared across all accounts, not
@@ -305,3 +325,12 @@ db.exec(`
     frequency INTEGER NOT NULL
   );
 `);
+
+// grammar_lessons is created above (in the same db.exec as the rest of this
+// second block), so this patch must come after it, not alongside the other
+// column patches earlier in the file (those run right after the FIRST
+// db.exec, before this table exists on a brand-new database).
+const grammarLessonColumns = db.prepare('PRAGMA table_info(grammar_lessons)').all().map((c) => c.name);
+if (!grammarLessonColumns.includes('importance_rank')) {
+  db.exec('ALTER TABLE grammar_lessons ADD COLUMN importance_rank INTEGER');
+}

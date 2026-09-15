@@ -493,3 +493,76 @@ export async function explainMistake({ provider, apiKey, promptText, expectedAns
   const result = await impl.call(apiKey, systemPrompt, userText);
   return validateMistakeExplanation(result, availableTags);
 }
+
+// Generates a personalized multi-lesson practice course (see
+// practiceCourseGenerator.js for how the learner input is built and how the
+// result is converted into LessonPlayer steps), using the account's own
+// Translation API key. Unlike the other AI calls in this file, this one
+// does NOT use a forced tool schema / strict Structured Outputs - the
+// course this produces is a deeply nested, variable-length structure (many
+// lessons, each with many steps), which doesn't fit a fixed JSON Schema
+// well, and the caller's system prompt (the german-course-generator skill)
+// already fully specifies the required JSON shape in prose - the same
+// "plain JSON in the response text" approach buildTextSystemPrompt already
+// uses for DeepSeek works reliably for exactly this kind of case, so it's
+// used uniformly here for all three providers rather than mixing schema
+// styles. Needs a much larger max_tokens and timeout than the other calls
+// here - a real course runs to thousands of tokens of output - and
+// DeepSeek's json_object mode requires the word "json" to appear in the
+// prompt (see explainMistake's fix above), which the skill text already
+// does throughout.
+const COURSE_MAX_TOKENS = 8192;
+const COURSE_TIMEOUT_MS = 180000;
+
+async function courseProviderCall(provider, apiKey, systemPrompt, userText) {
+  if (provider === 'anthropic') {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
+      body: JSON.stringify({
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: COURSE_MAX_TOKENS,
+        system: systemPrompt,
+        messages: [{ role: 'user', content: userText }],
+      }),
+      signal: AbortSignal.timeout(COURSE_TIMEOUT_MS),
+    });
+    if (!res.ok) throw new Error(`Anthropic API error (${res.status}): ${await res.text().catch(() => res.statusText)}`);
+    const data = await res.json();
+    const text = data.content?.find((block) => block.type === 'text')?.text;
+    if (!text) throw new Error('Anthropic response had no text content');
+    return extractJson(text);
+  }
+
+  const impl =
+    provider === 'openai'
+      ? { url: 'https://api.openai.com/v1/chat/completions', model: 'gpt-4o-mini' }
+      : provider === 'deepseek'
+        ? { url: 'https://api.deepseek.com/chat/completions', model: 'deepseek-chat' }
+        : null;
+  if (!impl) throw new Error(`Unsupported AI provider: ${provider}`);
+
+  const res = await fetch(impl.url, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json', authorization: `Bearer ${apiKey}` },
+    body: JSON.stringify({
+      model: impl.model,
+      max_tokens: COURSE_MAX_TOKENS,
+      response_format: { type: 'json_object' },
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: userText },
+      ],
+    }),
+    signal: AbortSignal.timeout(COURSE_TIMEOUT_MS),
+  });
+  if (!res.ok) throw new Error(`API error (${res.status}): ${await res.text().catch(() => res.statusText)}`);
+  const data = await res.json();
+  return extractJson(data.choices?.[0]?.message?.content || '{}');
+}
+
+export async function generatePracticeCourse({ provider, apiKey, systemPrompt, learnerInput }) {
+  if (!LLM_PROVIDERS.includes(provider)) throw new Error(`Unsupported AI provider: ${provider}`);
+  const userText = JSON.stringify(learnerInput);
+  return courseProviderCall(provider, apiKey, systemPrompt, userText);
+}
