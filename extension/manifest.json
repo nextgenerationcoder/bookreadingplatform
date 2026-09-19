@@ -21,7 +21,7 @@
     "type": "module"
   },
   "options_page": "options.html",
-  "permissions": ["storage"],
+  "permissions": ["storage", "activeTab"],
   "host_permissions": ["https://book.amirseyti.de/*"],
   "content_scripts": [
     {
