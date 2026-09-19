@@ -68,8 +68,19 @@ export function cookieOptions(maxAge) {
   };
 }
 
+// Requests carry the session token either as the httpOnly cookie (the web
+// app) or as "Authorization: Bearer <token>" (the Chrome extension - it has
+// no same-site cookie jar access from a content/background script, so login
+// hands it the raw token to store itself, see routes/auth.js).
+export function extractSessionToken(req) {
+  const header = req.headers.authorization || '';
+  const match = /^Bearer\s+(.+)$/i.exec(header);
+  if (match) return match[1];
+  return req.cookies?.[SESSION_COOKIE];
+}
+
 export function requireAuth(req, res, next) {
-  const user = getSessionUser(req.cookies?.[SESSION_COOKIE]);
+  const user = getSessionUser(extractSessionToken(req));
   if (!user) return res.status(401).json({ error: 'not authenticated' });
   req.user = user;
   req.userId = user.id;

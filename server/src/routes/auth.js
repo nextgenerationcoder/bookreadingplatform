@@ -8,6 +8,7 @@ import {
   deleteSession,
   requireAuth,
   cookieOptions,
+  extractSessionToken,
   SESSION_COOKIE_NAME,
 } from '../auth.js';
 
@@ -41,7 +42,11 @@ router.post('/signup', (req, res) => {
 
   const { token, maxAge } = createSession(id);
   res.cookie(SESSION_COOKIE_NAME, token, cookieOptions(maxAge));
-  res.status(201).json({ id, email: normalizedEmail });
+  // token is also returned in the body (not just the httpOnly cookie) so
+  // clients that can't use cookies - namely the Chrome extension's
+  // background service worker - can store and send it themselves as
+  // "Authorization: Bearer <token>". The web client just ignores this field.
+  res.status(201).json({ id, email: normalizedEmail, token });
 });
 
 router.post('/login', (req, res) => {
@@ -56,11 +61,11 @@ router.post('/login', (req, res) => {
   }
   const { token, maxAge } = createSession(user.id);
   res.cookie(SESSION_COOKIE_NAME, token, cookieOptions(maxAge));
-  res.json({ id: user.id, email: user.email });
+  res.json({ id: user.id, email: user.email, token });
 });
 
 router.post('/logout', (req, res) => {
-  deleteSession(req.cookies?.[SESSION_COOKIE_NAME]);
+  deleteSession(extractSessionToken(req));
   res.clearCookie(SESSION_COOKIE_NAME, { path: '/' });
   res.json({ ok: true });
 });
