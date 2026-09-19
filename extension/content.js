@@ -13,6 +13,8 @@ let wrappedSpans = [];
 let clickedWords = new Map(); // normalized word -> {german, persian}
 let seenWords = new Map(); // normalized word -> {german, persian}, superset of clickedWords
 let vocabStatus = {}; // normalized word -> 'learning' | 'learned' | 'passive'
+let autoSyncTimer = null;
+const AUTO_SYNC_DELAY_MS = 4000; // sync shortly after the last click, not per-click
 
 const HAS_WORD_RE = /[A-Za-zÀ-ÖØ-öø-ÿ'’-]{2,}/;
 const TOKEN_SPLIT_RE = /[A-Za-zÀ-ÖØ-öø-ÿ'’-]{2,}/g;
@@ -70,6 +72,10 @@ async function activateReadingMode() {
 function deactivateReadingMode() {
   if (!active) return;
   active = false;
+  clearTimeout(autoSyncTimer);
+  // Flush whatever hasn't synced yet so stopping (or navigating away, since
+  // this fires from beforeunload too) doesn't silently drop it.
+  if (clickedWords.size || seenWords.size) syncNow();
   for (const span of wrappedSpans) {
     const parent = span.parentNode;
     if (!parent) continue;
@@ -128,7 +134,7 @@ function wrapWords(root) {
       span.className = 'lex-word';
       span.textContent = word;
       const key = normalize(word);
-      const status = vocabStatus[key];
+      const status = vocabStatus[key] || 'unset';
       span.classList.add(
         status === 'learned' || status === 'passive'
           ? 'lex-known'
@@ -137,6 +143,7 @@ function wrapWords(root) {
             : 'lex-unset'
       );
       span.dataset.word = word;
+      span.dataset.status = status;
       span.addEventListener('click', onWordClick);
       frag.appendChild(span);
       wrappedSpans.push(span);
@@ -157,6 +164,17 @@ async function onWordClick(e) {
   const word = span.dataset.word;
   const key = normalize(word);
   span.classList.add('lex-clicked');
+
+  // A click means "I don't know this" - color it orange right away, same as
+  // the website's own reader does, matching vocab.js's /reading-page rule
+  // that a click always pushes toward 'learning' unless the word is already
+  // 'learned' (a page skim shouldn't undo real progress on a mastered word).
+  if (span.dataset.status !== 'learned') {
+    span.classList.remove('lex-known', 'lex-unset');
+    span.classList.add('lex-learning');
+    span.dataset.status = 'learning';
+  }
+
   showGlossPopup(span, 'Looking up…');
 
   let gloss = 'Not found';
@@ -169,6 +187,19 @@ async function onWordClick(e) {
   clickedWords.set(key, { german: word, persian: gloss });
   seenWords.set(key, { german: word, persian: gloss });
   showGlossPopup(span, gloss);
+  updatePendingStatus();
+  scheduleAutoSync();
+}
+
+function updatePendingStatus() {
+  const statusEl = widgetHost?.querySelector('#lex-status');
+  if (!statusEl) return;
+  statusEl.textContent = `${clickedWords.size} to learn queued – syncing soon…`;
+}
+
+function scheduleAutoSync() {
+  clearTimeout(autoSyncTimer);
+  autoSyncTimer = setTimeout(syncNow, AUTO_SYNC_DELAY_MS);
 }
 
 function showGlossPopup(anchor, text) {
@@ -265,6 +296,14 @@ async function syncNow() {
     if (statusEl) statusEl.textContent = `Sync failed: ${err.message}`;
   }
 }
+
+// Best-effort: fires on navigation/tab-close so words aren't silently lost
+// if the user never presses Stop. Not guaranteed to finish (the page is
+// already tearing down), but the 4s debounce in scheduleAutoSync usually
+// means most clicks are already synced by the time this fires.
+window.addEventListener('beforeunload', () => {
+  if (active && (clickedWords.size || seenWords.size)) syncNow();
+});
 
 chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
   if (msg.type === 'TOGGLE_READING_MODE') {
