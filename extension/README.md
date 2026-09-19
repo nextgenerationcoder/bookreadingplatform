@@ -8,12 +8,14 @@ website's own reader uses (see `server/src/routes/vocab.js`), so words show
 up in "My Words" identically whether they came from a book page or a random
 webpage.
 
-Titles, navigation, headers/footers and similar boilerplate are never
-touched at all (excluded entirely, not just left uncolored) - and passive
-credit only ever covers the paragraph you've actually clicked through, up
-to your last click in it, exactly like the website's own reader (see
-"How passive words get picked" below). Reading Mode never assumes you've
-read the whole page just because it's open.
+Navigation menus are skipped entirely. Titles and headings are wrapped and
+colorable like anything else, but treated as their own separate "paragraph"
+- so clicking a word in the article body never accidentally credits the
+page title (or a different paragraph) as passively known. Passive credit
+only ever covers the paragraph you've actually clicked through, up to your
+last click in it, exactly like the website's own reader (see "How passive
+words get picked" below). Reading Mode never assumes you've read the whole
+page just because it's open.
 
 ## Load it (development / unpacked)
 
@@ -29,11 +31,11 @@ No build step - it's plain JS/HTML/CSS, loaded as-is.
 1. Click the extension icon and log in with your Book Reading Platform
    account email/password.
 2. Open any webpage with German text, click the icon, and press
-   **Start Reading Mode**. Every German-looking word in the page's actual
-   content gets colored (gray = new, orange = learning, green =
-   known/learned) using your account's real vocab status, exactly like the
-   website's reader - titles, nav, headers/footers etc. are left alone
-   entirely, not wrapped or colored at all.
+   **Start Reading Mode**. Every German-looking word gets colored (gray =
+   new, orange = learning, green = known/learned) using your account's real
+   vocab status, exactly like the website's reader - navigation menus are
+   skipped entirely; titles/headings are still colorable but tracked
+   separately from the surrounding article (see below).
 3. Click a word to see its gloss and mark it as a learning word (turns
    orange immediately). This also marks everything *between your previous
    click and this one, within the same paragraph*, as passively known
@@ -54,9 +56,12 @@ No build step - it's plain JS/HTML/CSS, loaded as-is.
 Passive credit is scoped tightly on purpose, so Reading Mode never claims
 you understood text you didn't actually read:
 
-- **Paragraph-scoped**: each `<p>` (or `<li>`/`<blockquote>`/`<div>`/etc.
-  that's acting as one) tracks its own "read up to here" position,
-  independently of every other paragraph on the page.
+- **Paragraph-scoped**: each `<p>`/`<li>`/`<blockquote>`/heading/etc. tracks
+  its own "read up to here" position, independently of every other one on
+  the page. Text with no such wrapper at all (some sites just dump text
+  straight into a `<div>`) falls back to treating each distinct parent
+  element as its own unit, rather than merging everything on the page into
+  one.
 - **Click-driven, forward-only**: within a paragraph, clicking a word
   commits every word between the last click and this one (inclusive) as
   passive. Nothing past your last click, and nothing in a paragraph you

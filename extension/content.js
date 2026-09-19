@@ -24,19 +24,23 @@ const HAS_WORD_RE = /[A-Za-zÀ-ÖØ-öø-ÿ'’-]{2,}/;
 const TOKEN_SPLIT_RE = /[A-Za-zÀ-ÖØ-öø-ÿ'’-]{2,}/g;
 const DEFAULT_COLORS = { known: '#2f8f4e', learning: '#d98c2b', unset: '#9a9488' };
 
-// Never wrapped/colored at all, not just excluded from auto-passive - a page
-// title, nav links, footer boilerplate etc. aren't "reading" in the sense
-// this feature means, so they stay plain text entirely rather than risking
-// getting marked as known vocabulary the reader never actually read.
-const EXCLUDE_SELECTOR =
-  'script, style, noscript, textarea, input, select, iframe, code, pre, ' +
-  'nav, header, footer, aside, form, button, label, ' +
-  'h1, h2, h3, h4, h5, h6, .lex-widget-host, .lex-word';
+// Kept deliberately narrow (unlike an earlier version of this file, which
+// also excluded nav/header/footer/aside/form/button/label/h1-h6 wholesale -
+// too many real sites nest actual article content inside one of those tags
+// for styling reasons, which silently broke Reading Mode on them entirely).
+// NAV is the one addition to the original list: real navigation links are
+// never article prose, so excluding that subtree is safe on any site.
+const EXCLUDE_SELECTOR = 'script, style, noscript, textarea, input, select, iframe, code, pre, nav, .lex-widget-host, .lex-word';
 
-// The nearest one of these ancestors is treated as "one paragraph" for the
-// read-up-to-here commit range below - closest() finds the innermost match,
-// so a <p> two levels up wins over an outer <div>/<section> further out.
-const PARAGRAPH_SELECTOR = 'p, li, blockquote, dd, dt, figcaption, td, th, div, section, article, main';
+// Paragraph boundary for the read-up-to-here commit range below: walk up
+// from the word's own parent looking for the nearest semantic block tag
+// (so a heading is its own separate unit from the surrounding article, and
+// two <p>s never merge into one). If no such tag exists before reaching
+// <body> (some sites just dump raw text straight into a <div> with no <p>
+// at all), fall back to the word's own direct parent element rather than
+// a shared generic ancestor - keeps sibling paragraphs in plain <div>s
+// distinct from each other instead of collapsing into one.
+const PARAGRAPH_TAGS = new Set(['P', 'LI', 'BLOCKQUOTE', 'DD', 'DT', 'FIGCAPTION', 'TD', 'TH', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6']);
 
 function normalize(word) {
   return word.toLowerCase();
@@ -48,8 +52,13 @@ function statusClass(status) {
   return 'lex-unset';
 }
 
-function findParagraph(el) {
-  return el.closest(PARAGRAPH_SELECTOR) || el;
+function findParagraph(startEl) {
+  let node = startEl;
+  while (node && node.nodeType === 1 && node !== document.body) {
+    if (PARAGRAPH_TAGS.has(node.tagName)) return node;
+    node = node.parentElement;
+  }
+  return startEl;
 }
 
 function getParaEntry(para) {
@@ -196,7 +205,11 @@ function wrapWords(root) {
 // no equivalent "I'm done with this page" signal on an arbitrary webpage,
 // so only what was actually clicked through ever counts.
 function commitReadUpTo(span) {
-  const para = findParagraph(span);
+  // Must match wrapWords' findParagraph(textNode.parentElement) call exactly
+  // - pass span.parentElement (not span itself, a leaf SPAN never matches
+  // PARAGRAPH_TAGS anyway) so the no-semantic-tag-found fallback returns the
+  // same element wrapWords used as the WeakMap key, not a different one.
+  const para = findParagraph(span.parentElement);
   const entry = getParaEntry(para);
   const clickedIndex = Number(span.dataset.paraIndex);
   if (!Number.isFinite(clickedIndex) || clickedIndex <= entry.lastCommitted) return;
