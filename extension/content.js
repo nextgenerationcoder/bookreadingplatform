@@ -1,28 +1,64 @@
 // Reading Mode content script. Loaded (dormant) on every http(s) page except
 // the platform's own site; does nothing until it gets a TOGGLE_READING_MODE
-// message from the popup. Mirrors client/src/views/reader.js's model: a
-// clicked word means "I don't know this" (-> learning), everything else the
-// scan touches is assumed passively understood (-> passive) - see
-// server/src/routes/vocab.js's /reading-page endpoint, which this reuses
-// directly rather than inventing a separate extension-only vocab table.
+// message from the popup. Mirrors client/src/views/reader.js's model
+// exactly, not just its "clicked = learning, else passive" split but also
+// *how* passive gets assigned: a click commits everything read *up to that
+// click* as passive (see reader.js's commitReadUpTo), not the whole page at
+// once - a title or nav link the reader never actually read shouldn't be
+// claimed as passively known just because it happened to be on the page.
+// See server/src/routes/vocab.js's /reading-page endpoint, which this
+// reuses directly rather than inventing a separate extension-only table.
 
 let active = false;
 let widgetHost = null;
 let styleEl = null;
 let wrappedSpans = [];
 let clickedWords = new Map(); // normalized word -> {german, persian}
-let seenWords = new Map(); // normalized word -> {german, persian}, superset of clickedWords
+let seenWords = new Map(); // normalized word -> {german, persian}; only ever populated by commitReadUpTo (i.e. words actually read up to a click), never the whole page at once
 let vocabStatus = {}; // normalized word -> 'learning' | 'learned' | 'passive'
+let paraState = new WeakMap(); // paragraph element -> {count, lastCommitted} - see commitReadUpTo
 let autoSyncTimer = null;
 const AUTO_SYNC_DELAY_MS = 4000; // sync shortly after the last click, not per-click
 
 const HAS_WORD_RE = /[A-Za-zÀ-ÖØ-öø-ÿ'’-]{2,}/;
 const TOKEN_SPLIT_RE = /[A-Za-zÀ-ÖØ-öø-ÿ'’-]{2,}/g;
-const SKIP_TAGS = new Set(['SCRIPT', 'STYLE', 'NOSCRIPT', 'TEXTAREA', 'INPUT', 'SELECT', 'IFRAME', 'CODE', 'PRE']);
 const DEFAULT_COLORS = { known: '#2f8f4e', learning: '#d98c2b', unset: '#9a9488' };
+
+// Never wrapped/colored at all, not just excluded from auto-passive - a page
+// title, nav links, footer boilerplate etc. aren't "reading" in the sense
+// this feature means, so they stay plain text entirely rather than risking
+// getting marked as known vocabulary the reader never actually read.
+const EXCLUDE_SELECTOR =
+  'script, style, noscript, textarea, input, select, iframe, code, pre, ' +
+  'nav, header, footer, aside, form, button, label, ' +
+  'h1, h2, h3, h4, h5, h6, .lex-widget-host, .lex-word';
+
+// The nearest one of these ancestors is treated as "one paragraph" for the
+// read-up-to-here commit range below - closest() finds the innermost match,
+// so a <p> two levels up wins over an outer <div>/<section> further out.
+const PARAGRAPH_SELECTOR = 'p, li, blockquote, dd, dt, figcaption, td, th, div, section, article, main';
 
 function normalize(word) {
   return word.toLowerCase();
+}
+
+function statusClass(status) {
+  if (status === 'learned' || status === 'passive') return 'lex-known';
+  if (status === 'learning') return 'lex-learning';
+  return 'lex-unset';
+}
+
+function findParagraph(el) {
+  return el.closest(PARAGRAPH_SELECTOR) || el;
+}
+
+function getParaEntry(para) {
+  let entry = paraState.get(para);
+  if (!entry) {
+    entry = { count: 0, lastCommitted: -1 };
+    paraState.set(para, entry);
+  }
+  return entry;
 }
 
 function sendMsg(type, payload = {}) {
@@ -85,6 +121,7 @@ function deactivateReadingMode() {
   wrappedSpans = [];
   clickedWords.clear();
   seenWords.clear();
+  paraState = new WeakMap();
   styleEl?.remove();
   styleEl = null;
   widgetHost?.remove();
@@ -109,9 +146,8 @@ function wrapWords(root) {
       if (!node.nodeValue || !HAS_WORD_RE.test(node.nodeValue)) return NodeFilter.FILTER_REJECT;
       const parent = node.parentElement;
       if (!parent) return NodeFilter.FILTER_REJECT;
-      if (SKIP_TAGS.has(parent.tagName)) return NodeFilter.FILTER_REJECT;
       if (parent.isContentEditable) return NodeFilter.FILTER_REJECT;
-      if (parent.closest('.lex-widget-host, .lex-word')) return NodeFilter.FILTER_REJECT;
+      if (parent.closest(EXCLUDE_SELECTOR)) return NodeFilter.FILTER_REJECT;
       return NodeFilter.FILTER_ACCEPT;
     },
   });
@@ -120,6 +156,8 @@ function wrapWords(root) {
   while ((node = walker.nextNode())) textNodes.push(node);
 
   for (const textNode of textNodes) {
+    const para = findParagraph(textNode.parentElement);
+    const entry = getParaEntry(para);
     const text = textNode.nodeValue;
     const frag = document.createDocumentFragment();
     let lastIndex = 0;
@@ -135,24 +173,49 @@ function wrapWords(root) {
       span.textContent = word;
       const key = normalize(word);
       const status = vocabStatus[key] || 'unset';
-      span.classList.add(
-        status === 'learned' || status === 'passive'
-          ? 'lex-known'
-          : status === 'learning'
-            ? 'lex-learning'
-            : 'lex-unset'
-      );
+      span.classList.add(statusClass(status));
       span.dataset.word = word;
       span.dataset.status = status;
+      span.dataset.paraIndex = entry.count++;
       span.addEventListener('click', onWordClick);
       frag.appendChild(span);
       wrappedSpans.push(span);
-      if (!seenWords.has(key)) seenWords.set(key, { german: word, persian: '' });
 
       lastIndex = offset + word.length;
     }
     if (lastIndex < text.length) frag.appendChild(document.createTextNode(text.slice(lastIndex)));
     textNode.parentNode.replaceChild(frag, textNode);
+  }
+}
+
+// A click is also a "I've read at least this far [in this paragraph]"
+// signal - everything between the previous furthest click and this one,
+// *within the same paragraph*, gets committed as passive right away. Never
+// crosses into other paragraphs and never auto-commits a trailing
+// unclicked tail - unlike the website's own "Finish Page" button, there's
+// no equivalent "I'm done with this page" signal on an arbitrary webpage,
+// so only what was actually clicked through ever counts.
+function commitReadUpTo(span) {
+  const para = findParagraph(span);
+  const entry = getParaEntry(para);
+  const clickedIndex = Number(span.dataset.paraIndex);
+  if (!Number.isFinite(clickedIndex) || clickedIndex <= entry.lastCommitted) return;
+
+  const spansInRange = [...para.querySelectorAll('.lex-word')].filter((s) => {
+    const idx = Number(s.dataset.paraIndex);
+    return idx > entry.lastCommitted && idx <= clickedIndex;
+  });
+  entry.lastCommitted = clickedIndex;
+
+  for (const s of spansInRange) {
+    const key = normalize(s.dataset.word);
+    if (clickedWords.has(key)) continue; // stays orange, tracked separately
+    if (!seenWords.has(key)) seenWords.set(key, { german: s.dataset.word, persian: '' });
+    if (s.dataset.status !== 'learned' && s.dataset.status !== 'learning') {
+      s.classList.remove('lex-unset');
+      s.classList.add('lex-known');
+      s.dataset.status = 'passive';
+    }
   }
 }
 
@@ -174,9 +237,12 @@ async function onWordClick(e) {
     span.classList.add('lex-learning');
     span.dataset.status = 'learning';
   }
+  clickedWords.set(key, { german: word, persian: '' });
+  seenWords.set(key, { german: word, persian: '' });
+
+  commitReadUpTo(span);
 
   showGlossPopup(span, 'Looking up…');
-
   let gloss = 'Not found';
   try {
     const data = await sendMsg('LOOKUP_WORD', { word: key });

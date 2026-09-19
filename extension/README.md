@@ -2,11 +2,18 @@
 
 Turns any webpage into German reading practice against your Book Reading
 Platform account. Click a word you don't know → it's saved as a **learning**
-word; everything else the scan touches → saved as **passive** vocabulary.
+word; everything else you've read past → saved as **passive** vocabulary.
 Same distinction and the same `POST /api/vocab/reading-page` endpoint the
 website's own reader uses (see `server/src/routes/vocab.js`), so words show
 up in "My Words" identically whether they came from a book page or a random
 webpage.
+
+Titles, navigation, headers/footers and similar boilerplate are never
+touched at all (excluded entirely, not just left uncolored) - and passive
+credit only ever covers the paragraph you've actually clicked through, up
+to your last click in it, exactly like the website's own reader (see
+"How passive words get picked" below). Reading Mode never assumes you've
+read the whole page just because it's open.
 
 ## Load it (development / unpacked)
 
@@ -22,17 +29,42 @@ No build step - it's plain JS/HTML/CSS, loaded as-is.
 1. Click the extension icon and log in with your Book Reading Platform
    account email/password.
 2. Open any webpage with German text, click the icon, and press
-   **Start Reading Mode**. Every German-looking word on the page gets
-   colored (gray = new, orange = learning, green = known/learned) using your
-   account's real vocab status, exactly like the website's reader.
-3. Click a word to see its gloss and mark it as a learning word.
-4. Press **Sync words** on the floating "Reading Mode" widget (bottom-right
-   of the page) to save everything to your account: clicked words as
-   learning, everything else the scan touched as passive. Press it again
-   any time - already-synced words reset and only new activity is sent on
-   each sync.
+   **Start Reading Mode**. Every German-looking word in the page's actual
+   content gets colored (gray = new, orange = learning, green =
+   known/learned) using your account's real vocab status, exactly like the
+   website's reader - titles, nav, headers/footers etc. are left alone
+   entirely, not wrapped or colored at all.
+3. Click a word to see its gloss and mark it as a learning word (turns
+   orange immediately). This also marks everything *between your previous
+   click and this one, within the same paragraph*, as passively known
+   (green) - reading through a paragraph and clicking the words you don't
+   know credits the rest of that paragraph as passive, same as the website.
+   It never jumps to other paragraphs and never assumes you've read
+   anything you haven't actually clicked through.
+4. Reading Mode auto-syncs to your account a few seconds after your last
+   click, and again when you press **Stop** or navigate away - so you don't
+   need to remember to save. The floating "Reading Mode" widget
+   (bottom-right of the page) also has a **Sync words** button for an
+   immediate sync, and shows a live "N to learn queued" status.
 5. Press **Stop** on the widget (or toggle from the popup) to unwrap the
-   page and remove the widget.
+   page and remove the widget - this also flushes any not-yet-synced words.
+
+### How passive words get picked
+
+Passive credit is scoped tightly on purpose, so Reading Mode never claims
+you understood text you didn't actually read:
+
+- **Paragraph-scoped**: each `<p>` (or `<li>`/`<blockquote>`/`<div>`/etc.
+  that's acting as one) tracks its own "read up to here" position,
+  independently of every other paragraph on the page.
+- **Click-driven, forward-only**: within a paragraph, clicking a word
+  commits every word between the last click and this one (inclusive) as
+  passive. Nothing past your last click, and nothing in a paragraph you
+  haven't clicked in at all, is ever marked passive or synced.
+- **Never auto-completes a page**: unlike the website's "Finish Page"
+  button, there's no "I'm done" signal on an arbitrary webpage, so Reading
+  Mode never assumes you finished reading just because you stopped or
+  navigated away - only what you actually clicked through gets synced.
 
 ### Highlight colors
 
