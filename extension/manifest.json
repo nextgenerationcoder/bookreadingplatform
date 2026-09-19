@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Book Reading Platform – Reading Mode",
   "version": "1.0.0",
-  "description": "Turn any webpage into German reading practice: click words to save them to your Book Reading Platform account as learning words; everything else is logged as passive vocabulary.",
+  "description": "Turn any webpage into German reading practice for your Book Reading Platform account.",
   "icons": {
     "16": "icons/icon16.png",
     "48": "icons/icon48.png",
