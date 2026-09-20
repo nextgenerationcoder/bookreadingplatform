@@ -11,9 +11,9 @@ const router = Router();
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
 
 // POST /api/asr/transcribe (multipart "audio", a WAV file) — returns the
-// transcribed text. Defaults to the self-hosted Whisper container (no
-// per-account setup needed); if the account has configured 'groq' with its
-// own key in Settings, that's used instead.
+// transcribed text via Groq (see asr.js). Needs the account's own Groq API
+// key configured in Settings; there's no keyless default anymore now that
+// the self-hosted Whisper container is gone.
 router.post('/transcribe', upload.single('audio'), async (req, res) => {
   if (!req.file) return res.status(400).json({ error: 'an audio file is required' });
 
@@ -25,11 +25,14 @@ router.post('/transcribe', upload.single('audio'), async (req, res) => {
       ? [req.body.hotwords]
       : undefined;
 
-  try {
-    const row = db.prepare('SELECT asr_provider, asr_api_key_enc FROM users WHERE id = ?').get(req.userId);
-    const provider = row?.asr_provider || 'self-hosted';
-    const apiKey = row?.asr_api_key_enc ? await decrypt(row.asr_api_key_enc) : null;
+  const row = db.prepare('SELECT asr_provider, asr_api_key_enc FROM users WHERE id = ?').get(req.userId);
+  const provider = row?.asr_provider || 'groq';
+  const apiKey = row?.asr_api_key_enc ? await decrypt(row.asr_api_key_enc) : null;
+  if (!apiKey) {
+    return res.status(400).json({ error: 'Add a Groq API key in Settings to use the mic button.' });
+  }
 
+  try {
     const text = await transcribeAudio({
       provider,
       apiKey,

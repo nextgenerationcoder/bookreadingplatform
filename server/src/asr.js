@@ -1,51 +1,21 @@
-// Speech-to-text for LessonPlayer's spoken-answer input. Two providers:
-// - 'self-hosted' (default, no key needed): our own German-tuned Whisper
-//   large-v3 turbo container (see docker-compose.yml's `whisper` service).
-//   Runs on this VPS's CPU, so a single transcription can take a while.
-// - 'groq': Groq's hosted Whisper API - the same model family, but running
-//   on Groq's inference hardware, dramatically faster than the CPU
-//   container. Needs the account's own Groq API key.
+// Speech-to-text for LessonPlayer's spoken-answer input. Groq's hosted
+// Whisper API is the only provider - it used to be a choice between this and
+// a self-hosted Whisper container, but that container's model weights ate
+// ~1.4GB of RAM on the VPS for a feature Groq already covers well (and much
+// faster, running on Groq's inference hardware instead of this VPS's CPU),
+// so it was removed - see docker-compose.yml's git history for the old
+// `whisper` service.
 //
-// Neither has a repeated-hotwords field; the closest equivalent both share
-// is a free-text `prompt`/`initial_prompt` fed to the decoder as preceding
-// context. Callers should only pass words the learner has already been
-// shown (e.g. a step's newly-taught vocabulary) - never the full expected
-// answer, or the model would just be nudged toward recognizing that answer
-// regardless of what was actually said, defeating the point of an active-
-// recall check.
+// Has no repeated-hotwords field; the closest equivalent is a free-text
+// `prompt` fed to the decoder as preceding context. Callers should only pass
+// words the learner has already been shown (e.g. a step's newly-taught
+// vocabulary) - never the full expected answer, or the model would just be
+// nudged toward recognizing that answer regardless of what was actually
+// said, defeating the point of an active-recall check.
 
-const WHISPER_URL = process.env.WHISPER_URL || 'http://whisper:9000';
 const GROQ_MODEL = 'whisper-large-v3';
 
 const ASR_PROVIDERS = {
-  'self-hosted': {
-    async call(_apiKey, audioBuffer, mimeType, filename, { hotwords } = {}) {
-      const url = new URL('/asr', WHISPER_URL);
-      url.searchParams.set('task', 'transcribe');
-      url.searchParams.set('language', 'de');
-      url.searchParams.set('output', 'json');
-      if (hotwords && hotwords.length) {
-        url.searchParams.set('initial_prompt', hotwords.slice(0, 20).join(', '));
-      }
-
-      const form = new FormData();
-      form.append('audio_file', new Blob([audioBuffer], { type: mimeType }), filename);
-
-      const res = await fetch(url, {
-        method: 'POST',
-        body: form,
-        // Cold model load / CPU inference can take a while on the first
-        // request after a redeploy - generous timeout so that doesn't
-        // spuriously fail.
-        signal: AbortSignal.timeout(60000),
-      });
-      if (!res.ok) {
-        throw new Error(`self-hosted Whisper error (${res.status}): ${await res.text().catch(() => res.statusText)}`);
-      }
-      const data = await res.json();
-      return data.text || '';
-    },
-  },
   groq: {
     async call(apiKey, audioBuffer, mimeType, filename, { hotwords } = {}) {
       const form = new FormData();
@@ -77,6 +47,7 @@ const ASR_PROVIDERS = {
 export const ASR_PROVIDERS_LIST = Object.keys(ASR_PROVIDERS);
 
 export async function transcribeAudio({ provider, apiKey, audioBuffer, mimeType, filename = 'audio.wav', hotwords }) {
-  const impl = ASR_PROVIDERS[provider] || ASR_PROVIDERS['self-hosted'];
+  const impl = ASR_PROVIDERS[provider] || ASR_PROVIDERS.groq;
+  if (!apiKey) throw new Error('No Groq API key configured - add one in Settings to use the mic button.');
   return (await impl.call(apiKey, audioBuffer, mimeType, filename, { hotwords })).trim();
 }

@@ -1,7 +1,6 @@
 // Converts a browser MediaRecorder recording (webm/opus in Chrome/Firefox,
-// mp4/aac in Safari) into a 16-bit PCM mono WAV Blob - the format the
-// self-hosted Whisper container's ffmpeg-based /asr endpoint reliably
-// accepts regardless of source codec.
+// mp4/aac in Safari) into a 16-bit PCM mono WAV Blob - sidesteps any codec
+// surprises with Groq's transcription API regardless of source format.
 export async function blobToWav(blob) {
   const arrayBuffer = await blob.arrayBuffer();
   const audioCtx = new (window.AudioContext || window.webkitAudioContext)();

@@ -322,12 +322,11 @@ export function renderLessonPlayer(host, lesson) {
     api.recordVocab(step.software, correct).catch(() => {});
   }
 
-  // Record → convert to WAV (the self-hosted Whisper container's ffmpeg
-  // decode step accepts most formats, but WAV sidesteps codec surprises -
-  // see audioToWav.js) → transcribe → fill the answer input. The learner
-  // still reviews/edits before submitting; this never auto-submits on
-  // their behalf. Falls back silently to typing if the mic is unavailable
-  // or denied.
+  // Record → convert to WAV (Groq's transcription API accepts most formats,
+  // but WAV sidesteps codec surprises - see audioToWav.js) → transcribe →
+  // fill the answer input. The learner still reviews/edits before
+  // submitting; this never auto-submits on their behalf. Falls back
+  // silently to typing if the mic is unavailable or denied.
   function wireMicButton(micBtn, input, feedback, isAlreadyCorrect, hotwords) {
     let mediaRecorder = null;
     let chunks = [];

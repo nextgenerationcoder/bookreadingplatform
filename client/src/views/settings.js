@@ -1,7 +1,6 @@
 import { api } from '../api.js';
 
 const PROVIDER_LABELS = { anthropic: 'Anthropic (Claude)', openai: 'OpenAI (GPT)', deepseek: 'DeepSeek' };
-const ASR_PROVIDER_LABELS = { 'self-hosted': 'Self-hosted (Whisper, German)', groq: 'Groq (Whisper, fast)' };
 
 export async function renderSettings(host) {
   host.innerHTML = '<div class="loading">Loading settings…</div>';
@@ -88,27 +87,21 @@ export async function renderSettings(host) {
         <h1 style="margin-top:32px">Speech Input</h1>
         <p class="hint">
           Used by Lesson 1's "speak your answer" microphone button — transcribes what you say into
-          text, which fills the answer field the same as typing. Self-hosted (the default) runs a
-          German-tuned Whisper model on the server, no API key needed, but can be slow. Groq runs
-          the same kind of model on much faster hardware — worth it if self-hosted feels sluggish.
+          text, which fills the answer field the same as typing, via Groq's hosted Whisper API.
+          Requires your own Groq API key; without one, the mic button just shows an error asking
+          you to add a key here.
         </p>
         <div class="authCard" style="max-width:420px;margin:18px 0 0">
           ${
             asr.configured
-              ? `<p><strong>Current provider:</strong> ${ASR_PROVIDER_LABELS[asr.provider] || asr.provider}</p>
+              ? `<p><strong>Current provider:</strong> Groq (Whisper, fast)</p>
                  <p class="hint" style="padding:0 0 14px">The key itself is never shown again once saved.</p>
-                 <button id="clearAsrBtn" type="button">Reset to Self-hosted</button>`
+                 <button id="clearAsrBtn" type="button">Remove API Key</button>`
               : ''
           }
           <form id="asrForm" style="margin-top:${asr.configured ? '18px' : '0'}">
-            <label>Provider
-              <select id="asrProvider">
-                <option value="self-hosted">Self-hosted (Whisper, German)</option>
-                <option value="groq">Groq (Whisper, fast)</option>
-              </select>
-            </label>
-            <label id="asrApiKeyLabel">Groq API Key
-              <input type="password" id="asrApiKey" autocomplete="off" placeholder="gsk_…">
+            <label>Groq API Key
+              <input type="password" id="asrApiKey" autocomplete="off" placeholder="gsk_…" required>
             </label>
             <button type="submit">${asr.configured ? 'Replace' : 'Save'}</button>
           </form>
@@ -219,23 +212,11 @@ export async function renderSettings(host) {
     const asrForm = host.querySelector('#asrForm');
     const asrStatus = host.querySelector('#asrStatus');
     const clearAsrBtn = host.querySelector('#clearAsrBtn');
-    const asrProviderSelect = host.querySelector('#asrProvider');
-    const asrApiKeyLabel = host.querySelector('#asrApiKeyLabel');
     const asrApiKeyInput = host.querySelector('#asrApiKey');
-
-    asrProviderSelect.value = asr.provider;
-
-    function syncAsrKeyField() {
-      const needsKey = asrProviderSelect.value !== 'self-hosted';
-      asrApiKeyLabel.hidden = !needsKey;
-      asrApiKeyInput.required = needsKey;
-    }
-    syncAsrKeyField();
-    asrProviderSelect.onchange = syncAsrKeyField;
 
     asrForm.onsubmit = async (e) => {
       e.preventDefault();
-      const provider = asrProviderSelect.value;
+      const provider = 'groq';
       const apiKey = asrApiKeyInput.value.trim();
       asrStatus.textContent = 'Saving…';
       asrStatus.className = 'importStatus';
