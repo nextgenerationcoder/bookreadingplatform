@@ -1,9 +1,13 @@
 name: Deploy to VPS
 
-# Runs docker compose up -d --build on the production VPS whenever this
-# branch is pushed, then hits the app's health endpoint to confirm it came
-# back up. No third-party SSH action - plain openssh-client, so the only
-# thing with access to the deploy key is this repo's own runner.
+# Runs docker compose up -d --build --remove-orphans on the production VPS
+# whenever this branch is pushed, then hits the app's health endpoint to
+# confirm it came back up. --remove-orphans matters: without it, a service
+# deleted from docker-compose.yml (e.g. the self-hosted whisper container)
+# keeps running untouched on every future deploy - plain `up` never stops
+# containers for services that no longer exist in the file. No third-party
+# SSH action - plain openssh-client, so the only thing with access to the
+# deploy key is this repo's own runner.
 on:
   push:
     branches: [claude/web-app-project-avh8op]
@@ -34,7 +38,7 @@ jobs:
             git fetch origin
             git checkout claude/web-app-project-avh8op
             git reset --hard origin/claude/web-app-project-avh8op
-            docker compose up -d --build
+            docker compose up -d --build --remove-orphans
             docker compose ps
           '
 
