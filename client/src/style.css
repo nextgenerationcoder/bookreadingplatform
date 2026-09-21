@@ -41,6 +41,9 @@ a { color: var(--accent); text-decoration: none }
 button { border: 1px solid var(--line); background: var(--paper); padding: 9px 13px; border-radius: 10px; font-size: 15px; cursor: pointer }
 button:disabled { opacity: .35 }
 #pageIndicator { margin-inline-start: auto; color: var(--muted); font-size: 14px }
+.gotoPageForm { display: flex; gap: 6px; align-items: center }
+.gotoPageForm input { width: 68px; padding: 6px 8px; border: 1px solid var(--line); border-radius: 8px; font-size: 14px; background: var(--paper) }
+.gotoPageForm button { padding: 6px 10px; font-size: 14px }
 
 .button { display: inline-block; border: 1px solid var(--accent); background: var(--accent); color: #fff; padding: 8px 14px; border-radius: 10px; font-size: 14px }
 

@@ -88,8 +88,13 @@ export async function renderReader(host, bookId, kind = 'book') {
       <button id="prev">← Previous</button>
       <button id="next">Next →</button>
       <span id="pageIndicator"></span>
+      <form id="gotoPageForm" class="gotoPageForm">
+        <input type="number" id="gotoPageInput" inputmode="numeric" placeholder="Page #" aria-label="Go to page" />
+        <button type="submit">Go</button>
+      </form>
       <a id="editPageLink" class="backLink" href="#">Edit page</a>
     </div>
+    <div id="gotoPageStatus" class="importStatus error" hidden></div>
     <div class="ttsBar">
       <button id="playPauseBtn" type="button">▶ Play</button>
       <button id="prevSentenceBtn" type="button" title="Previous sentence">⏮</button>
@@ -107,6 +112,9 @@ export async function renderReader(host, bookId, kind = 'book') {
   const prevBtn = host.querySelector('#prev');
   const nextBtn = host.querySelector('#next');
   const indicator = host.querySelector('#pageIndicator');
+  const gotoPageForm = host.querySelector('#gotoPageForm');
+  const gotoPageInput = host.querySelector('#gotoPageInput');
+  const gotoPageStatus = host.querySelector('#gotoPageStatus');
   const editPageLink = host.querySelector('#editPageLink');
   const pageHost = host.querySelector('#pageHost');
   const playPauseBtn = host.querySelector('#playPauseBtn');
@@ -276,6 +284,25 @@ export async function renderReader(host, bookId, kind = 'book') {
     renderPage();
   }
 
+  // Page numbers aren't guaranteed contiguous (a book can be missing pages),
+  // so this looks up the matching entry rather than assuming pageNumber ===
+  // pageIndex + first-page-offset.
+  function goToPage(pageNumber) {
+    const next = book.pages.findIndex((p) => p.page === pageNumber);
+    if (next === -1) {
+      gotoPageStatus.textContent = `No page ${pageNumber} in this book.`;
+      gotoPageStatus.hidden = false;
+      return;
+    }
+    gotoPageStatus.hidden = true;
+    stopAudio();
+    speaking = false;
+    updatePlayButton();
+    pageIndex = next;
+    currentSentenceIndex = 0;
+    renderPage();
+  }
+
   function onKeydown(e) {
     if (e.key === 'ArrowLeft') go(-1);
     if (e.key === 'ArrowRight') go(1);
@@ -302,6 +329,13 @@ export async function renderReader(host, bookId, kind = 'book') {
     const last = book.pages[book.pages.length - 1].page;
     indicator.textContent = `Page ${page.page} of ${first}–${last}`;
     editPageLink.href = `${editPageBase}/page/${page.page}/edit`;
+    // No min/max constraint attributes here on purpose - those trigger the
+    // browser's native validation, which silently blocks form submission
+    // for an out-of-range value before goToPage() ever runs, so the "No
+    // page N in this book" message below never gets a chance to show.
+    gotoPageInput.placeholder = `Page # (${first}–${last})`;
+    gotoPageInput.value = '';
+    gotoPageStatus.hidden = true;
 
     pageHost.innerHTML = '';
     wordIndexCounter = 0;
@@ -528,5 +562,12 @@ export async function renderReader(host, bookId, kind = 'book') {
 
   prevBtn.onclick = () => go(-1);
   nextBtn.onclick = () => go(1);
+  gotoPageForm.onsubmit = (e) => {
+    e.preventDefault();
+    const value = Number(gotoPageInput.value);
+    if (!Number.isFinite(value)) return;
+    goToPage(value);
+    gotoPageInput.value = '';
+  };
   renderPage();
 }
