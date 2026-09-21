@@ -1,0 +1,34 @@
+{
+  "manifest_version": 3,
+  "name": "Book Reading Platform – Reading Mode",
+  "version": "1.0.0",
+  "description": "Turn any webpage into German reading practice for your Book Reading Platform account.",
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "options_page": "options.html",
+  "permissions": ["storage", "activeTab"],
+  "host_permissions": ["https://book.amirseyti.de/*"],
+  "content_scripts": [
+    {
+      "matches": ["http://*/*", "https://*/*"],
+      "exclude_matches": ["https://book.amirseyti.de/*", "http://book.amirseyti.de/*"],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ]
+}

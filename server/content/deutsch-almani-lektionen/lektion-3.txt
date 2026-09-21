@@ -1,0 +1,191 @@
+COURSE: deutsch-almani-lektion-3
+TITLE: Lektion 3
+LEVEL: A1
+LANG: de -> fa
+
+PAGE 1
+CHAPTER: Lektion 3
+1: wir gehen
+ما می رویم
+2: Wo
+کجا
+3: Wohin
+به کجا
+4: wohin gehen Sie?
+شما به کجا میروید؟
+5: wohin wollen Sie gehen?
+به کجا می خواهید شما بروید؟
+6: hingehen
+رفتن به/ به سمتی رفتن
+7: wo wollen Sie hingehen?
+به کجا می خواهید شما بروید؟
+8: dort
+آنجا
+9: dorthin
+به آنجا
+10: ich will dorthin gehen
+من می خواهم به آنجا بروم
+11: aber ich kann nicht heute dorthin gehen
+اما من نمی توانم امروز به آنجا بروم
+12: ich bin
+من هستم
+13: beschäftigt
+مشغول
+14: das Geschäft
+تجارت / مغازه
+15: ich bin beschäftigt
+من مشغول هستم ( سرم شلوغه )
+16: ich bin heute sehr beschäftigt
+من امروز خیلی مشغول هستم
+17: ich bin jetzt sehr beschäftigt
+من اکنون خیلی مشغول هستم
+18: ich werde sehr beschäftigt sein
+من خیلی مشغول خواهم بود
+19: wie lange bleiben wir?
+چه مدت ما می مانیم؟
+20: wohin gehen Sie?
+به کجا شما می روید؟
+21: wie lange können wir heute hier bleiben?
+چه مدت می توانیم ما امروز اینجا بمانیم؟
+22: wie lange werden wir hier bleiben?
+چه مدت ما اینجا خواهیم ماند؟
+23: wie lange können Sie hier bleiben?
+چه مدت می توانید شما اینجا بمانید؟
+24: wie lange bleiben Sie hier?
+چه مدت شما اینجا می مانید؟
+25: فعل مانند جمالت سوالی در ابتدا می آید، با این تفاوت که فقط لحن
+در جمالت امری محترمانه خطاب به یک نفر - جمله تغییر می کند.
+26: kommen Sie !
+بیایید شما!
+27: kommen Sie hierher!
+بیایید اینجا!
+28: hierher oder her
+به سمت اینجا
+29: bringen Sie es mir heute!
+آن را امروز به من بیاورید!
+30: bringen Sie es mir heute?
+شما آن را امروز به من می آورید؟
+31: bringen Sie es mir!
+آن را به من بیاورید!
+32: warten
+منتظر بودن
+33: warum warten Sie?
+چرا منتظر هستید شما؟
+34: warten Sie bitte!
+منتظر ب اشید لطفأ!
+35: wollen Sie bitte warten!
+میشه لطفأ منتظر باشید
+36: warten auf
+منتظر بودن بر
+37: wollen Sie bitte auf mich warten?
+میشه لطفأ منتظر من باشید؟
+38: wollen Sie bitte auf mich morgen hier warten?
+میشه لطفأ شما فردا اینجا منتظر من باشید؟
+39: warten Sie auf mich!
+منتظر من باشید!
+40: warten Sie auf mich?
+منتظر من می شوید؟
+41: können Sie auf mich warten?
+می توانید منتظر من باشید؟
+42: wollen Sie auf mich warten?
+می خواهید منتظر من باشید؟
+43: wo wollen Sie auf mich warten?
+کجا می خواهید منتظر من باشید؟
+44: wo werden Sie auf mich warten?
+کجا منتظر من خواهید بود؟
+45: sie (they for clarity die)
+آنها
+46: wie lange bleiben wir hier?
+چه مدت ما اینجا می مانیم؟
+47: ich komme mit Ihnen
+من می آیم با شما
+48: warten Sie!
+منتظر باشید
+49: wollen Sie bitte warten!
+میشه لطفأ منتظر باشید!
+50: ich werde auf Sie warten
+من منتظر شما خواهم بود
+51: ich werde hier bleiben
+من اینجا خواهم ماند
+52: kaufen
+خریدن
+53: der Kaufmann
+تاجر
+54: ich werde es kaufen
+من آن را خواهم خرید
+55: teuer
+گران
+56: wir werden es nicht kaufen, denn es ist sehr teuer
+ما آن را نخواهیم خرید، چون آن خیلی گران است
+57: wir werden es kaufen, denn wir wollen es haben
+ما آن را خواهیم خرید، چون ما میخواهیم آن را داشته باشیم
+58: ich sehe Sie morgen
+من می بینم شما را فردا
+59: ich gehe mit Ihnen morgen
+من می روم با شما فردا
+60: er wird es kaufen
+او آن را خواهد خرید
+61: er wird bald hier sein
+او به زودی اینجا خواهد بود
+62: sie wird bald hier sein
+او به زودی اینجا خواهد بود
+63: fertig
+آماده
+64: es ist fertig
+آن آماده است
+65: schon
+پیشاپیش / فی الواقع / همواره (معادل دقیق در فارسی ندارد)
+66: es ist schon fertig
+آن پیشاپیش آماده است
+67: es ist schon hier
+آن پیشاپیش اینجا است
+68: ich habe es schon
+من آن را پیشاپیش دارم
+69: schön
+زیبا
+70: es ist sehr schön
+آن خیی زیبا است
+71: Er ist sehr schön
+او خیلی زیبا است
+72: alles
+همه چیز
+73: alles ist schon fertig
+همه چیز پیشاپیش آماده است
+74: alles wird für Sie bald fertig sein
+همه چیز برای شما به زودی آماده خواهد بود
+75: er bleibt
+او می ماند
+76: sie bleibt
+او می ماند
+77: es bleibt
+آن می ماند
+78: alles bleibt hier
+همه چیز اینجا می مانند
+79: alle, Sie alle, die alle, wir alle
+همه / همه آنها / اینها همه / همه ما
+80: alle bleiben hier
+همه اینجا می مانند
+81: mein Freund
+دوست من
+82: mein Freund bleibt nicht
+دوست من نمی ماند
+83: meine Freunde
+دوستان من
+84: meine Freunde bleiben nicht hier
+دوستان من اینجا نمی مانند
+85: wir alle bleiben hier
+همه ما اینجا می مانیم
+86: er kommt bald
+او به زودی می اید
+87: er bringt es mir
+او آن را به من می آورد
+88: er wird es Ihnen morgen bringen
+او آن را به شما فردا خواهد اورد
+89: wann werden Sie es mir bringen?
+چه زمانی شما آن را به من خوا هید آورد؟
+90: wollen Sie bitte es mir bringen
+میشه لطفا شما آن را به من بیاورید؟
+91: wollen Sie bitte es mir morgen bringen
+میشه شما لطفأ آن را به من فردا بیاورید
+92: wann werden Sie es mir bringen?
+چه زمانی شما آن را خواهید آورد؟
