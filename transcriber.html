@@ -1,0 +1,308 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Longform Transcriber</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600&family=Source+Sans+3:wght@400;600&family=JetBrains+Mono:wght@400&display=swap">
+<style>
+  :root {
+    --bg: #f6f7f9;
+    --surface: #ffffff;
+    --ink: #1b2330;
+    --muted: #5b6676;
+    --line: #dde2ea;
+    --accent: #2f5bd3;
+    --accent-ink: #ffffff;
+    --good: #1f7a4d;
+    --bad: #b3261e;
+    --wave: #c9d4f2;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #11151c; --surface: #19202a; --ink: #e6eaf1; --muted: #9aa5b5;
+      --line: #2a3340; --accent: #7c9cf5; --accent-ink: #0d1320;
+      --good: #5cc38d; --bad: #f08a80; --wave: #2c3a5c;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #11151c; --surface: #19202a; --ink: #e6eaf1; --muted: #9aa5b5;
+    --line: #2a3340; --accent: #7c9cf5; --accent-ink: #0d1320;
+    --good: #5cc38d; --bad: #f08a80; --wave: #2c3a5c;
+    color-scheme: dark;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font: 16px/1.55 "Source Sans 3", system-ui, -apple-system, "Segoe UI", sans-serif;
+    padding-inline: 16px; padding-block: 32px 64px;
+  }
+  main { max-width: 820px; margin: 0 auto; display: grid; gap: 24px; }
+  h1 {
+    font-family: Fraunces, Georgia, serif; font-weight: 600;
+    font-size: clamp(1.8rem, 4vw, 2.4rem); line-height: 1.15; margin: 0;
+    text-wrap: balance;
+  }
+  .lede { margin: 8px 0 0; color: var(--muted); max-width: 62ch; }
+  .panel {
+    background: var(--surface); border: 1px solid var(--line); border-radius: 10px;
+    padding: 20px; display: grid; gap: 16px;
+  }
+  .drop {
+    border: 2px dashed var(--line); border-radius: 8px; padding: 28px 16px;
+    text-align: center; cursor: pointer; color: var(--muted);
+  }
+  .drop.over { border-color: var(--accent); color: var(--ink); }
+  .drop strong { color: var(--ink); display: block; font-size: 1.05rem; }
+  .row { display: flex; flex-wrap: wrap; gap: 12px; align-items: end; }
+  label.field { display: grid; gap: 4px; font-size: .85rem; color: var(--muted); }
+  label.field span { text-transform: uppercase; letter-spacing: .06em; font-weight: 600; }
+  select, button {
+    font: inherit; border-radius: 6px; border: 1px solid var(--line);
+    background: var(--surface); color: var(--ink); padding: 8px 12px;
+  }
+  button { cursor: pointer; font-weight: 600; }
+  button.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+  button:disabled { opacity: .5; cursor: not-allowed; }
+  button:focus-visible, select:focus-visible, .drop:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .status { font-size: .95rem; color: var(--muted); display: grid; gap: 8px; }
+  .status .msg.error { color: var(--bad); }
+  .status .msg.done { color: var(--good); }
+  .bar { height: 8px; background: var(--wave); border-radius: 4px; overflow: hidden; }
+  .bar > i { display: block; height: 100%; width: 0; background: var(--accent); transition: width .3s; }
+  .meta { font-family: "JetBrains Mono", ui-monospace, monospace; font-size: .8rem; font-variant-numeric: tabular-nums; }
+  .transcript {
+    max-height: 60vh; overflow-y: auto; display: grid; gap: 6px;
+    font-size: 1rem;
+  }
+  .seg { display: grid; grid-template-columns: 6.5ch 1fr; gap: 12px; }
+  .seg time { font-family: "JetBrains Mono", ui-monospace, monospace; font-size: .8rem; color: var(--muted); padding-top: 3px; font-variant-numeric: tabular-nums; }
+  .empty { color: var(--muted); font-style: italic; }
+  .notes { font-size: .9rem; color: var(--muted); margin: 0; padding-left: 1.2em; display: grid; gap: 4px; }
+  @media (prefers-reduced-motion: reduce) { .bar > i { transition: none; } }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>Longform Transcriber</h1>
+    <p class="lede">Transcribe long English recordings (interviews, lectures, hour-long meetings) with OpenAI's Whisper model. Everything runs in this browser tab, and the audio never leaves your computer.</p>
+  </header>
+
+  <section class="panel" aria-label="Audio and settings">
+    <div class="drop" id="drop" tabindex="0" role="button" aria-label="Choose an audio file">
+      <strong id="fileName">Drop an audio file here, or click to choose one</strong>
+      MP3, M4A, WAV, OGG, WEBM, MP4 and other formats your browser can play
+    </div>
+    <input type="file" id="file" accept="audio/*,video/*" hidden>
+    <div class="row">
+      <label class="field" for="model"><span>Model</span>
+        <select id="model">
+          <option value="onnx-community/whisper-tiny.en">Tiny (fastest, ~40 MB download)</option>
+          <option value="onnx-community/whisper-base.en" selected>Base (balanced, ~80 MB download)</option>
+          <option value="onnx-community/whisper-small.en">Small (most accurate, ~250 MB download)</option>
+        </select>
+      </label>
+      <button class="primary" id="start" disabled>Transcribe</button>
+      <button id="stop" hidden>Stop</button>
+    </div>
+    <div class="status" aria-live="polite">
+      <div class="msg" id="msg">Choose a file to begin.</div>
+      <div class="bar" aria-hidden="true"><i id="barFill"></i></div>
+      <div class="meta" id="meta"></div>
+    </div>
+  </section>
+
+  <section class="panel" aria-label="Transcript">
+    <div class="row" style="justify-content: space-between; align-items: center;">
+      <strong>Transcript</strong>
+      <div class="row">
+        <button id="copy" disabled>Copy text</button>
+        <button id="dlTxt" disabled>Download .txt</button>
+        <button id="dlSrt" disabled>Download .srt</button>
+      </div>
+    </div>
+    <div class="transcript" id="out"><p class="empty">The text appears here as each part finishes.</p></div>
+  </section>
+
+  <ul class="notes">
+    <li>The first run downloads the model, and your browser caches it for next time.</li>
+    <li>In Chrome or Edge with WebGPU, a 52-minute file with the Base model usually takes 5 to 15 minutes. Without WebGPU it runs on the CPU and can take 30 minutes or more. Keep this tab open until it finishes.</li>
+    <li>Use a laptop or desktop. Phones often run out of memory on hour-long files.</li>
+  </ul>
+</main>
+
+<script>
+const SLICE_SEC = 180;          // audio is fed to the worker in 3-minute slices
+const SR = 16000;
+
+const workerSrc = `
+import { pipeline, env } from "https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.8.1";
+env.allowLocalModels = false;
+let asr = null, loadedModel = null, device = null;
+
+async function load(model) {
+  if (asr && loadedModel === model) return;
+  const progress = (p) => { if (p.status === "progress" && p.total) postMessage({ type: "download", file: p.file, loaded: p.loaded, total: p.total }); };
+  const hasGPU = !!(self.navigator && navigator.gpu && await navigator.gpu.requestAdapter().catch(() => null));
+  if (hasGPU) {
+    try {
+      asr = await pipeline("automatic-speech-recognition", model, {
+        device: "webgpu", dtype: { encoder_model: "fp32", decoder_model_merged: "q4" }, progress_callback: progress });
+      device = "WebGPU";
+    } catch (e) { asr = null; }
+  }
+  if (!asr) {
+    asr = await pipeline("automatic-speech-recognition", model, { device: "wasm", dtype: "q8", progress_callback: progress });
+    device = "CPU (WASM)";
+  }
+  loadedModel = model;
+  postMessage({ type: "ready", device });
+}
+
+onmessage = async (e) => {
+  const d = e.data;
+  try {
+    if (d.type === "load") await load(d.model);
+    if (d.type === "slice") {
+      const r = await asr(d.audio, { chunk_length_s: 30, stride_length_s: 5, return_timestamps: true });
+      postMessage({ type: "result", index: d.index, offset: d.offset, text: r.text, chunks: r.chunks || [] });
+    }
+  } catch (err) {
+    postMessage({ type: "error", message: String(err && err.message || err) });
+  }
+};
+`;
+
+const $ = (id) => document.getElementById(id);
+let file = null, audio = null, worker = null, segments = [], stopped = false, t0 = 0;
+
+function setMsg(text, cls = "") { $("msg").textContent = text; $("msg").className = "msg " + cls; }
+function setBar(frac) { $("barFill").style.width = (Math.max(0, Math.min(1, frac)) * 100).toFixed(1) + "%"; }
+function fmt(sec, srt = false) {
+  sec = Math.max(0, sec || 0);
+  const h = Math.floor(sec / 3600), m = Math.floor(sec % 3600 / 60), s = Math.floor(sec % 60), ms = Math.floor((sec % 1) * 1000);
+  const p = (n, l = 2) => String(n).padStart(l, "0");
+  return srt ? `${p(h)}:${p(m)}:${p(s)},${p(ms, 3)}` : (h ? `${h}:${p(m)}:${p(s)}` : `${m}:${p(s)}`);
+}
+
+function pickFile(f) {
+  if (!f) return;
+  file = f; audio = null;
+  $("fileName").textContent = f.name + " (" + (f.size / 1048576).toFixed(1) + " MB)";
+  $("start").disabled = false;
+  setMsg("Ready. Press Transcribe.");
+}
+$("drop").onclick = () => $("file").click();
+$("drop").onkeydown = (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); $("file").click(); } };
+$("file").onchange = (e) => pickFile(e.target.files[0]);
+["dragenter", "dragover"].forEach(ev => $("drop").addEventListener(ev, (e) => { e.preventDefault(); $("drop").classList.add("over"); }));
+["dragleave", "drop"].forEach(ev => $("drop").addEventListener(ev, (e) => { e.preventDefault(); $("drop").classList.remove("over"); }));
+$("drop").addEventListener("drop", (e) => pickFile(e.dataTransfer.files[0]));
+
+async function decode(f) {
+  const buf = await f.arrayBuffer();
+  const ctx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: SR });
+  const decoded = await ctx.decodeAudioData(buf);
+  ctx.close();
+  const n = decoded.length, chans = decoded.numberOfChannels;
+  if (chans === 1) return decoded.getChannelData(0);
+  const mono = new Float32Array(n);
+  for (let c = 0; c < chans; c++) { const d = decoded.getChannelData(c); for (let i = 0; i < n; i++) mono[i] += d[i] / chans; }
+  return mono;
+}
+
+function render() {
+  const out = $("out");
+  out.innerHTML = "";
+  for (const s of segments) {
+    const row = document.createElement("div"); row.className = "seg";
+    const t = document.createElement("time"); t.textContent = fmt(s.start);
+    const p = document.createElement("div"); p.textContent = s.text;
+    row.append(t, p); out.append(row);
+  }
+  out.scrollTop = out.scrollHeight;
+  const has = segments.length > 0;
+  ["copy", "dlTxt", "dlSrt"].forEach(id => $(id).disabled = !has);
+}
+
+function ask(msg, transfer) {
+  return new Promise((resolve, reject) => {
+    const onMsg = (e) => {
+      const d = e.data;
+      if (d.type === "download") {
+        setMsg(`Downloading model: ${d.file.split("/").pop()}`);
+        setBar(d.loaded / d.total);
+        return;
+      }
+      worker.removeEventListener("message", onMsg);
+      d.type === "error" ? reject(new Error(d.message)) : resolve(d);
+    };
+    worker.addEventListener("message", onMsg);
+    worker.postMessage(msg, transfer || []);
+  });
+}
+
+$("start").onclick = async () => {
+  stopped = false; segments = []; render();
+  $("out").innerHTML = '<p class="empty">Working…</p>';
+  $("start").disabled = true; $("model").disabled = true; $("stop").hidden = false;
+  try {
+    if (!audio) {
+      setMsg("Decoding audio. Hour-long files can take a minute."); setBar(0);
+      audio = await decode(file);
+    }
+    const total = audio.length / SR;
+    if (!worker) worker = new Worker(URL.createObjectURL(new Blob([workerSrc], { type: "text/javascript" })), { type: "module" });
+    setMsg("Loading the model…");
+    const ready = await ask({ type: "load", model: $("model").value });
+    const nSlices = Math.ceil(total / SLICE_SEC);
+    t0 = performance.now();
+    for (let i = 0; i < nSlices && !stopped; i++) {
+      const offset = i * SLICE_SEC;
+      const slice = audio.slice(offset * SR, Math.min(audio.length, (offset + SLICE_SEC) * SR));
+      setMsg(`Transcribing ${fmt(offset)} to ${fmt(Math.min(total, offset + SLICE_SEC))} of ${fmt(total)} on ${ready.device}`);
+      setBar(i / nSlices);
+      const r = await ask({ type: "slice", audio: slice, offset, index: i }, [slice.buffer]);
+      const chunks = r.chunks.length ? r.chunks : [{ text: r.text, timestamp: [0, slice.length / SR] }];
+      for (const c of chunks) {
+        const text = (c.text || "").trim();
+        if (!text) continue;
+        const [a, b] = c.timestamp || [0, null];
+        segments.push({ start: offset + (a ?? 0), end: offset + (b ?? Math.min(SLICE_SEC, total - offset)), text });
+      }
+      render();
+      const done = (i + 1) / nSlices, elapsed = (performance.now() - t0) / 1000;
+      setBar(done);
+      $("meta").textContent = `Part ${i + 1} of ${nSlices} · elapsed ${fmt(elapsed)} · about ${fmt(elapsed / done - elapsed)} left`;
+    }
+    setMsg(stopped ? "Stopped. The text so far is below." : `Done. ${segments.length} segments from ${fmt(total)} of audio.`, stopped ? "" : "done");
+  } catch (err) {
+    setMsg("Something went wrong: " + err.message + ". Try the Tiny model, or a desktop browser such as Chrome.", "error");
+  } finally {
+    $("start").disabled = false; $("model").disabled = false; $("stop").hidden = true;
+  }
+};
+
+$("stop").onclick = () => { stopped = true; setMsg("Stopping after the current part…"); };
+
+const plain = () => segments.map(s => s.text).join(" ").replace(/\s+/g, " ").trim();
+const baseName = () => (file ? file.name.replace(/\.[^.]+$/, "") : "transcript");
+function save(text, name) {
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([text], { type: "text/plain;charset=utf-8" }));
+  a.download = name; document.body.append(a); a.click(); a.remove();
+}
+$("dlTxt").onclick = () => save(segments.map(s => `[${fmt(s.start)}] ${s.text}`).join("\n") + "\n\n---\n\n" + plain() + "\n", baseName() + ".txt");
+$("dlSrt").onclick = () => save(segments.map((s, i) => `${i + 1}\n${fmt(s.start, true)} --> ${fmt(s.end, true)}\n${s.text}\n`).join("\n"), baseName() + ".srt");
+$("copy").onclick = async () => {
+  try { await navigator.clipboard.writeText(plain()); setMsg("Copied the transcript.", "done"); }
+  catch { const r = document.createRange(); r.selectNodeContents($("out")); getSelection().removeAllRanges(); getSelection().addRange(r); setMsg("Text selected. Press Ctrl+C (Cmd+C on a Mac) to copy it."); }
+};
+</script>
+</body>
+</html>
