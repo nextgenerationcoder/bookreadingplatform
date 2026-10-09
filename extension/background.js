@@ -99,3 +99,61 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
     .catch((err) => sendResponse({ ok: false, error: err.message }));
   return true; // keep the message channel open for the async response above
 });
+
+// Right-click "Import to Book Reading Platform" on any selected text - the
+// same browser-chrome entry point tools like Language Reactor use. Reuses
+// the site's existing #/import-url page (client/src/views/importUrl.js)
+// rather than inventing a second import path: opens it in a new tab and
+// fills in the selection, exactly as if the user had pasted it themselves.
+// The page itself already handles "not logged in" and "no Translation key
+// configured" - nothing extra to do here for either case.
+const IMPORT_SELECTION_MENU_ID = 'lex-import-selection';
+
+chrome.runtime.onInstalled.addListener(() => {
+  chrome.contextMenus.removeAll(() => {
+    chrome.contextMenus.create({
+      id: IMPORT_SELECTION_MENU_ID,
+      title: 'Import to Book Reading Platform',
+      contexts: ['selection'],
+    });
+  });
+});
+
+function fillImportForm(selectedText, pageTitle) {
+  const tryFill = () => {
+    const textarea = document.querySelector('#pasteTextInput');
+    if (!textarea) return false;
+    textarea.value = selectedText;
+    const titleInput = document.querySelector('#pasteTitleInput');
+    if (titleInput && !titleInput.value) titleInput.value = pageTitle || '';
+    textarea.focus();
+    return true;
+  };
+  if (tryFill()) return;
+  // The SPA may still be mounting the import view right after navigation -
+  // poll briefly rather than assuming the DOM is ready.
+  let attempts = 0;
+  const interval = setInterval(() => {
+    attempts += 1;
+    if (tryFill() || attempts > 20) clearInterval(interval);
+  }, 100);
+}
+
+chrome.contextMenus.onClicked.addListener((info, tab) => {
+  if (info.menuItemId !== IMPORT_SELECTION_MENU_ID) return;
+  const text = info.selectionText || '';
+  if (!text.trim()) return;
+
+  chrome.tabs.create({ url: `${API_BASE}/#/import-url` }, (newTab) => {
+    const onUpdated = (tabId, info2) => {
+      if (tabId !== newTab.id || info2.status !== 'complete') return;
+      chrome.tabs.onUpdated.removeListener(onUpdated);
+      chrome.scripting.executeScript({
+        target: { tabId: newTab.id },
+        func: fillImportForm,
+        args: [text, tab?.title || ''],
+      });
+    };
+    chrome.tabs.onUpdated.addListener(onUpdated);
+  });
+});

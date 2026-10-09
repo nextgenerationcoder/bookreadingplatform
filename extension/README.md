@@ -77,6 +77,17 @@ Click **Highlight colors…** in the popup to open the options page and pick
 your own colors for known/learning/new words (defaults match the website).
 New colors apply the next time you start Reading Mode on a page.
 
+### Import selected text (right-click menu)
+
+Select any text on any page, right-click, and choose **Import to Book
+Reading Platform** - the same kind of entry point tools like Language
+Reactor add to the context menu. This opens the site's existing "Import
+Text" page (`#/import-url`) in a new tab with your selection already filled
+in, exactly as if you'd pasted it yourself - no new import path, just a
+shortcut into the one that already exists. Needs you to be logged in on
+the site and to have a Translation API key configured (same requirement as
+using Import Text normally); the page itself prompts for both if missing.
+
 ## How auth works
 
 The extension can't use the website's httpOnly session cookie (a Chrome
@@ -103,7 +114,8 @@ bound by. `content.js` only ever talks to `background.js` via
   every `http(s)` page except the platform's own site (dormant until
   toggled on).
 - `background.js` - service worker; owns the session token and all API
-  calls (`fetch` to `https://book.amirseyti.de`).
+  calls (`fetch` to `https://book.amirseyti.de`), and the right-click
+  "Import to Book Reading Platform" context menu item.
 - `content.js` - Reading Mode itself: wraps words in spans, colors them by
   vocab status, shows a gloss popup on click, and the floating
   Sync/Stop widget.
