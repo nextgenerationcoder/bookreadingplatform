@@ -79,12 +79,14 @@ export async function renderMyWords(host) {
               <th>Streak</th>
               <th>Frequency</th>
               <th>Last Practiced</th>
+              <th></th>
             </tr>
           </thead>
           <tbody id="vocabBody"></tbody>
         </table>
       </div>
       <div id="vocabEmptyState" class="loading" hidden></div>
+      <div id="vocabActionStatus" class="importStatus error" hidden></div>
 
       <h2 class="wordsSectionTitle">Words Clicked While Reading</h2>
       <p class="hint">
@@ -121,6 +123,7 @@ export async function renderMyWords(host) {
 
   const vocabBody = host.querySelector('#vocabBody');
   const vocabEmptyState = host.querySelector('#vocabEmptyState');
+  const vocabActionStatus = host.querySelector('#vocabActionStatus');
   const vocabTabBtns = host.querySelectorAll('.vocabTabBtn');
   const vocabSort = host.querySelector('#vocabSort');
   let activeVocabTab = 'learning';
@@ -152,16 +155,59 @@ export async function renderMyWords(host) {
     for (const w of list) {
       const tr = document.createElement('tr');
       const streakCell = activeVocabTab === 'passive' ? '—' : `${w.correctStreak} / ${vocab.learnedStreakThreshold}`;
+      const actionCell =
+        activeVocabTab === 'learned'
+          ? ''
+          : `<button class="linkButton markKnownBtn" data-word="${escapeAttr(w.german)}" data-persian="${escapeAttr(w.persian || '')}">Mark as known</button>`;
       tr.innerHTML = `
         <td dir="ltr" class="wordCell">${escapeHtml(w.german)}</td>
         <td dir="rtl">${w.persian ? escapeHtml(w.persian) : '—'}</td>
         <td>${streakCell}</td>
         <td>${frequencyCell(w.german)}</td>
         <td>${formatRelative(w.lastSeenAt)}</td>
+        <td>${actionCell}</td>
       `;
       vocabBody.appendChild(tr);
     }
   }
+
+  // "I already know this, stop flagging it" - a manual override to 'learned'
+  // (see routes/vocab.js's /mark-known), same action as right-clicking a
+  // word in the reader or Reading Mode. Delegated on the table body since
+  // rows are rebuilt wholesale on every tab/sort change.
+  vocabBody.addEventListener('click', async (e) => {
+    const btn = e.target.closest('.markKnownBtn');
+    if (!btn) return;
+    const german = btn.dataset.word;
+    const persian = btn.dataset.persian;
+    btn.disabled = true;
+    btn.textContent = 'Marking…';
+    vocabActionStatus.hidden = true;
+    try {
+      await api.markWordKnown(german, persian);
+      let w = vocab.words.find((entry) => entry.german === german);
+      if (w) {
+        w.status = 'learned';
+      } else {
+        w = { german, persian, timesSeen: 1, timesCorrectTotal: 0, correctStreak: 0, status: 'learned', lastSeenAt: new Date().toISOString() };
+        vocab.words.push(w);
+      }
+      if (!learned.includes(w)) learned.push(w);
+      for (const list of [learning, passive]) {
+        const idx = list.indexOf(w);
+        if (idx !== -1) list.splice(idx, 1);
+      }
+      vocabTabBtns.forEach((b) => {
+        b.textContent = `${b.dataset.tab[0].toUpperCase()}${b.dataset.tab.slice(1)} (${VOCAB_LISTS[b.dataset.tab].length})`;
+      });
+      renderVocabRows();
+    } catch (err) {
+      btn.disabled = false;
+      btn.textContent = 'Mark as known';
+      vocabActionStatus.textContent = `Could not mark "${german}" as known: ${err.message}`;
+      vocabActionStatus.hidden = false;
+    }
+  });
 
   vocabTabBtns.forEach((btn) => {
     btn.onclick = () => {
@@ -236,4 +282,8 @@ function escapeHtml(str) {
   const div = document.createElement('div');
   div.textContent = str;
   return div.innerHTML;
+}
+
+function escapeAttr(str) {
+  return str.replace(/"/g, '&quot;');
 }

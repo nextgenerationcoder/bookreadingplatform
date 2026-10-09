@@ -79,6 +79,13 @@ async function syncReadingPage(toLearn, passive) {
   });
 }
 
+async function markWordKnown(german, persian) {
+  return apiFetch('/api/vocab/mark-known', {
+    method: 'POST',
+    body: JSON.stringify({ german, persian }),
+  });
+}
+
 const HANDLERS = {
   GET_AUTH_STATE: () => getAuthState(),
   LOGIN: (msg) => login(msg.email, msg.password),
@@ -86,6 +93,7 @@ const HANDLERS = {
   LOOKUP_WORD: (msg) => lookupWord(msg.word),
   GET_VOCAB_STATUS: () => getVocabStatus(),
   SYNC_READING_PAGE: (msg) => syncReadingPage(msg.toLearn, msg.passive),
+  MARK_WORD_KNOWN: (msg) => markWordKnown(msg.german, msg.persian),
 };
 
 chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {

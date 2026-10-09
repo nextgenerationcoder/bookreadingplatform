@@ -148,4 +148,35 @@ router.post('/reading-page', (req, res) => {
   res.json({ ok: true, toLearnCount: toLearn.length, passiveCount: passive.length });
 });
 
+// POST /api/vocab/mark-known { german, persian } — manual override: "I
+// already know this word, stop flagging it as something I'm learning."
+// Used by the right-click "mark as known" action in the reader, Reading
+// Mode (the Chrome extension), and the "Mark as known" button on My Words.
+// Sets status straight to 'learned' regardless of current status/streak -
+// unlike /record's streak-earned 'learned', this is a direct assertion by
+// the learner, not something to re-derive from correct_streak, so
+// correct_streak itself is left alone (an existing lesson streak in
+// progress isn't erased by this; a brand-new row just starts at 0, which
+// is irrelevant once status is already 'learned' - see myWords.js, which
+// never shows streak for a status it didn't earn through practice).
+router.post('/mark-known', (req, res) => {
+  const { german, persian } = req.body || {};
+  if (!german || typeof german !== 'string') {
+    return res.status(400).json({ error: 'german is required' });
+  }
+
+  const now = new Date().toISOString();
+  db.prepare(
+    `INSERT INTO vocab_progress (user_id, german, persian, times_seen, times_correct_total, correct_streak, status, first_seen_at, last_seen_at, learned_at)
+     VALUES (?, ?, ?, 1, 0, 0, 'learned', ?, ?, ?)
+     ON CONFLICT(user_id, german) DO UPDATE SET
+       status = 'learned',
+       last_seen_at = excluded.last_seen_at,
+       learned_at = COALESCE(vocab_progress.learned_at, excluded.learned_at),
+       persian = CASE WHEN vocab_progress.persian = '' THEN excluded.persian ELSE vocab_progress.persian END`
+  ).run(req.userId, german, persian || '', now, now, now);
+
+  res.json({ ok: true });
+});
+
 export default router;

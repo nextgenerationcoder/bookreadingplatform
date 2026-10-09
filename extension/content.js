@@ -187,6 +187,7 @@ function wrapWords(root) {
       span.dataset.status = status;
       span.dataset.paraIndex = entry.count++;
       span.addEventListener('click', onWordClick);
+      span.addEventListener('contextmenu', onWordRightClick);
       frag.appendChild(span);
       wrappedSpans.push(span);
 
@@ -268,6 +269,37 @@ async function onWordClick(e) {
   showGlossPopup(span, gloss);
   updatePendingStatus();
   scheduleAutoSync();
+}
+
+// Right-click = "I already know this, stop flagging it" - the opposite
+// signal from a left-click. Marks the word 'learned' (green) directly via
+// /api/vocab/mark-known, and drops it from this session's clicked/seen
+// tracking so the next auto-sync doesn't turn around and report it as
+// toLearn/passive.
+async function onWordRightClick(e) {
+  e.preventDefault();
+  const span = e.currentTarget;
+  const word = span.dataset.word;
+  const key = normalize(word);
+
+  showGlossPopup(span, 'Marking as known…');
+  try {
+    await sendMsg('MARK_WORD_KNOWN', { german: word, persian: '' });
+  } catch (err) {
+    showGlossPopup(span, `Error: ${err.message}`);
+    return;
+  }
+
+  clickedWords.delete(key);
+  seenWords.delete(key);
+  vocabStatus[key] = 'learned';
+  for (const s of wrappedSpans) {
+    if (normalize(s.dataset.word) !== key) continue;
+    s.classList.remove('lex-clicked', 'lex-known', 'lex-learning', 'lex-unset');
+    s.classList.add('lex-known');
+    s.dataset.status = 'learned';
+  }
+  showGlossPopup(span, 'Marked as known ✓');
 }
 
 function updatePendingStatus() {

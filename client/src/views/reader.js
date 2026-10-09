@@ -413,6 +413,7 @@ export async function renderReader(host, bookId, kind = 'book') {
         span.dataset.page = pageNum;
         span.textContent = token;
         span.addEventListener('click', onWordClick);
+        span.addEventListener('contextmenu', onWordRightClick);
         de.appendChild(span);
       } else {
         de.appendChild(document.createTextNode(token));
@@ -475,6 +476,35 @@ export async function renderReader(host, bookId, kind = 'book') {
 
     api.recordWordClick(bookId, Number(el.dataset.page), word).catch(() => {});
     commitReadUpTo(el);
+  }
+
+  // Right-click = "I already know this, stop flagging it" - the opposite
+  // signal from a left-click. Sets status straight to 'learned' (green)
+  // server-side via /api/vocab/mark-known and un-does any in-session
+  // "clicked this page" tracking for the word, so Finish Page/
+  // commitReadUpTo won't turn around and report it as toLearn.
+  async function onWordRightClick(e) {
+    e.preventDefault();
+    const el = e.currentTarget;
+    const word = el.dataset.word;
+    const key = normalize(word);
+    const gloss = el.dataset.gloss === NO_GLOSS ? '' : el.dataset.gloss;
+
+    showPopupFor(el, word, 'Marking as known…');
+    try {
+      await api.markWordKnown(word, gloss);
+    } catch (err) {
+      showPopupFor(el, word, `Error: ${err.message}`);
+      return;
+    }
+
+    delete clickedWords[key];
+    vocabStatus[key] = 'learned';
+    pageHost.querySelectorAll(`.word[data-word="${CSS.escape(word)}"]`).forEach((span) => {
+      span.classList.remove('learned');
+      applyWordColor(span, key);
+    });
+    showPopupFor(el, word, 'Marked as known ✓');
   }
 
   // A click is also a "I've read at least this far" signal - everything

@@ -151,6 +151,10 @@ export const api = {
   // page, split by whether it was clicked (see reader.js's "Finish Page").
   recordReadingPage: (toLearn, passive) => post('/api/vocab/reading-page', { toLearn, passive }),
 
+  // Manual "I already know this" override - right-click a word in the
+  // reader/Reading Mode, or the "Mark as known" button on My Words.
+  markWordKnown: (german, persian) => post('/api/vocab/mark-known', { german, persian }),
+
   // words: string[] - returns { word: rank } for whichever of these words
   // are in the top 200k frequency list (see server/data/word-frequency.seed.json).
   getWordFrequency: (words) => post('/api/word-frequency/lookup', { words }),
