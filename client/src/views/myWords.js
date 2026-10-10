@@ -159,9 +159,16 @@ export async function renderMyWords(host) {
         activeVocabTab === 'learned'
           ? ''
           : `<button class="linkButton markKnownBtn" data-word="${escapeAttr(w.german)}" data-persian="${escapeAttr(w.persian || '')}">Mark as known</button>`;
+      // Prefer the live shared dictionary gloss over the snapshot saved on
+      // this row - vocab_progress.persian is whatever it was when the word
+      // was last practiced, so a later "Change translation" edit (which
+      // updates the dictionary, not this row) would otherwise never show up
+      // here. Phrases aren't in the dictionary (it's single-word only), so
+      // they always fall back to the row's own persian field.
+      const meaning = dictionary[normalizeWord(w.german)] || w.persian;
       tr.innerHTML = `
         <td dir="ltr" class="wordCell">${escapeHtml(w.german)}</td>
-        <td dir="rtl">${w.persian ? escapeHtml(w.persian) : '—'}</td>
+        <td dir="rtl">${meaning ? escapeHtml(meaning) : '—'}</td>
         <td>${streakCell}</td>
         <td>${frequencyCell(w.german)}</td>
         <td>${formatRelative(w.lastSeenAt)}</td>
