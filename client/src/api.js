@@ -155,6 +155,15 @@ export const api = {
   // reader/Reading Mode, or the "Mark as known" button on My Words.
   markWordKnown: (german, persian) => post('/api/vocab/mark-known', { german, persian }),
 
+  // The opposite manual override - right-click menu's "Mark unknown".
+  markWordUnknown: (german, persian) => post('/api/vocab/mark-unknown', { german, persian }),
+
+  // Right-click menu's "Change translation" for a single word - reuses the
+  // same "word = gloss" bulk-import parser the Add Words admin page uses
+  // (see dictionaryImporter.js), just with one line, so it updates the
+  // shared dictionary the same way a manual re-import would.
+  updateDictionaryGloss: (word, gloss) => post('/api/dictionary/import', { text: `${word} = ${gloss}` }),
+
   // words: string[] - returns { word: rank } for whichever of these words
   // are in the top 200k frequency list (see server/data/word-frequency.seed.json).
   getWordFrequency: (words) => post('/api/word-frequency/lookup', { words }),

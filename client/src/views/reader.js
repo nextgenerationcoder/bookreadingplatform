@@ -2,6 +2,7 @@ import { api } from '../api.js';
 import { getDictionary, normalizeWord } from '../state.js';
 import { showPopupFor, hidePopup } from '../popup.js';
 import { findSeparableCompounds } from '../separableVerbs.js';
+import { showWordMenu, showTranslationPicker, closeTranslationPicker } from '../wordMenu.js';
 
 const TOKEN_RE = /[A-Za-zÀ-ÖØ-öø-ÿ'’-]+|[^A-Za-zÀ-ÖØ-öø-ÿ'’-]+/g;
 const NO_GLOSS = 'Not yet in the dictionary.';
@@ -316,12 +317,14 @@ export async function renderReader(host, bookId, kind = 'book') {
     if (!document.body.contains(host)) {
       document.removeEventListener('keydown', onKeydown);
       stopAudio();
+      closeTranslationPicker();
       observer.disconnect();
     }
   });
   observer.observe(document.body, { childList: true, subtree: true });
 
   function renderPage() {
+    closeTranslationPicker();
     const page = book.pages[pageIndex];
     prevBtn.disabled = pageIndex === 0;
     nextBtn.disabled = pageIndex === book.pages.length - 1;
@@ -478,33 +481,104 @@ export async function renderReader(host, bookId, kind = 'book') {
     commitReadUpTo(el);
   }
 
-  // Right-click = "I already know this, stop flagging it" - the opposite
-  // signal from a left-click. Sets status straight to 'learned' (green)
-  // server-side via /api/vocab/mark-known and un-does any in-session
-  // "clicked this page" tracking for the word, so Finish Page/
-  // commitReadUpTo won't turn around and report it as toLearn.
-  async function onWordRightClick(e) {
+  // Right-click opens a small menu (mark known / mark unknown / change
+  // translation) instead of acting immediately - see wordMenu.js. A single
+  // word uses the clicked span; a drag-selected phrase (more than one
+  // word, selection anchored inside this sentence's German text) uses the
+  // full selected text instead, so "mark known"/"change translation" can
+  // apply to a multi-word chunk just as well as to one word.
+  function onWordRightClick(e) {
     e.preventDefault();
     const el = e.currentTarget;
-    const word = el.dataset.word;
-    const key = normalize(word);
-    const gloss = el.dataset.gloss === NO_GLOSS ? '' : el.dataset.gloss;
+    const selection = window.getSelection();
+    const selectedText = selection && !selection.isCollapsed ? selection.toString().trim() : '';
+    const isPhrase = selectedText.includes(' ') && selection.anchorNode && el.closest('.de')?.contains(selection.anchorNode);
+    const text = isPhrase ? selectedText : el.dataset.word;
 
-    showPopupFor(el, word, 'Marking as known…');
+    showWordMenu(e.clientX, e.clientY, [
+      { label: 'Mark known', onClick: () => markWordKnown(el, text, isPhrase) },
+      { label: 'Mark unknown', onClick: () => markWordUnknown(el, text, isPhrase) },
+      { label: 'Change translation', onClick: () => startChangeTranslation(el, text, isPhrase) },
+    ]);
+  }
+
+  // Sets status straight to 'learned' (green) server-side via
+  // /api/vocab/mark-known and un-does any in-session "clicked this page"
+  // tracking for the word, so Finish Page/commitReadUpTo won't turn around
+  // and report it as toLearn. For a phrase (isPhrase), there's no single
+  // .word span to recolor - just confirms via the popup.
+  async function markWordKnown(el, text, isPhrase) {
+    const key = normalize(text);
+    const gloss = !isPhrase && el.dataset.gloss !== NO_GLOSS ? el.dataset.gloss : '';
+
+    showPopupFor(el, text, 'Marking as known…');
     try {
-      await api.markWordKnown(word, gloss);
+      await api.markWordKnown(text, gloss);
     } catch (err) {
-      showPopupFor(el, word, `Error: ${err.message}`);
+      showPopupFor(el, text, `Error: ${err.message}`);
       return;
     }
 
-    delete clickedWords[key];
-    vocabStatus[key] = 'learned';
-    pageHost.querySelectorAll(`.word[data-word="${CSS.escape(word)}"]`).forEach((span) => {
-      span.classList.remove('learned');
-      applyWordColor(span, key);
+    if (!isPhrase) {
+      delete clickedWords[key];
+      vocabStatus[key] = 'learned';
+      pageHost.querySelectorAll(`.word[data-word="${CSS.escape(text)}"]`).forEach((span) => {
+        span.classList.remove('learned');
+        applyWordColor(span, key);
+      });
+    }
+    showPopupFor(el, text, 'Marked as known ✓');
+  }
+
+  // The opposite: forces status back to 'learning' (orange) even if it was
+  // already 'learned' - a deliberate menu choice, unlike a stray click,
+  // so overriding 'learned' here is correct. Also treats it like a fresh
+  // click for Finish Page bookkeeping (toLearn, not passive).
+  async function markWordUnknown(el, text, isPhrase) {
+    const key = normalize(text);
+    const gloss = !isPhrase && el.dataset.gloss !== NO_GLOSS ? el.dataset.gloss : '';
+
+    showPopupFor(el, text, 'Marking as unknown…');
+    try {
+      await api.markWordUnknown(text, gloss);
+    } catch (err) {
+      showPopupFor(el, text, `Error: ${err.message}`);
+      return;
+    }
+
+    if (!isPhrase) {
+      clickedWords[key] = (clickedWords[key] || 0) + 1;
+      vocabStatus[key] = 'learning';
+      pageHost.querySelectorAll(`.word[data-word="${CSS.escape(text)}"]`).forEach((span) => {
+        span.classList.add('learned');
+        applyWordColor(span, key);
+      });
+    }
+    showPopupFor(el, text, 'Marked as unknown ✓');
+  }
+
+  // "Change translation": the learner picks the matching Persian text from
+  // this sentence's own translation line (see wordMenu.js's picker) rather
+  // than typing anything. A single word updates the shared dictionary
+  // gloss (visible everywhere the word appears, like a manual re-import);
+  // a phrase has no single dictionary entry to update, so it's saved as a
+  // personal vocab_progress row instead, same as "mark known" with a
+  // specific translation attached.
+  function startChangeTranslation(el, text, isPhrase) {
+    const faEl = el.closest('.sentence')?.querySelector('.fa');
+    if (!faEl) return;
+    showTranslationPicker(faEl, text, async (persianText) => {
+      if (isPhrase) {
+        await api.markWordKnown(text, persianText);
+        return;
+      }
+      const key = normalize(text);
+      await api.updateDictionaryGloss(text, persianText);
+      dictionary[key] = persianText;
+      pageHost.querySelectorAll(`.word[data-word="${CSS.escape(text)}"]`).forEach((span) => {
+        span.dataset.gloss = persianText;
+      });
     });
-    showPopupFor(el, word, 'Marked as known ✓');
   }
 
   // A click is also a "I've read at least this far" signal - everything

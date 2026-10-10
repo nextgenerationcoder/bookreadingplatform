@@ -86,6 +86,24 @@ async function markWordKnown(german, persian) {
   });
 }
 
+async function markWordUnknown(german, persian) {
+  return apiFetch('/api/vocab/mark-unknown', {
+    method: 'POST',
+    body: JSON.stringify({ german, persian }),
+  });
+}
+
+// Reuses the same bulk "word = gloss" import parser the website's Add Words
+// admin page uses - see dictionaryImporter.js - so a single-word translation
+// change from Reading Mode's menu updates the shared dictionary exactly like
+// a manual re-import would.
+async function updateDictionaryGloss(word, gloss) {
+  return apiFetch('/api/dictionary/import', {
+    method: 'POST',
+    body: JSON.stringify({ text: `${word} = ${gloss}` }),
+  });
+}
+
 const HANDLERS = {
   GET_AUTH_STATE: () => getAuthState(),
   LOGIN: (msg) => login(msg.email, msg.password),
@@ -94,6 +112,8 @@ const HANDLERS = {
   GET_VOCAB_STATUS: () => getVocabStatus(),
   SYNC_READING_PAGE: (msg) => syncReadingPage(msg.toLearn, msg.passive),
   MARK_WORD_KNOWN: (msg) => markWordKnown(msg.german, msg.persian),
+  MARK_WORD_UNKNOWN: (msg) => markWordUnknown(msg.german, msg.persian),
+  UPDATE_DICTIONARY_GLOSS: (msg) => updateDictionaryGloss(msg.word, msg.gloss),
 };
 
 chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {

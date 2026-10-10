@@ -145,8 +145,127 @@ function injectStyles(colors) {
     .lex-word.lex-learning { color: ${colors.learning} !important; }
     .lex-word.lex-unset { color: ${colors.unset} !important; }
     .lex-word.lex-clicked { text-decoration: underline; text-decoration-style: dotted; }
+    .lex-menu { position: fixed; z-index: 2147483647; display: flex; flex-direction: column;
+      min-width: 170px; background: #fff; color: #111; border: 1px solid #ccc; border-radius: 10px;
+      box-shadow: 0 10px 30px rgba(0,0,0,.28); overflow: hidden; padding: 4px 0;
+      font-family: system-ui, sans-serif; font-size: 14px; }
+    .lex-menu button { all: unset; box-sizing: border-box; cursor: pointer; padding: 9px 16px;
+      width: 100%; font-size: 14px; color: #111; }
+    .lex-menu button:hover { background: #eee; }
+    .lex-translate-box { position: fixed; z-index: 2147483647; display: flex; flex-direction: column;
+      gap: 6px; min-width: 220px; background: #fff7e0; color: #111; border: 1px solid #e5c76b;
+      border-radius: 10px; box-shadow: 0 10px 30px rgba(0,0,0,.28); padding: 10px 12px;
+      font-family: system-ui, sans-serif; font-size: 13px; }
+    .lex-translate-box input { font-size: 13px; padding: 5px 7px; border-radius: 6px; border: 1px solid #ccc; }
+    .lex-translate-box .lex-translate-actions { display: flex; gap: 6px; }
+    .lex-translate-box button { padding: 4px 10px; border-radius: 6px; border: 1px solid #ccc;
+      background: #fff; cursor: pointer; font-size: 13px; }
+    .lex-translate-box .lex-translate-status { color: #555; }
   `;
   document.head.appendChild(styleEl);
+}
+
+let menuEl = null;
+let translateBoxEl = null;
+
+function hideMenu() {
+  menuEl?.remove();
+  menuEl = null;
+}
+
+function closeTranslateBox() {
+  translateBoxEl?.remove();
+  translateBoxEl = null;
+}
+
+// items: [{label, onClick}]
+function showMenu(x, y, items) {
+  hideMenu();
+  menuEl = document.createElement('div');
+  menuEl.className = 'lex-menu';
+  for (const item of items) {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.textContent = item.label;
+    btn.onclick = () => {
+      hideMenu();
+      item.onClick();
+    };
+    menuEl.appendChild(btn);
+  }
+  menuEl.style.left = '0px';
+  menuEl.style.top = '0px';
+  document.body.appendChild(menuEl);
+  const rect = menuEl.getBoundingClientRect();
+  const left = Math.max(8, Math.min(x, window.innerWidth - rect.width - 8));
+  const top = Math.max(8, Math.min(y, window.innerHeight - rect.height - 8));
+  menuEl.style.left = `${left}px`;
+  menuEl.style.top = `${top}px`;
+}
+
+document.addEventListener('click', (e) => {
+  if (!e.target.closest('.lex-menu')) hideMenu();
+});
+document.addEventListener('contextmenu', (e) => {
+  if (!e.target.closest('.lex-word, .lex-menu')) hideMenu();
+});
+document.addEventListener('scroll', hideMenu, true);
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    hideMenu();
+    closeTranslateBox();
+  }
+});
+
+// "Change translation" on arbitrary webpages has no parallel Persian line to
+// pick from (unlike the website's own reader), so this opens a small typed
+// text box near the clicked word/phrase instead - onSave(typedText) does the
+// actual API call and should throw/reject on failure.
+function showTranslateBox(anchor, label, onSave) {
+  closeTranslateBox();
+  const rect = anchor.getBoundingClientRect();
+
+  translateBoxEl = document.createElement('div');
+  translateBoxEl.className = 'lex-translate-box';
+  translateBoxEl.innerHTML = `
+    <span>Persian translation for "${escapeHtml(label)}":</span>
+    <input type="text" class="lex-translate-input" dir="rtl" />
+    <div class="lex-translate-actions">
+      <button type="button" class="lex-translate-save">Save</button>
+      <button type="button" class="lex-translate-cancel">Cancel</button>
+    </div>
+    <span class="lex-translate-status"></span>
+  `;
+  translateBoxEl.style.left = `${Math.max(8, rect.left)}px`;
+  translateBoxEl.style.top = `${rect.bottom + 6}px`;
+  document.body.appendChild(translateBoxEl);
+
+  const input = translateBoxEl.querySelector('.lex-translate-input');
+  const statusEl = translateBoxEl.querySelector('.lex-translate-status');
+  input.focus();
+
+  translateBoxEl.querySelector('.lex-translate-cancel').onclick = () => closeTranslateBox();
+  translateBoxEl.querySelector('.lex-translate-save').onclick = async () => {
+    const text = input.value.trim();
+    if (!text) {
+      statusEl.textContent = 'Type a translation first.';
+      return;
+    }
+    statusEl.textContent = 'Saving…';
+    try {
+      await onSave(text);
+      statusEl.textContent = 'Saved ✓';
+      setTimeout(closeTranslateBox, 700);
+    } catch (err) {
+      statusEl.textContent = `Error: ${err.message}`;
+    }
+  };
+}
+
+function escapeHtml(str) {
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
 }
 
 function wrapWords(root) {
@@ -271,35 +390,99 @@ async function onWordClick(e) {
   scheduleAutoSync();
 }
 
-// Right-click = "I already know this, stop flagging it" - the opposite
-// signal from a left-click. Marks the word 'learned' (green) directly via
-// /api/vocab/mark-known, and drops it from this session's clicked/seen
-// tracking so the next auto-sync doesn't turn around and report it as
-// toLearn/passive.
-async function onWordRightClick(e) {
+// Right-click opens a small menu (mark known / mark unknown / change
+// translation) instead of acting immediately, mirroring the website
+// reader's wordMenu.js. A single word uses the clicked span; a drag-selected
+// phrase (more than one word, selection anchored inside the same wrapped
+// text) uses the full selected text instead, so "mark known"/"change
+// translation" can apply to a multi-word chunk just as well as to one word.
+function onWordRightClick(e) {
   e.preventDefault();
   const span = e.currentTarget;
-  const word = span.dataset.word;
-  const key = normalize(word);
+  const selection = window.getSelection();
+  const selectedText = selection && !selection.isCollapsed ? selection.toString().trim() : '';
+  const isPhrase = selectedText.includes(' ') && selection.anchorNode && span.parentElement?.contains(selection.anchorNode);
+  const text = isPhrase ? selectedText : span.dataset.word;
+
+  showMenu(e.clientX, e.clientY, [
+    { label: 'Mark known', onClick: () => markWordKnownAction(span, text, isPhrase) },
+    { label: 'Mark unknown', onClick: () => markWordUnknownAction(span, text, isPhrase) },
+    { label: 'Change translation', onClick: () => startChangeTranslation(span, text, isPhrase) },
+  ]);
+}
+
+// Sets status straight to 'learned' (green) via /api/vocab/mark-known and
+// drops the word from this session's clicked/seen tracking so the next
+// auto-sync doesn't turn around and report it as toLearn/passive. For a
+// phrase (isPhrase), there's no single .lex-word span to recolor - just
+// confirms via the popup.
+async function markWordKnownAction(span, text, isPhrase) {
+  const key = normalize(text);
 
   showGlossPopup(span, 'Marking as known…');
   try {
-    await sendMsg('MARK_WORD_KNOWN', { german: word, persian: '' });
+    await sendMsg('MARK_WORD_KNOWN', { german: text, persian: '' });
   } catch (err) {
     showGlossPopup(span, `Error: ${err.message}`);
     return;
   }
 
-  clickedWords.delete(key);
-  seenWords.delete(key);
-  vocabStatus[key] = 'learned';
-  for (const s of wrappedSpans) {
-    if (normalize(s.dataset.word) !== key) continue;
-    s.classList.remove('lex-clicked', 'lex-known', 'lex-learning', 'lex-unset');
-    s.classList.add('lex-known');
-    s.dataset.status = 'learned';
+  if (!isPhrase) {
+    clickedWords.delete(key);
+    seenWords.delete(key);
+    vocabStatus[key] = 'learned';
+    for (const s of wrappedSpans) {
+      if (normalize(s.dataset.word) !== key) continue;
+      s.classList.remove('lex-clicked', 'lex-known', 'lex-learning', 'lex-unset');
+      s.classList.add('lex-known');
+      s.dataset.status = 'learned';
+    }
   }
   showGlossPopup(span, 'Marked as known ✓');
+}
+
+// The opposite: forces status back to 'learning' (orange) via
+// /api/vocab/mark-unknown even if it was already 'learned' - a deliberate
+// menu choice, unlike a stray click, so overriding 'learned' here is
+// correct.
+async function markWordUnknownAction(span, text, isPhrase) {
+  const key = normalize(text);
+
+  showGlossPopup(span, 'Marking as unknown…');
+  try {
+    await sendMsg('MARK_WORD_UNKNOWN', { german: text, persian: '' });
+  } catch (err) {
+    showGlossPopup(span, `Error: ${err.message}`);
+    return;
+  }
+
+  if (!isPhrase) {
+    vocabStatus[key] = 'learning';
+    for (const s of wrappedSpans) {
+      if (normalize(s.dataset.word) !== key) continue;
+      s.classList.remove('lex-clicked', 'lex-known', 'lex-unset');
+      s.classList.add('lex-learning');
+      s.dataset.status = 'learning';
+    }
+  }
+  showGlossPopup(span, 'Marked as unknown ✓');
+}
+
+// "Change translation": unlike the website reader (which has a parallel
+// Persian line to pick from), an arbitrary webpage has nothing to pick from,
+// so this opens a small typed text box instead (see showTranslateBox). A
+// single word updates the shared dictionary gloss (visible everywhere the
+// word appears, like a manual re-import); a phrase has no single dictionary
+// entry to update, so it's saved as a personal vocab_progress row instead,
+// same as "mark known" with a specific translation attached.
+function startChangeTranslation(span, text, isPhrase) {
+  showTranslateBox(span, text, async (typedText) => {
+    if (isPhrase) {
+      await sendMsg('MARK_WORD_KNOWN', { german: text, persian: typedText });
+      return;
+    }
+    await sendMsg('UPDATE_DICTIONARY_GLOSS', { word: text, gloss: typedText });
+  });
 }
 
 function updatePendingStatus() {

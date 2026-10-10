@@ -43,12 +43,22 @@ No build step - it's plain JS/HTML/CSS, loaded as-is.
    know credits the rest of that paragraph as passive, same as the website.
    It never jumps to other paragraphs and never assumes you've read
    anything you haven't actually clicked through.
-4. Reading Mode auto-syncs to your account a few seconds after your last
+4. Right-click a word for a small menu: **Mark known**, **Mark unknown**, or
+   **Change translation**. Unlike the website's own reader (which has a
+   parallel Persian translation line to pick a word from), an arbitrary
+   webpage has nothing like that, so **Change translation** here opens a
+   small text box where you type the Persian meaning yourself. A single
+   word's translation updates the shared dictionary, the same as a manual
+   re-import. To save a multi-word phrase instead of a single word, drag-
+   select the German text first, *then* right-click within the selection -
+   the menu's choices then apply to the whole phrase (saved to your own
+   word list, since a phrase has no single dictionary entry).
+5. Reading Mode auto-syncs to your account a few seconds after your last
    click, and again when you press **Stop** or navigate away - so you don't
    need to remember to save. The floating "Reading Mode" widget
    (bottom-right of the page) also has a **Sync words** button for an
    immediate sync, and shows a live "N to learn queued" status.
-5. Press **Stop** on the widget (or toggle from the popup) to unwrap the
+6. Press **Stop** on the widget (or toggle from the popup) to unwrap the
    page and remove the widget - this also flushes any not-yet-synced words.
 
 ### How passive words get picked

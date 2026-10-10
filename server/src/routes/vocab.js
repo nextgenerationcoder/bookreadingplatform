@@ -179,4 +179,33 @@ router.post('/mark-known', (req, res) => {
   res.json({ ok: true });
 });
 
+// POST /api/vocab/mark-unknown { german, persian } — the opposite manual
+// override: "I don't actually know this, go back to flagging it." Unlike a
+// casual click elsewhere in the app (which never downgrades an existing
+// 'learned' word, so an accidental tap doesn't erase real progress), this
+// is a deliberate menu choice, so it DOES override 'learned' - the learner
+// explicitly said so. correct_streak resets to 0 since the word is being
+// reset to "actively learning" (not demoted gracefully from part of a
+// quiz), making it eligible to re-earn 'learned' the normal way.
+router.post('/mark-unknown', (req, res) => {
+  const { german, persian } = req.body || {};
+  if (!german || typeof german !== 'string') {
+    return res.status(400).json({ error: 'german is required' });
+  }
+
+  const now = new Date().toISOString();
+  db.prepare(
+    `INSERT INTO vocab_progress (user_id, german, persian, times_seen, times_correct_total, correct_streak, status, first_seen_at, last_seen_at, learned_at)
+     VALUES (?, ?, ?, 1, 0, 0, 'learning', ?, ?, NULL)
+     ON CONFLICT(user_id, german) DO UPDATE SET
+       status = 'learning',
+       correct_streak = 0,
+       learned_at = NULL,
+       last_seen_at = excluded.last_seen_at,
+       persian = CASE WHEN vocab_progress.persian = '' THEN excluded.persian ELSE vocab_progress.persian END`
+  ).run(req.userId, german, persian || '', now, now);
+
+  res.json({ ok: true });
+});
+
 export default router;
