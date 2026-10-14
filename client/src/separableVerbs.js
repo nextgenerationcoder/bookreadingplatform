@@ -31,6 +31,11 @@
 // a gloss to show (falls back to a live lookup - see reader.js - if the
 // resulting infinitive isn't already known).
 
+// Exported alongside SEPARABLE_PREFIXES/likelyInfinitive so reader.js's
+// manual "Link separable verb" menu item (for when this file's automatic
+// clause-based detection misses a split verb) can reuse the exact same
+// prefix-recognition and conjugation-guessing used here, instead of
+// duplicating it.
 export const SEPARABLE_PREFIXES = [
   'ab', 'an', 'auf', 'aus', 'bei', 'da', 'dar', 'ein', 'empor', 'entgegen',
   'entlang', 'entzwei', 'fern', 'fest', 'fort', 'frei', 'gegenüber', 'gleich',
@@ -41,7 +46,7 @@ export const SEPARABLE_PREFIXES = [
   'vor', 'voran', 'voraus', 'vorbei', 'vorüber', 'weg', 'weiter', 'wieder',
   'zu', 'zurecht', 'zurück', 'zusammen',
 ];
-const SEPARABLE_PREFIX_SET = new Set(SEPARABLE_PREFIXES.map((p) => p.toLowerCase()));
+export const SEPARABLE_PREFIX_SET = new Set(SEPARABLE_PREFIXES.map((p) => p.toLowerCase()));
 
 // Closed-class words that must never be guessed as the finite verb of a
 // separable-verb pair (articles, pronouns, prepositions, conjunctions,
@@ -162,7 +167,7 @@ function reconstructWeakInfinitive(word) {
 // lookup - an irregular form that happens to also fit a weak ending
 // pattern, e.g. none of the tables' entries do, should never reach it, but
 // this keeps the precedence explicit).
-function likelyInfinitive(word) {
+export function likelyInfinitive(word) {
   const key = normalize(word);
   if (PRESENT_FORMS[key]) return PRESENT_FORMS[key];
   if (PRETERITE_FORMS[key]) return PRETERITE_FORMS[key];

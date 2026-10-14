@@ -9,6 +9,10 @@
 let menuEl = null;
 let pickerEl = null;
 let pickingFaEl = null;
+let linkBannerEl = null;
+let linkingFirstEl = null;
+let linkingSentenceEl = null;
+let linkingClickHandler = null;
 
 function ensureMenu() {
   if (menuEl) return menuEl;
@@ -33,11 +37,13 @@ document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') {
     hideWordMenu();
     closeTranslationPicker();
+    closeVerbLinkPicker();
   }
 });
 
 // items: [{label, onClick}]
 export function showWordMenu(x, y, items) {
+  closeVerbLinkPicker();
   const menu = ensureMenu();
   menu.innerHTML = '';
   for (const item of items) {
@@ -67,6 +73,7 @@ export function showWordMenu(x, y, items) {
 // call and should throw/reject on failure.
 export function showTranslationPicker(faEl, label, onSave) {
   closeTranslationPicker();
+  closeVerbLinkPicker();
   pickingFaEl = faEl;
   faEl.classList.add('pickingTranslation');
 
@@ -105,6 +112,55 @@ export function closeTranslationPicker() {
   pickingFaEl = null;
   pickerEl?.remove();
   pickerEl = null;
+}
+
+// "Link separable verb" flow: a fallback for when separableVerbs.js's
+// automatic clause-based detection misses a split verb (e.g. an irregular
+// conjugation not in its tables, or a prefix straddling an unusual clause
+// boundary). The learner clicks the first part's menu item, then clicks the
+// matching second part elsewhere in the same sentence - onPick(secondEl)
+// receives that span so reader.js can resolve/save the pair exactly like an
+// auto-detected one.
+export function closeVerbLinkPicker() {
+  linkingFirstEl?.classList.remove('linkingSource');
+  linkingSentenceEl?.classList.remove('linkingVerb');
+  if (linkingSentenceEl && linkingClickHandler) {
+    linkingSentenceEl.removeEventListener('click', linkingClickHandler, true);
+  }
+  linkBannerEl?.remove();
+  linkBannerEl = null;
+  linkingFirstEl = null;
+  linkingSentenceEl = null;
+  linkingClickHandler = null;
+}
+
+export function showVerbLinkPicker(sentenceEl, firstEl, label, onPick) {
+  closeVerbLinkPicker();
+  closeTranslationPicker();
+  linkingFirstEl = firstEl;
+  linkingSentenceEl = sentenceEl;
+  firstEl.classList.add('linkingSource');
+  sentenceEl.classList.add('linkingVerb');
+
+  linkBannerEl = document.createElement('div');
+  linkBannerEl.className = 'verbLinkBanner';
+  linkBannerEl.innerHTML = `
+    <span>Click the other part of "${escapeHtml(label)}" in this sentence</span>
+    <button type="button" class="linkCancelBtn">Cancel</button>
+  `;
+  sentenceEl.querySelector('.de')?.insertAdjacentElement('afterend', linkBannerEl);
+
+  linkBannerEl.querySelector('.linkCancelBtn').onclick = () => closeVerbLinkPicker();
+
+  linkingClickHandler = (e) => {
+    const span = e.target.closest('.word');
+    if (!span || span === firstEl) return;
+    e.preventDefault();
+    e.stopImmediatePropagation();
+    closeVerbLinkPicker();
+    onPick(span);
+  };
+  sentenceEl.addEventListener('click', linkingClickHandler, true);
 }
 
 function escapeHtml(str) {

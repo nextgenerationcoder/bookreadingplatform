@@ -1,8 +1,8 @@
 import { api } from '../api.js';
 import { getDictionary, normalizeWord } from '../state.js';
 import { showPopupFor, hidePopup } from '../popup.js';
-import { findSeparableCompounds } from '../separableVerbs.js';
-import { showWordMenu, showTranslationPicker, closeTranslationPicker } from '../wordMenu.js';
+import { findSeparableCompounds, SEPARABLE_PREFIX_SET, likelyInfinitive } from '../separableVerbs.js';
+import { showWordMenu, showTranslationPicker, closeTranslationPicker, showVerbLinkPicker, closeVerbLinkPicker } from '../wordMenu.js';
 
 const TOKEN_RE = /[A-Za-zÀ-ÖØ-öø-ÿ'’-]+|[^A-Za-zÀ-ÖØ-öø-ÿ'’-]+/g;
 const NO_GLOSS = 'Not yet in the dictionary.';
@@ -318,6 +318,7 @@ export async function renderReader(host, bookId, kind = 'book') {
       document.removeEventListener('keydown', onKeydown);
       stopAudio();
       closeTranslationPicker();
+      closeVerbLinkPicker();
       observer.disconnect();
     }
   });
@@ -325,6 +326,7 @@ export async function renderReader(host, bookId, kind = 'book') {
 
   function renderPage() {
     closeTranslationPicker();
+    closeVerbLinkPicker();
     const page = book.pages[pageIndex];
     prevBtn.disabled = pageIndex === 0;
     nextBtn.disabled = pageIndex === book.pages.length - 1;
@@ -495,11 +497,19 @@ export async function renderReader(host, bookId, kind = 'book') {
     const isPhrase = selectedText.includes(' ') && selection.anchorNode && el.closest('.de')?.contains(selection.anchorNode);
     const text = isPhrase ? selectedText : el.dataset.word;
 
-    showWordMenu(e.clientX, e.clientY, [
+    const items = [
       { label: 'Mark known', onClick: () => markWordKnown(el, text, isPhrase) },
       { label: 'Mark unknown', onClick: () => markWordUnknown(el, text, isPhrase) },
       { label: 'Change translation', onClick: () => startChangeTranslation(el, text, isPhrase) },
-    ]);
+    ];
+    // Only offered for a single word that isn't already part of a detected/
+    // linked pair - separableVerbs.js's automatic detector sometimes misses
+    // a split verb (irregular conjugation not in its tables, or an unusual
+    // clause boundary), so this lets the learner fix that case by hand.
+    if (!isPhrase && !el.classList.contains('compoundPart')) {
+      items.push({ label: 'Link separable verb', onClick: () => startVerbLink(el, text) });
+    }
+    showWordMenu(e.clientX, e.clientY, items);
   }
 
   // Sets status straight to 'learned' (green) server-side via
@@ -577,6 +587,69 @@ export async function renderReader(host, bookId, kind = 'book') {
       dictionary[key] = persianText;
       pageHost.querySelectorAll(`.word[data-word="${CSS.escape(text)}"]`).forEach((span) => {
         span.dataset.gloss = persianText;
+      });
+    });
+  }
+
+  // Given the two clicked words of a manually-linked separable verb, try to
+  // reconstruct its infinitive exactly like separableVerbs.js's automatic
+  // detector does: exactly one of the two must be a known separable prefix
+  // (SEPARABLE_PREFIX_SET), and the other must be a conjugation
+  // likelyInfinitive() can resolve - prefix + that stem is the infinitive.
+  // Returns null if neither condition holds (an irregular/unlisted form, or
+  // neither word is a recognized prefix), in which case startVerbLink falls
+  // back to a plain compound key instead of a real infinitive.
+  function guessSeparableInfinitive(wordA, wordB) {
+    const aIsPrefix = SEPARABLE_PREFIX_SET.has(normalize(wordA));
+    const bIsPrefix = SEPARABLE_PREFIX_SET.has(normalize(wordB));
+    if (aIsPrefix === bIsPrefix) return null;
+    const [prefix, verbForm] = aIsPrefix ? [wordA, wordB] : [wordB, wordA];
+    const stem = likelyInfinitive(verbForm);
+    if (!stem) return null;
+    return { infinitive: normalize(prefix) + stem, verbForm };
+  }
+
+  // "Link separable verb": a fallback for when separableVerbs.js's automatic
+  // clause-based detection misses a split verb. The learner clicks the
+  // other part of the verb in the same sentence (see wordMenu.js's
+  // showVerbLinkPicker), then picks its Persian meaning the same way
+  // "Change translation" does. Mirrors an auto-detected pair exactly - both
+  // spans end up with the resolved infinitive as dataset.word, the chosen
+  // gloss, and 'compoundPart'/'compoundGroup' so they highlight together on
+  // click just like one findSeparableCompounds already found.
+  //
+  // When the infinitive can be resolved, this also saves a dictionary hint
+  // on the conjugated form (" • infinitive", same shape upsertSeparableVerbs
+  // writes) so findSeparableCompounds recognizes this exact conjugated form
+  // on its own from now on - everywhere it recurs, not just this click.
+  function startVerbLink(el, text) {
+    const sentenceEl = el.closest('.sentence');
+    const faEl = sentenceEl?.querySelector('.fa');
+    if (!sentenceEl || !faEl) return;
+
+    showVerbLinkPicker(sentenceEl, el, text, (secondEl) => {
+      const secondText = secondEl.dataset.word;
+      const guess = guessSeparableInfinitive(text, secondText);
+      const infinitive = guess ? guess.infinitive : normalize(`${text}${secondText}`);
+
+      showTranslationPicker(faEl, infinitive, async (persianText) => {
+        await api.updateDictionaryGloss(infinitive, persianText);
+        if (guess) {
+          await api.updateDictionaryGloss(guess.verbForm, `${persianText} • ${infinitive}`);
+        }
+        const key = normalize(infinitive);
+        dictionary[key] = persianText;
+
+        const indices = [el.dataset.pageIndex, secondEl.dataset.pageIndex].sort((a, b) => Number(a) - Number(b));
+        const groupId = `manual-${indices[0]}-${indices[1]}`;
+        for (const span of [el, secondEl]) {
+          span.dataset.word = infinitive;
+          span.dataset.gloss = persianText;
+          span.classList.add('compoundPart');
+          span.dataset.compoundGroup = groupId;
+          span.title = `Separable verb: ${infinitive}`;
+          applyWordColor(span, key);
+        }
       });
     });
   }
