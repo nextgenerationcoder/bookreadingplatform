@@ -1,0 +1,259 @@
+COURSE: deutsch-almani-lektion-1
+TITLE: Lektion 1
+LEVEL: A1
+LANG: de -> fa
+
+PAGE 1
+CHAPTER: Lektion 1
+1: gut
+خوب
+2: es ist
+آن است
+3: es ist gut
+آن خوب است
+4: was
+چه چیزی
+5: Wasser
+آب
+6: trinken
+نوشیدن
+7: Sie
+شما
+8: wollen Sie?
+می خواهید شما؟ (پرسش مودبانه)
+9: Sie wollen
+شما می خواهید
+10: trinken
+نوشیدن
+11: was wollen Sie trinken?
+چه چیزی می خواهید شما بنوشید؟
+12: essen
+خوردن
+13: was wollen Sie essen?
+چه چیزی می خواهید شما بخورید؟
+14: tun
+انجام دادن
+15: was wollen Sie tun?
+چه چیزی می خواهید شما انجام دهید؟
+16: kommen
+آمدن
+17: wollen Sie kommen?
+می خواهید شما بیایید؟
+18: mit mir
+با من
+19: wollen Sie mit mir kommen?
+می خواهید شما با من بیایید؟
+20: heute
+امروز
+21: wollen Sie heute mit mir kommen?
+می خواهید شما امروز با من بیایید؟
+22: Abend
+عصر
+23: guten Abend
+عصر بخیر
+24: heute Abend
+امروز عصر
+25: wollen Sie heute Abend mit mir kommen?
+می خواهید شما امروز عصر با من بیاید؟
+26: was wollen Sie essen?
+چه چیزی می خواهید شما بخورید؟
+27: s ein
+هستن
+28: wann
+کی (چه زمانی؟)
+29: hier
+اینجا
+30: wann wollen Sie hier sein?
+کی می خواهی شما اینجا باشی؟
+31: können Sie?
+می توانید شما؟
+32: können Sie mit mir kommen?
+می توانید شما با من بیایید؟
+33: wollen Sie mit mir kommen?
+می خواهید شما با من بیایید؟
+34: Ja
+بله
+35: nein
+نه
+36: bitte
+لطفأ
+37: wann wollen Sie mit mir kommen?
+کی میخواهید شما با من بیایید؟
+38: sehen
+دیدن
+39: auf Wiedersehen
+خداحافظ ( دیدن )
+40: auf Wiederhören
+خداحافظ ( شنیدن )
+41: wann wollen Sie es sehen?
+کی می خواهید شما آن را ببینید؟
+42: können Sie es sehen?
+می توانید شما آن را ببینید؟
+43: ich kann
+من می توانم
+44: ich will
+من می خواهم
+45: wollen Sie?
+می خواهید شما؟
+46: Sie wollen
+شما می خواهید
+47: wenn
+اگر
+48: wenn Sie wollen
+اگر شما بخواهید
+49: Sie kommen
+شما می آیی
+50: wir kommen
+ما می آییم
+51: kommen Sie?
+می آیی شما؟
+52: wann kommen Sie?
+کی میایی شما؟
+53: ich komme
+من میام
+54: bald
+به زودی
+55: ich komme bald
+من به زودی می آیم
+56: können Sie mit mir kommen
+می توانی شما با من بیایی؟
+57: bleiben
+ماندن
+58: wir bleiben
+ما می مانیم
+59: wir bleiben hier
+ما اینجا می مانیم
+60: wir bleiben heute Abend hier
+ما امروز عصر اینجا می مانیم
+61: wir bleiben heute hier
+ما امروز اینجا می مانیم
+62: Sie bleiben
+شما می مانید
+63: bleiben Sie?
+می مانید شما؟
+64: wie
+چگونه؟
+65: gehen
+رفتن
+66: wir gehen
+ما می رویم
+67: Sie gehen
+شما می روید
+68: nicht
+فعل را منفی می کند Not
+69: jetzt
+االن
+70: nicht jetzt
+االن نه
+71: ich will es sehen
+من می خواهم آن را ببینم
+72: ich will
+من می خواهم
+73: aber
+اما
+74: ich will es sehen aber nicht jetzt
+من می خواهم آن را ببینم اما نه االن
+75: können Sie es sehen?
+می توانید شما آن را ببینید؟
+76: ich kann es sehen
+من میخواهم آن را ببینم
+77: ich kann Sie nicht sehen
+م ن نمی توانم شما را ببینم
+78: verstehen
+فهمیدن
+79: stehen
+قرارداشتن
+80: wir verstehen
+ما می فهمیم
+81: wir verstehen Sie
+ما شما را می فهمیم
+82: sehr
+زیاد ( خیلی )
+83: sehr gut
+خیلی خوب
+84: es ist sehr gut
+آن خیلی خوب است
+85: wir verstehen
+ما می فهمیم
+86: wir verstehen nicht
+ما نمی فهمیم
+87: wir verstehen es nicht
+ما آن را نمی فهمیم
+88: wir verstehen Sie nicht
+ما شما را نمی فهمیم
+89: wir verstehen Sie nicht sehr gut
+ما شما را خیلی خوب نمی فهمیم
+90: verstehen Sie?
+می فهمی شما؟ ( متوجه هستی ؟ )
+91: verstehen Sie es?
+شما آن را می فهمی؟
+92: mich
+من را
+93: verstehen Sie mich?
+شما من را می فهمی؟
+94: verstehen Sie mich nicht?
+شما من را نمی فهمید؟
+95: können Sie mich verstehen?
+می توانید شما من را بفهمید؟
+96: ich kann nicht
+من نمی توانم
+97: ich kann Sie nicht verstehen
+من نمی توانم شما را بفهمم
+98: es tut mir leid
+متأسفم
+99: es tut mir leid, aber
+متأسفم، اما
+100: es tut mir leid, aber ich kann Sie nicht verstehen
+متأسفم، اما من نمی توانم شما را بفهمم
+101: wir bleiben
+ما می مانیم
+102: wir bleiben nicht
+ما نمی مانیم
+103: wir bleiben nicht hier
+ما اینجا نمی مانیم
+104: lange
+زیاد ( مدت )
+105: wir können nicht lange hier bleiben
+ما نمی توانیم اینجا مدت زیادی بمانیم
+106: wie
+چگونه
+107: wie lange
+چه مدت؟
+108: wie lange können Sie hier bleiben
+چه مدت می توانید شما اینجا بمانید؟
+109: ich muss
+من باید
+110: ich muss es sehen
+من باید آن را ببینم
+111: ich muss hier bleiben
+من باید اینجا بمانم
+112: aber ich kann nicht lange hier bleiben
+اما من نمی توانم اینجا زیاد بمانم
+113: ich muss bald gehen
+من باید به زودی بروم
+114: mir
+به من
+115: mich
+من را
+116: verstehen Sie mich?
+شما من را می فهمید؟
+117: bringen
+آوردن
+118: finden
+پیدا کردن
+119: es tut mir leid, aber ich kann es nicht finden
+متأسفم، اما من نمی توانم آن را پیدا کنم
+120: weiß
+سفید
+121: Weißwein
+شراب سفید
+122: ich weiß
+من می دانم
+123: ich weiß es
+من آن را می دانم
+124: ich weiß es nicht
+من آن را نمی دانم
+125: Wo
+کجا
+126: ich weiß nicht wo es ist, ich kann es nicht finden
+من نمی دانم آن کجاست، من نمی توانم آن را پیدا کنم

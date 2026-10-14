@@ -1,0 +1,205 @@
+COURSE: deutsch-almani-lektion-7
+TITLE: Lektion 7
+LEVEL: A1
+LANG: de -> fa
+
+PAGE 1
+CHAPTER: Lektion 7
+1: es kann heute fertig sein
+آن می تواند آماده باشد امروز
+2: es kann nicht so möglich sein
+آن نمی تواند آن طور ممکن باشد
+3: ich werde es morgen kaufen, wenn ich die Zeit habe
+من آن را فردا خواهم خرید ، اگر من زمان داشته باشم
+4: können Sie mir sagen, ob Sie es tun können
+می توانید شما به من بگویید، که آیا شما آن را می توانید انجام دهید
+5: ich möchte wissen, wann Sie es tun werden
+من دوست دارم ب دانم ، چه زمانی شما آ نرا انجام خواهید داد
+6: ich verstehe Sie nicht
+من شما را نمی فهمم
+7: ich kann Sie nicht verstehen
+من نمی توانم شما را بفهمم
+8: er versteht nicht
+او نمی فهمد
+9: er kann nicht verstehen
+او نمی تواند بفهمد
+10: konnten
+گذشته توانستن
+11: ich konnte
+من توانستم
+12: er konnte
+او توانست
+13: Sie konnten
+شما توانستین
+14: ich konnte es nicht finden
+من نتوانستم آن را پیدا کنم
+15: ich konnte Sie nicht verstehen
+من نتوانستم شما را بفهمم
+16: gestern
+دیروز
+17: gestern Abend
+دیروز عصر
+18: er konnte gestern Abend nicht mit uns dorthin gehen
+او نتوانست با ما به آنجا دیروز عصر برود
+19: war- waren
+sein گذشته
+20: ich war da gestern Abend
+من دیروز عصر آنجا بودم
+21: aber es war nicht fertig
+اما آن آماده نبود
+22: wir waren da
+ما آنجا بودیم
+23: wo waren Sie?
+کجا بودید شما ؟
+24: es war nicht möglich, es zu tun
+ممکن نبود، آن را انجام دادن
+25: ich hatte
+من داشتم
+26: wir hatten
+ما داشتیم
+27: ich hatte keine Zeit, es zu tun, weil ich sehr beschäftigt war
+من وقت نداشتم آن را انجام بد هم ، چون من خیلی مشغول بودم
+28: ich konnte es nicht finden
+من نتوانستم آن را پیدا کنم
+29: könnten
+معادل فارسی ندارد ( در موقعیت های خواه ش ، درخواست مؤدبانه، شرطی، آرزویی وغیر واقعی )
+30: könnten Sie mit mir kommen?
+می توانید شما با من بیاید؟
+31: könnten Sie mir sagen?
+می توانید شما به من بگویید؟
+32: können Sie jetzt warten?
+می توانید شما االن منظر ب اشید؟
+33: können Sie hier warten?
+می توانید اینجا منتظر باشید؟
+34: ohne
+بدون
+35: ohne Sie
+بدون شما
+36: ich kann es ohne Sie nicht tun
+من نمی توانم آن را بدون شما انجام دهم
+37: ich konnte es gestern ohne Sie nicht tun
+من نتوانستم آن را دیروز بدون شما انجام دهم
+38: ich konnte Sie nicht verstehen
+من نتوانستم شما را بفهمم
+39: müssen
+باید
+40: ich muss jetzt gehen
+من باید اکنون بروم
+41: wir müssen es kaufen
+ما باید آن را بخریم
+42: Sie müssen auf mich warten
+شما باید منتظر من باشید
+43: mussten
+گذشته Müssen
+44: ich musste hier bleiben
+من باید اینجا می ماندم
+45: er musste auf mich warten
+او باید منتظر من می ماند
+46: er will es kaufen
+او می خواهد آن را بخرد
+47: er kann es nicht kaufen, weil es sehr teuer ist
+او نمی تواند آن را بخرد ، چون آن بسیار گران است
+48: er kann es nicht kaufen, weil es zu teuer ist
+او نمی تواند آن را بخرد ، چون آن خیلی گران است
+49: er will es nicht haben
+او آن را نمی خواهد داشته باشد
+50: er wird es morgen haben
+او آن را فردا خواهد دشت
+51: er wird es tun, weil er es tun will
+او آن را انجام خواهد داد،چون او می خواهد آن را انجام ده د
+52: wollen Sie es tun?
+می خواهید شما آن را انجام دهید ؟
+53: wir wollen es nicht tun
+ما نمی خواهیم آن را انجام دهیم
+54: warum wollen Sie es jetzt nicht tun?
+چرا شما نمی خواهید اکنون آن را انجام دهید؟
+55: er will es nicht tun
+او نمی خواهد آن را انجام دهد
+56: er wird es nicht tun
+او آن را انجام نخواهد داد
+57: wollen Sie bitte es tun
+میشه لطفأ آن را انجام دهید
+58: wollen Sie bitte mir sagen
+میشه لطفأ به من بگویید؟
+59: wollten
+گذشته خواستن
+60: ich wollte
+من می خواستم
+61: er wollte
+او می خواست
+62: er wollte es kaufen, weil er es haben wollte
+او می خواست آن را بخرد، چون او آن را می خواست داشته باشد
+63: ich wollte nicht hier bleiben
+من نمی خواستم اینجا بمانم
+64: wir wollten nicht hier bleiben
+ما نمی خواستیم اینجا بمانیم
+65: wir sollen hier bleiben
+ما می بایستی اینجا بمانیم
+66: Sie sollen mir sagen
+شما می بایستی به من بگویید
+67: es soll fertig sein
+آن می بایست آماده باشد
+68: sollten, sollte
+فرم حال و گذشته این فعل یک معنا می دهد به جای باید میتوانید از " انتظار می رود " یا " انتظار می رفت " برای درک معنا و تفاوت آ نها استفاده کنید
+69: er sollte auf mich warten
+او باید منتظر من می ماند ( بماند ) / انتظار میرفت او منتظر من بماند
+70: aber er konnte nicht warten
+اما او نتوانست منتظر بماند
+71: dürfen
+امکان داشتن / اجازه داشتن / قادر بودن
+72: ich darf
+من اجازه دارم
+73: man darf nicht
+آدم اجازه ندارد
+74: darf ich es sehen?
+اجازه دارم آن را ببینم؟ / میشه آن را ببینم؟
+75: anprobieren
+امتحان کردن ( لباس ) / پرو لباس
+76: darf ich es anprobieren?
+اجازه هست من آن را امتحان کنم؟
+77: Lust
+حوصله / میل
+78: ich habe keine Lust
+من حوصله ندارم
+79: ich habe keine Lust, es zu tun
+من حوصله ندارم، آن را انجام دهم
+80: es freut mich, es zu tun
+مرا خوشحال می کند، آن را انجام دادن
+81: ich freue mich, Sie zu sehen
+خوشحال می شوم شما را ببینم
+82: ich freue mich sehr, Sie zu sehen
+خیلی خوشحال می شوم شما را ببینم
+83: es wird mich sehr freuen, Sie zu sehen
+مرا بسیار خوشحال خواهد کرد، شما را دیدن
+84: ich würde es tun
+من آن را انجام دهم
+85: er würde es nicht tun
+او آن را انجام ندهد
+86: denn es würde nicht möglich sein, es zu tun
+چون ممکن نَبُوَد ، آن را انجام داد ن
+87: es war nicht möglich, es zu tun
+ممکن نبود انجام دادنش
+88: es wäre nicht möglich
+آن ممکن نَبود
+89: lassen
+گذاشتن / اجازه دادن / رها کردن / ول کردن
+90: reparieren
+تعمیر کردن
+91: ich werde es reparieren
+من آن را تع م یر خواهم کرد
+92: ich werde es reparieren lassen
+من خواهم داد آن را تعمیر کنند
+93: ich muss es reparieren lassen
+من باید آن را بدهم تعمیر کنند
+94: ich werde es wachen lassen
+من خواهم داد آن را بشویند
+95: rein _sauber
+تمیز
+96: reinigen
+تمیز کردن
+97: wollen Sie es reparieren?
+می خواهید آن را تعمیر کنید؟
+98: wollen Sie es reinigen lassen?
+می خواهید آن را بدهید ت میز کنند؟
+99: ich muss es reinigen lassen
+من باید بدهم آن را ت میز کنند

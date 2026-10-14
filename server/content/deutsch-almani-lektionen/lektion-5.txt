@@ -1,0 +1,217 @@
+COURSE: deutsch-almani-lektion-5
+TITLE: Lektion 5
+LEVEL: A1
+LANG: de -> fa
+
+PAGE 1
+CHAPTER: Lektion 5
+1: wohin gehen Sie?
+به کجا می روید شما؟
+2: fragen
+پرسیدن
+3: die Frage
+سوال
+4: ich habe eine Frage
+من یک سوال دارم
+5: warum fragen Sie?
+چرا سوال می پرسید؟
+6: ich will wissen
+من می خواهم بدانم
+7: ich will wissen, wo es ist?
+من می خواهم بدانم، کجا است آن ؟
+8: ich will dorthin gehen
+من می خواهم به آنجا بروم
+9: es ist dort
+آن آنجاست
+10: ich möchte dorthin gehen
+من دوست دارم به آنجا بروم
+11: nichts
+هیچ چیز
+12: ich habe nichts
+من هیچ چیز ندارم
+13: ich verstehe nichts
+من هیچ چیز نمی فهمم
+14: ich habe es nicht
+من آن را ندارم
+15: ich habe jetzt nichts
+من اکنون هیچ چیز ن د ارم
+16: ich möchte es haben
+من دوست دارم آن را داشته باشم
+17: ich möchte dorthin gehen
+من دوست دارم به آنجا بروم
+18: es geht sehr gut
+آن می رود خیلی خوب / ( اوضاع خوبه )
+19: wie geht es Ihnen?
+حالتون چطوره ؟
+20: wie gehst es dir?
+حالت چطوره؟
+21: wie geht es? / wie geht`s?
+اوضا ع چطوره؟
+22: es geht mir gut
+من خوبم / به من خوب میگذرد
+23: es geht mir sehr gut
+من خیلی خوبم
+24: es geht gut
+خوب میگذره
+25: es geht sehr gut
+خیلی خوب می گذرد
+26: alles geht sehr gut
+همه چیز خیلی خوب می گذرد
+27: besser
+بهتر
+28: viel
+خیلی
+29: vielen Dank
+خیلی ممنون
+30: es geht heute viel besser
+من امروز خیلی بهتر هستم
+31: alles geht heute viel besser
+همه چیز امروز خیلی بهتر است
+32: fühlen
+احساس کردن
+33: ich fühle es
+من آن را احساس می کنم
+34: ich fühle es nicht
+من آن را احساس نمی کنم
+35: ich kann es nicht fühlen
+من نمی توانم آن را احساس کنم
+36: ich fühle mich gut
+من خوب احساس میکنم / ( من احساس خوبی دارم )
+37: ich fühle mich heute sehr gut
+من امروز احساس خیلی خوبی دارم
+38: ich fühle mich nicht heute sehr gut
+من امروز احساس خیلی خوبی ندارم
+39: wir fühlen uns gut
+ما احساس خوبی داریم
+40: er fühlt sich gut
+او احساس خوبی دارد
+41: sie fühlt sich sehr gut
+او احساس خیلی خوبی دارد
+42: fühlen Sie es?
+احساس می کنید شما آن را؟
+43: wie fühlen Sie sich?
+چگونه احساس می کنید شما ؟ / چگونه حسی دارید شما ؟
+44: waschen
+شستن
+45: ich wasche es
+من آن را می شویم
+46: ich wasche mich
+من می شویم خودم را
+47: sich beeilen
+عجله کردن
+48: ich beeile mich
+من عجله می کنم
+49: wir müssen uns beeilen
+ما باید عجله کنیم
+50: ich muss mich beeilen
+من باید عجله کنم
+51: er muss sich beeilen
+او باید عجله کند
+52: man
+آدم
+53: man muss sich beeilen
+آدم باید عجله کند
+54: wir müssen uns beeilen
+ما باید عجله کنیم
+55: Sie müssen sich beeilen
+شما باید عجله کنید
+56: ich werde mich beeilen
+من عجله خواهم کرد
+57: wir werden uns beeilen
+ما عجله خواهیم کرد
+58: wollen Sie bitte sich beeilen
+میشه لطفأ عجله کنید
+59: können Sie sich beeilen?
+می توانید عجله کنید ؟
+60: warum beeilen Sie sich nicht?
+چرا شما عجله نمی کنید ؟
+61: Beeilen Sie sich!
+عجله کنید !
+62: sollen
+باید (اما نه با اجبار زیاد – در مواقع توصیه و پیشنهاد )
+63: Sie sollen sich beeilen
+شما باید عجله کنید / شما بهتره عجله کنید
+64: interessieren
+عالقه داشتن / عالقه مند شدن
+65: interessiert
+عالقه مند
+66: es interessiert mich sehr
+آن مرا عالقه مند می کند
+67: sich für etwas interessieren
+به چیزی عالقه داشتن
+68: Buch
+کتاب
+69: ich interessiere mich für Buch
+من به کتاب عالقه دارم
+70: interessieren Sie sich nicht für Buch?
+به کتاب عالقه ندارید؟
+71: warum interessieren Sie sich nicht für Buch?
+چرا به کتاب عالقه ندارید؟
+72: ich interessiere mich sehr
+من خیلی عالقه دارم
+73: er interessiert sich
+او عالقه دارد
+74: das
+آن
+75: das interessiert mich sehr
+آن عالقه مرا خیلی جلب می کند
+76: das interessiert mich nicht
+آن عالقه من را جلب نمی کند
+77: interessant
+جالب
+78: die Freude
+شادی / کیف
+79: sich freuen
+مشتاق بودن / خوشحال بودن
+80: ich freue mich sehr
+من خیلی خوشحالم
+81: ich freue mich
+من خوشحالم
+82: es freut mich
+آن مرا خوشحال می کند
+83: die Zeit
+زمان / وقت
+84: die Zeitung
+روزنامه
+85: ich habe nicht die Zeit
+من وقت ندارم
+86: ich habe keine Zeit jetzt
+من اکنون هیچ وقتی ندارم
+87: die Möglichkeit
+فرصت / امکان
+88: ich habe keine Möglichkeit
+من هیچ امکانی ندارم / من امکانی ندارم / برای من ممکن نیست
+89: ich habe keine Zeit, es zu tun
+من وقت ندارم آن را انجام دهم
+90: es ist nicht möglich, es zu tun
+آن ممکن نیست آن را انجام دادن / انجام دادن آن ممکن نیست
+91: die Gelegenheit
+شانس / فرصت
+92: ich möchte die Gelegenheit haben, es zu sehen
+من دوست دارم فرصت داشته باشم آن را ببینم
+93: immer
+همیشه
+94: ich habe nicht immer die Gelegenheit, es zu sehen
+من همیشه فرصت ن دارم آن را ببینم
+95: oft
+اغلب
+96: ich habe nicht oft die Gelegenheit, es zu sehen
+من اغلب فرصت ندارم آن را ببینم
+97: es ist nicht möglich
+آن ممکن نیست
+98: es ist nicht möglich, heute dorthin zu gehen
+آن ممکن نیست امروز به آنجا رفتن
+99: wichtig
+مهم
+100: es ist sehr wichtig, es zu tun
+خیلی مهم است آن را انجام دادن
+101: es ist nicht so wichtig
+آن خیلی مهم نیست
+102: es ist nicht so wichtig, es zu tun
+انجام دادن آن خیلی مهم نیست
+103: nötig
+ضروری
+104: es ist nicht nötig, es jetzt zu tun
+انجام دادن آن االن ضروری نیست
+105: spät
+دیر / بعدأ
