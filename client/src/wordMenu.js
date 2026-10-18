@@ -13,6 +13,7 @@ let linkBannerEl = null;
 let linkingFirstEl = null;
 let linkingSentenceEl = null;
 let linkingClickHandler = null;
+let patternEl = null;
 
 function ensureMenu() {
   if (menuEl) return menuEl;
@@ -38,12 +39,14 @@ document.addEventListener('keydown', (e) => {
     hideWordMenu();
     closeTranslationPicker();
     closeVerbLinkPicker();
+    closePatternConfirm();
   }
 });
 
 // items: [{label, onClick}]
 export function showWordMenu(x, y, items) {
   closeVerbLinkPicker();
+  closePatternConfirm();
   const menu = ensureMenu();
   menu.innerHTML = '';
   for (const item of items) {
@@ -74,6 +77,7 @@ export function showWordMenu(x, y, items) {
 export function showTranslationPicker(faEl, label, onSave) {
   closeTranslationPicker();
   closeVerbLinkPicker();
+  closePatternConfirm();
   pickingFaEl = faEl;
   faEl.classList.add('pickingTranslation');
 
@@ -137,6 +141,7 @@ export function closeVerbLinkPicker() {
 export function showVerbLinkPicker(sentenceEl, firstEl, label, onPick) {
   closeVerbLinkPicker();
   closeTranslationPicker();
+  closePatternConfirm();
   linkingFirstEl = firstEl;
   linkingSentenceEl = sentenceEl;
   firstEl.classList.add('linkingSource');
@@ -161,6 +166,59 @@ export function showVerbLinkPicker(sentenceEl, firstEl, label, onPick) {
     onPick(span);
   };
   sentenceEl.addEventListener('click', linkingClickHandler, true);
+}
+
+export function closePatternConfirm() {
+  patternEl?.remove();
+  patternEl = null;
+}
+
+// "Extract pattern (AI)" flow: shows the AI's suggested generalized
+// pattern + translation (see reader.js's startExtractPattern) as editable
+// fields near the sentence, rather than saving them outright - the AI's
+// output is a starting point the learner can fix up, not assumed correct.
+export function showPatternConfirm(anchorEl, pattern, translation, onSave) {
+  closePatternConfirm();
+  closeTranslationPicker();
+  closeVerbLinkPicker();
+
+  patternEl = document.createElement('div');
+  patternEl.className = 'patternConfirm';
+  patternEl.innerHTML = `
+    <span>AI-suggested pattern - edit if needed, then Save:</span>
+    <input type="text" class="patternInput" dir="ltr" />
+    <input type="text" class="patternTranslationInput" dir="rtl" />
+    <div class="patternActions">
+      <button type="button" class="patternSaveBtn">Save to dictionary</button>
+      <button type="button" class="patternCancelBtn">Cancel</button>
+    </div>
+    <span class="patternStatus"></span>
+  `;
+  anchorEl.insertAdjacentElement('afterend', patternEl);
+
+  const patternInput = patternEl.querySelector('.patternInput');
+  const translationInput = patternEl.querySelector('.patternTranslationInput');
+  patternInput.value = pattern;
+  translationInput.value = translation;
+  const statusEl = patternEl.querySelector('.patternStatus');
+
+  patternEl.querySelector('.patternCancelBtn').onclick = () => closePatternConfirm();
+  patternEl.querySelector('.patternSaveBtn').onclick = async () => {
+    const finalPattern = patternInput.value.trim();
+    const finalTranslation = translationInput.value.trim();
+    if (!finalPattern || !finalTranslation) {
+      statusEl.textContent = 'Both fields are required.';
+      return;
+    }
+    statusEl.textContent = 'Saving…';
+    try {
+      await onSave(finalPattern, finalTranslation);
+      statusEl.textContent = 'Saved ✓';
+      setTimeout(closePatternConfirm, 700);
+    } catch (err) {
+      statusEl.textContent = `Error: ${err.message}`;
+    }
+  };
 }
 
 function escapeHtml(str) {

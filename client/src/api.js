@@ -164,6 +164,13 @@ export const api = {
   // shared dictionary the same way a manual re-import would.
   updateDictionaryGloss: (word, gloss) => post('/api/dictionary/import', { text: `${word} = ${gloss}` }),
 
+  // Right-click menu's "Extract pattern (AI)" for a multi-word selection:
+  // generalizes it into a reusable construction and translates that
+  // pattern, using the account's own Translation API key - see
+  // server/src/llm.js's extractPhrasePattern. Returns {pattern, translation}
+  // for the client to show in an editable confirm step before saving.
+  extractPattern: (text, sentence, persian) => post('/api/dictionary/extract-pattern', { text, sentence, persian }),
+
   // words: string[] - returns { word: rank } for whichever of these words
   // are in the top 200k frequency list (see server/data/word-frequency.seed.json).
   getWordFrequency: (words) => post('/api/word-frequency/lookup', { words }),

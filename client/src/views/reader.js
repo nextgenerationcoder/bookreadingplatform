@@ -2,7 +2,7 @@ import { api } from '../api.js';
 import { getDictionary, normalizeWord } from '../state.js';
 import { showPopupFor, hidePopup } from '../popup.js';
 import { findSeparableCompounds, SEPARABLE_PREFIX_SET, likelyInfinitive } from '../separableVerbs.js';
-import { showWordMenu, showTranslationPicker, closeTranslationPicker, showVerbLinkPicker, closeVerbLinkPicker } from '../wordMenu.js';
+import { showWordMenu, showTranslationPicker, closeTranslationPicker, showVerbLinkPicker, closeVerbLinkPicker, showPatternConfirm, closePatternConfirm } from '../wordMenu.js';
 
 const TOKEN_RE = /[A-Za-zÀ-ÖØ-öø-ÿ'’-]+|[^A-Za-zÀ-ÖØ-öø-ÿ'’-]+/g;
 const NO_GLOSS = 'Not yet in the dictionary.';
@@ -319,6 +319,7 @@ export async function renderReader(host, bookId, kind = 'book') {
       stopAudio();
       closeTranslationPicker();
       closeVerbLinkPicker();
+      closePatternConfirm();
       observer.disconnect();
     }
   });
@@ -327,6 +328,7 @@ export async function renderReader(host, bookId, kind = 'book') {
   function renderPage() {
     closeTranslationPicker();
     closeVerbLinkPicker();
+    closePatternConfirm();
     const page = book.pages[pageIndex];
     prevBtn.disabled = pageIndex === 0;
     nextBtn.disabled = pageIndex === book.pages.length - 1;
@@ -520,6 +522,12 @@ export async function renderReader(host, bookId, kind = 'book') {
     if (text === el.dataset.word && !el.classList.contains('compoundPart')) {
       items.push({ label: 'Link separable verb', onClick: () => startVerbLink(el, text) });
     }
+    // Only for a multi-word selection - a fixed construction (verb +
+    // preposition + case, an idiom) is worth generalizing into a reusable
+    // pattern; a single word already has its own dictionary entry as-is.
+    if (isPhrase) {
+      items.push({ label: 'Extract pattern (AI)', onClick: () => startExtractPattern(el, text) });
+    }
     showWordMenu(e.clientX, e.clientY, items);
   }
 
@@ -671,6 +679,40 @@ export async function renderReader(host, bookId, kind = 'book') {
         }
       });
     });
+  }
+
+  // "Extract pattern (AI)": for a selected multi-word chunk that's really a
+  // reusable construction (verb + preposition + case, an idiom) rather than
+  // a one-off fragment - e.g. selecting "einen Überblick über diese
+  // Unternehmenssoftware verschaffen" out of a sentence about one specific
+  // piece of software, where the dictionary-worthy unit is really the
+  // pattern "einen Überblick über etwas verschaffen" with the object
+  // generalized to "etwas". Doing that generalization needs real German
+  // grammar (case government, gender-appropriate placeholders) well beyond
+  // anything worth hand-coding here, so it's delegated to the account's own
+  // Translation API key (see server/src/llm.js's extractPhrasePattern) -
+  // the AI's suggested pattern + translation are shown as editable fields
+  // (wordMenu.js's showPatternConfirm) rather than saved outright, since
+  // it's a starting point the learner can fix up, not assumed correct.
+  function startExtractPattern(el, text) {
+    const sentenceEl = el.closest('.sentence');
+    const deEl = sentenceEl?.querySelector('.de');
+    const faEl = sentenceEl?.querySelector('.fa');
+    if (!deEl || !faEl) return;
+
+    showPopupFor(el, text, 'Asking AI…');
+    api
+      .extractPattern(text, deEl.textContent, faEl.textContent)
+      .then(({ pattern, translation }) => {
+        hidePopup();
+        showPatternConfirm(faEl, pattern, translation, async (finalPattern, finalTranslation) => {
+          await api.updateDictionaryGloss(finalPattern, finalTranslation);
+          dictionary[normalize(finalPattern)] = finalTranslation;
+        });
+      })
+      .catch((err) => {
+        showPopupFor(el, text, `Error: ${err.message}`);
+      });
   }
 
   // A click is also a "I've read at least this far" signal - everything

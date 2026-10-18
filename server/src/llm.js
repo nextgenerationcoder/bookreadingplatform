@@ -561,6 +561,151 @@ async function courseProviderCall(provider, apiKey, systemPrompt, userText) {
   return extractJson(data.choices?.[0]?.message?.content || '{}');
 }
 
+// "Link separable verb"'s sibling for multi-word phrases: a learner selects
+// a chunk of German text (see reader.js's "Extract pattern (AI)" menu item,
+// offered for a multi-word selection) that's really a fixed idiomatic
+// construction with one variable slot, e.g. selecting "einen Überblick über
+// diese Unternehmenssoftware verschaffen" out of a sentence about one
+// specific piece of software - the reusable, dictionary-worthy unit isn't
+// that literal sentence fragment but the pattern "einen Überblick über
+// etwas verschaffen" (to get an overview of something), with the specific
+// object generalized into a placeholder. Doing that generalization
+// mechanically would need real German grammar (case government, gender)
+// well beyond what's worth hand-coding here, so it's delegated to the same
+// AI call already used elsewhere in this file - given the selected phrase
+// plus its full sentence and that sentence's Persian translation for
+// context, it returns the generalized pattern and a fresh translation of
+// the pattern itself (not of the original literal text, which wouldn't
+// make sense once the object's been swapped for a placeholder).
+const PATTERN_TOOL_SCHEMA = {
+  type: 'object',
+  properties: {
+    pattern: {
+      type: 'string',
+      description:
+        'The reusable German structure generalized from the selected phrase: keep the fixed verb, preposition, and word order exactly as used, but replace any specific noun/name/pronoun that could vary with an appropriate placeholder (etwas for a thing; jemand/jemanden/jemandem/jemandes for a person, inflected for whatever case the construction requires). If the selected phrase is already a fixed idiom with nothing variable in it, return it unchanged.',
+    },
+    translation: {
+      type: 'string',
+      description: 'A fluent Persian translation of the generalized pattern itself, not of the original literal text it was extracted from.',
+    },
+  },
+  required: ['pattern', 'translation'],
+};
+
+function openAiPatternJsonSchema() {
+  return {
+    type: 'json_schema',
+    json_schema: {
+      name: 'phrase_pattern',
+      strict: true,
+      schema: {
+        type: 'object',
+        properties: { pattern: { type: 'string' }, translation: { type: 'string' } },
+        required: ['pattern', 'translation'],
+        additionalProperties: false,
+      },
+    },
+  };
+}
+
+function validatePhrasePattern(parsed) {
+  if (!parsed || typeof parsed.pattern !== 'string' || !parsed.pattern.trim() || typeof parsed.translation !== 'string' || !parsed.translation.trim()) {
+    throw new Error('AI response was not in the expected {pattern, translation} shape');
+  }
+  return { pattern: parsed.pattern.trim(), translation: parsed.translation.trim() };
+}
+
+const PATTERN_PROVIDERS = {
+  anthropic: {
+    model: 'claude-haiku-4-5-20251001',
+    async call(apiKey, systemPrompt, userText) {
+      const res = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
+        body: JSON.stringify({
+          model: PATTERN_PROVIDERS.anthropic.model,
+          max_tokens: 500,
+          system: systemPrompt,
+          tools: [{ name: 'record_pattern', description: 'Records the generalized phrase pattern and its translation.', input_schema: PATTERN_TOOL_SCHEMA }],
+          tool_choice: { type: 'tool', name: 'record_pattern' },
+          messages: [{ role: 'user', content: userText }],
+        }),
+        signal: AbortSignal.timeout(30000),
+      });
+      if (!res.ok) throw new Error(`Anthropic API error (${res.status}): ${await res.text().catch(() => res.statusText)}`);
+      const data = await res.json();
+      return anthropicToolInput(data);
+    },
+  },
+  openai: {
+    model: 'gpt-4o-mini',
+    async call(apiKey, systemPrompt, userText) {
+      const res = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', authorization: `Bearer ${apiKey}` },
+        body: JSON.stringify({
+          model: PATTERN_PROVIDERS.openai.model,
+          response_format: openAiPatternJsonSchema(),
+          messages: [
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: userText },
+          ],
+        }),
+        signal: AbortSignal.timeout(30000),
+      });
+      if (!res.ok) throw new Error(`OpenAI API error (${res.status}): ${await res.text().catch(() => res.statusText)}`);
+      const data = await res.json();
+      return JSON.parse(data.choices?.[0]?.message?.content || '{}');
+    },
+  },
+  deepseek: {
+    model: 'deepseek-chat',
+    async call(apiKey, systemPrompt, userText) {
+      const res = await fetch('https://api.deepseek.com/chat/completions', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', authorization: `Bearer ${apiKey}` },
+        body: JSON.stringify({
+          model: PATTERN_PROVIDERS.deepseek.model,
+          response_format: { type: 'json_object' },
+          messages: [
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: userText },
+          ],
+        }),
+        signal: AbortSignal.timeout(30000),
+      });
+      if (!res.ok) throw new Error(`API error (${res.status}): ${await res.text().catch(() => res.statusText)}`);
+      const data = await res.json();
+      return extractJson(data.choices?.[0]?.message?.content || '{}');
+    },
+  },
+};
+
+export async function extractPhrasePattern({ provider, apiKey, phrase, sentence, sentenceTranslation }) {
+  const impl = PATTERN_PROVIDERS[provider];
+  if (!impl) throw new Error(`Unsupported AI provider: ${provider}`);
+
+  const systemPrompt = [
+    'A German learner selected a chunk of text out of a sentence in a bilingual reading app, because it looks',
+    'like a reusable construction (a fixed verb + preposition + case pattern, an idiom, a collocation) rather',
+    'than just a one-off fragment. Generalize it into a reusable pattern and translate that pattern, as',
+    'instructed. Respond with ONLY a JSON object of the exact shape {"pattern": "...", "translation": "..."} -',
+    'no commentary or markdown fences.',
+  ].join(' ');
+
+  const userText = [
+    `Selected phrase: ${phrase}`,
+    `Full sentence it came from: ${sentence}`,
+    sentenceTranslation ? `That sentence's Persian translation (context only): ${sentenceTranslation}` : null,
+  ]
+    .filter(Boolean)
+    .join('\n');
+
+  const result = await impl.call(apiKey, systemPrompt, userText);
+  return validatePhrasePattern(result);
+}
+
 export async function generatePracticeCourse({ provider, apiKey, systemPrompt, learnerInput }) {
   if (!LLM_PROVIDERS.includes(provider)) throw new Error(`Unsupported AI provider: ${provider}`);
   const userText = JSON.stringify(learnerInput);
