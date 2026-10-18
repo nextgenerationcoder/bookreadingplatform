@@ -484,29 +484,40 @@ export async function renderReader(host, bookId, kind = 'book') {
   }
 
   // Right-click opens a small menu (mark known / mark unknown / change
-  // translation) instead of acting immediately - see wordMenu.js. A single
-  // word uses the clicked span; a drag-selected phrase (more than one
-  // word, selection anchored inside this sentence's German text) uses the
-  // full selected text instead, so "mark known"/"change translation" can
-  // apply to a multi-word chunk just as well as to one word.
+  // translation) instead of acting immediately - see wordMenu.js. A drag-
+  // selection that includes the right-clicked word is used as the menu's
+  // target instead of the whole word, covering two cases:
+  //   - a multi-word chunk (contains a space) - can span any amount of
+  //     text, even across several sentences (not restricted to this word's
+  //     own .de paragraph - containsNode confirms the clicked word is part
+  //     of the selection wherever it extends), since German is full of
+  //     multi-word expressions worth saving as their own unit.
+  //   - a SUBSTRING of just this one word (no space) - e.g. selecting
+  //     "Leistung" out of "Leistungsträger" - treated like any other single
+  //     word (saved to the shared dictionary), since it's a real standalone
+  //     word the compound happens to contain, not a personal phrase.
+  // With no matching selection, the whole clicked word is used, same as
+  // before.
   function onWordRightClick(e) {
     e.preventDefault();
     const el = e.currentTarget;
     const selection = window.getSelection();
-    const selectedText = selection && !selection.isCollapsed ? selection.toString().trim() : '';
-    const isPhrase = selectedText.includes(' ') && selection.anchorNode && el.closest('.de')?.contains(selection.anchorNode);
-    const text = isPhrase ? selectedText : el.dataset.word;
+    const hasSelection = selection && !selection.isCollapsed && selection.containsNode(el, true);
+    const selectedText = hasSelection ? selection.toString().trim() : '';
+    const text = selectedText || el.dataset.word;
+    const isPhrase = text.includes(' ');
 
     const items = [
       { label: 'Mark known', onClick: () => markWordKnown(el, text, isPhrase) },
       { label: 'Mark unknown', onClick: () => markWordUnknown(el, text, isPhrase) },
       { label: 'Change translation', onClick: () => startChangeTranslation(el, text, isPhrase) },
     ];
-    // Only offered for a single word that isn't already part of a detected/
-    // linked pair - separableVerbs.js's automatic detector sometimes misses
-    // a split verb (irregular conjugation not in its tables, or an unusual
-    // clause boundary), so this lets the learner fix that case by hand.
-    if (!isPhrase && !el.classList.contains('compoundPart')) {
+    // Only offered when no custom selection is overriding the word, and
+    // it isn't already part of a detected/linked pair - separableVerbs.js's
+    // automatic detector sometimes misses a split verb (irregular
+    // conjugation not in its tables, or an unusual clause boundary), so
+    // this lets the learner fix that case by hand.
+    if (text === el.dataset.word && !el.classList.contains('compoundPart')) {
       items.push({ label: 'Link separable verb', onClick: () => startVerbLink(el, text) });
     }
     showWordMenu(e.clientX, e.clientY, items);
@@ -515,11 +526,15 @@ export async function renderReader(host, bookId, kind = 'book') {
   // Sets status straight to 'learned' (green) server-side via
   // /api/vocab/mark-known and un-does any in-session "clicked this page"
   // tracking for the word, so Finish Page/commitReadUpTo won't turn around
-  // and report it as toLearn. For a phrase (isPhrase), there's no single
-  // .word span to recolor - just confirms via the popup.
+  // and report it as toLearn. For custom text (a phrase, or a substring of
+  // this word), there's no single .word span whose dataset.gloss/word
+  // actually matches it - el.dataset.gloss belongs to the FULL word under
+  // the cursor, not the selection, so it'd be wrong to reuse here, and
+  // there's nothing to recolor either; just confirms via the popup.
   async function markWordKnown(el, text, isPhrase) {
     const key = normalize(text);
-    const gloss = !isPhrase && el.dataset.gloss !== NO_GLOSS ? el.dataset.gloss : '';
+    const isCustomText = text !== el.dataset.word;
+    const gloss = !isCustomText && el.dataset.gloss !== NO_GLOSS ? el.dataset.gloss : '';
 
     showPopupFor(el, text, 'Marking as known…');
     try {
@@ -529,7 +544,7 @@ export async function renderReader(host, bookId, kind = 'book') {
       return;
     }
 
-    if (!isPhrase) {
+    if (!isCustomText) {
       delete clickedWords[key];
       vocabStatus[key] = 'learned';
       pageHost.querySelectorAll(`.word[data-word="${CSS.escape(text)}"]`).forEach((span) => {
@@ -546,7 +561,8 @@ export async function renderReader(host, bookId, kind = 'book') {
   // click for Finish Page bookkeeping (toLearn, not passive).
   async function markWordUnknown(el, text, isPhrase) {
     const key = normalize(text);
-    const gloss = !isPhrase && el.dataset.gloss !== NO_GLOSS ? el.dataset.gloss : '';
+    const isCustomText = text !== el.dataset.word;
+    const gloss = !isCustomText && el.dataset.gloss !== NO_GLOSS ? el.dataset.gloss : '';
 
     showPopupFor(el, text, 'Marking as unknown…');
     try {
@@ -556,7 +572,7 @@ export async function renderReader(host, bookId, kind = 'book') {
       return;
     }
 
-    if (!isPhrase) {
+    if (!isCustomText) {
       clickedWords[key] = (clickedWords[key] || 0) + 1;
       vocabStatus[key] = 'learning';
       pageHost.querySelectorAll(`.word[data-word="${CSS.escape(text)}"]`).forEach((span) => {
@@ -567,13 +583,16 @@ export async function renderReader(host, bookId, kind = 'book') {
     showPopupFor(el, text, 'Marked as unknown ✓');
   }
 
-  // "Change translation": the learner picks the matching Persian text from
-  // this sentence's own translation line (see wordMenu.js's picker) rather
-  // than typing anything. A single word updates the shared dictionary
-  // gloss (visible everywhere the word appears, like a manual re-import);
-  // a phrase has no single dictionary entry to update, so it's saved as a
-  // personal vocab_progress row instead, same as "mark known" with a
-  // specific translation attached.
+  // "Change translation": the learner picks the matching Persian text (see
+  // wordMenu.js's picker) rather than typing anything - the picker is
+  // anchored under this word's own sentence as a starting point, but
+  // nothing stops dragging the selection into another sentence's .fa too,
+  // for a translation spanning the same multiple sentences as a chunk's
+  // German text. A single word (including a substring of a bigger word)
+  // updates the shared dictionary gloss (visible everywhere that word
+  // appears, like a manual re-import); a multi-word phrase has no single
+  // dictionary entry to update, so it's saved as a personal vocab_progress
+  // row instead, same as "mark known" with a specific translation attached.
   function startChangeTranslation(el, text, isPhrase) {
     const faEl = el.closest('.sentence')?.querySelector('.fa');
     if (!faEl) return;
