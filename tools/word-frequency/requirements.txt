@@ -1,0 +1,6 @@
+python-jobspy==1.1.80
+requests>=2.31.0
+beautifulsoup4>=4.12.0
+feedparser>=6.0.11
+spacy>=3.7.0
+langdetect>=1.0.9
