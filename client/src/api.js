@@ -179,4 +179,24 @@ export const api = {
   // readable book - see server/src/urlImport.js. Requires a Translation API
   // key configured in Settings (same one PDF import uses).
   importPastedText: (text, title) => post('/api/import-url', { text, title }),
+
+  // Private interactive-textbook import (Step 1) - see
+  // server/src/textbookImporter.js and routes/textbooks.js.
+  importTextbookLesson: ({ textbookPdf, transcriptPdf, audioFiles, bookId, bookTitle, lessonNumber, lessonTitle, printedPageStart }) => {
+    const fd = new FormData();
+    fd.append('textbookPdf', textbookPdf);
+    if (transcriptPdf) fd.append('transcriptPdf', transcriptPdf);
+    for (const file of audioFiles || []) fd.append('audio', file);
+    fd.append('bookId', bookId);
+    fd.append('bookTitle', bookTitle);
+    fd.append('lessonNumber', lessonNumber);
+    fd.append('lessonTitle', lessonTitle);
+    if (printedPageStart) fd.append('printedPageStart', printedPageStart);
+    return postForm('/api/textbooks/import', fd);
+  },
+  getTextbookImportStatus: (jobId) => get(`/api/textbooks/import/${jobId}`),
+  listTextbookExercises: (bookId, lessonNumber, onlyNeedsReview = false) =>
+    get(`/api/textbooks/${encodeURIComponent(bookId)}/lessons/${lessonNumber}/exercises${onlyNeedsReview ? '?needsReview=1' : ''}`),
+  updateTextbookExercise: (id, body) => patch(`/api/textbooks/exercises/${id}`, body),
+  textbookMediaUrl: (id) => `/api/textbooks/media/${id}`,
 };

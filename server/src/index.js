@@ -22,6 +22,7 @@ import wordFrequencyRouter from './routes/wordFrequency.js';
 import urlImportRouter from './routes/urlImport.js';
 import grammarRouter from './routes/grammar.js';
 import practiceRouter from './routes/practice.js';
+import textbooksRouter from './routes/textbooks.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -73,6 +74,7 @@ app.use('/api/word-frequency', requireAuth, wordFrequencyRouter);
 app.use('/api/import-url', requireAuth, urlImportRouter);
 app.use('/api/grammar', requireAuth, grammarRouter);
 app.use('/api/practice', requireAuth, practiceRouter);
+app.use('/api/textbooks', requireAuth, textbooksRouter);
 
 // In production the client is built to client/dist and served by this same
 // process, so the whole app is one container behind one port. In local dev
