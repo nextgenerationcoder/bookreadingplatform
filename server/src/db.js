@@ -333,158 +333,45 @@ if (!grammarLessonColumns.includes('importance_rank')) {
   db.exec('ALTER TABLE grammar_lessons ADD COLUMN importance_rank INTEGER');
 }
 
-// Textbook import module (private interactive-exercise textbooks - distinct
-// from the plain bilingual-reading books/pages/sentences tables above: those
-// are sentence-by-sentence reading text, these are structured exercises with
-// instructions, questions/options, images, audio and transcripts). Prefixed
-// tb_ throughout so it never collides with the reading-book tables. See
-// server/src/textbookImporter.js.
+// Worksheets: a learner uploads a self-contained HTML page (made by hand or
+// by an AI) and the app just shows it back to them, unmodified - no parsing
+// into exercises, no shared content, private per account. The file itself
+// lives on disk (see worksheets.js's WORKSHEETS_DIR), never under a
+// publicly-served path - only GET /api/worksheets/:id/view (requireAuth,
+// and only for the uploading account) ever reads it.
 db.exec(`
-  CREATE TABLE IF NOT EXISTS tb_books (
-    id TEXT PRIMARY KEY,
-    title TEXT NOT NULL,
-    level TEXT,
-    publisher TEXT,
-    isbn TEXT,
-    created_at TEXT NOT NULL
-  );
-
-  CREATE TABLE IF NOT EXISTS tb_lessons (
-    id TEXT PRIMARY KEY,
-    book_id TEXT NOT NULL REFERENCES tb_books(id) ON DELETE CASCADE,
-    lesson_number INTEGER NOT NULL,
-    title TEXT NOT NULL,
-    start_page INTEGER,
-    end_page INTEGER,
-    UNIQUE (book_id, lesson_number)
-  );
-
-  CREATE TABLE IF NOT EXISTS tb_sections (
-    id TEXT PRIMARY KEY,
-    lesson_id TEXT NOT NULL REFERENCES tb_lessons(id) ON DELETE CASCADE,
-    section_letter TEXT NOT NULL,
-    title TEXT,
-    order_index INTEGER NOT NULL,
-    UNIQUE (lesson_id, section_letter)
-  );
-
-  -- One row per exercise (or sub-question, via sub_number). content_json and
-  -- answer_key_json hold the type-specific shape (questions/options/passage
-  -- text/grammar-table cells) rather than a rigid relational shape - exercise
-  -- types vary too much (matching vs fill-blank vs reading comprehension) for
-  -- one fixed set of columns, matching how interview_lessons/practice_courses
-  -- already store their step shape as JSON elsewhere in this file.
-  --
-  -- Idempotency: the natural key (book_id, lesson_id, section_id,
-  -- exercise_number, sub_number) is enforced unique below, and the importer
-  -- always upserts on that key (see upsertExercise in textbookImporter.js) -
-  -- re-running an import after a failure updates the same rows instead of
-  -- duplicating them. section_id is part of the key (and NOT NULL, never
-  -- left out of it) because this textbook restarts exercise numbering within
-  -- each lettered section (A/B/C/D each have their own "1, 2, 3...") - without
-  -- it, exercise "2" in one section silently overwrote exercise "2" in
-  -- another (a real bug the Lesson 2 demo import caught). Exercises before
-  -- the first lettered section (the lesson-opener warm-up) get an implicit
-  -- synthetic section (see UNNUMBERED_SECTION_LETTER in textbookImporter.js)
-  -- rather than a null section_id, specifically so they still collide (and
-  -- correctly update, not duplicate) on retry instead of NULL making every
-  -- such row look unique to SQLite's UNIQUE constraint.
-  CREATE TABLE IF NOT EXISTS tb_exercises (
-    id TEXT PRIMARY KEY,
-    book_id TEXT NOT NULL REFERENCES tb_books(id) ON DELETE CASCADE,
-    lesson_id TEXT NOT NULL REFERENCES tb_lessons(id) ON DELETE CASCADE,
-    section_id TEXT NOT NULL REFERENCES tb_sections(id) ON DELETE CASCADE,
-    exercise_number TEXT NOT NULL,
-    sub_number TEXT NOT NULL DEFAULT '',
-    printed_page INTEGER,
-    pdf_page_index INTEGER,
-    exercise_type TEXT NOT NULL,
-    instructions TEXT,
-    content_json TEXT NOT NULL,
-    answer_key_json TEXT,
-    answer_key_verified INTEGER NOT NULL DEFAULT 0,
-    extraction_confidence REAL,
-    extraction_source TEXT NOT NULL DEFAULT 'ai',
-    needs_review INTEGER NOT NULL DEFAULT 1,
-    order_index INTEGER NOT NULL DEFAULT 0,
-    created_at TEXT NOT NULL,
-    updated_at TEXT NOT NULL,
-    UNIQUE (book_id, lesson_id, section_id, exercise_number, sub_number)
-  );
-
-  -- file_path is relative to TB_MEDIA_DIR (see textbookImporter.js) - never a
-  -- web-servable path; only GET /api/textbooks/media/:id (requireAuth) reads it.
-  CREATE TABLE IF NOT EXISTS tb_exercise_images (
-    id TEXT PRIMARY KEY,
-    exercise_id TEXT NOT NULL REFERENCES tb_exercises(id) ON DELETE CASCADE,
-    file_path TEXT NOT NULL,
-    caption TEXT,
-    order_index INTEGER NOT NULL DEFAULT 0
-  );
-
-  CREATE TABLE IF NOT EXISTS tb_audio_files (
-    id TEXT PRIMARY KEY,
-    book_id TEXT NOT NULL REFERENCES tb_books(id) ON DELETE CASCADE,
-    lesson_id TEXT REFERENCES tb_lessons(id) ON DELETE SET NULL,
-    original_filename TEXT NOT NULL,
-    file_path TEXT NOT NULL,
-    track_label TEXT,
-    created_at TEXT NOT NULL
-  );
-
-  -- Many-to-many on purpose: one audio file (e.g. a single listening passage)
-  -- is routinely the source for several exercises in the book (3, 4 and 6 all
-  -- sharing one recording is the normal case, not an edge case).
-  CREATE TABLE IF NOT EXISTS tb_exercise_audio (
-    exercise_id TEXT NOT NULL REFERENCES tb_exercises(id) ON DELETE CASCADE,
-    audio_id TEXT NOT NULL REFERENCES tb_audio_files(id) ON DELETE CASCADE,
-    PRIMARY KEY (exercise_id, audio_id)
-  );
-
-  -- speaker_segments_json: [{speaker, text}, ...] - preserves speaker labels
-  -- exactly as printed in the transcript PDF; never a merged/paraphrased blob.
-  CREATE TABLE IF NOT EXISTS tb_transcripts (
-    id TEXT PRIMARY KEY,
-    book_id TEXT NOT NULL REFERENCES tb_books(id) ON DELETE CASCADE,
-    lesson_id TEXT REFERENCES tb_lessons(id) ON DELETE SET NULL,
-    audio_id TEXT REFERENCES tb_audio_files(id) ON DELETE SET NULL,
-    exercise_label TEXT,
-    speaker_segments_json TEXT NOT NULL,
-    source_pdf TEXT,
-    created_at TEXT NOT NULL
-  );
-
-  CREATE TABLE IF NOT EXISTS tb_exercise_transcripts (
-    exercise_id TEXT NOT NULL REFERENCES tb_exercises(id) ON DELETE CASCADE,
-    transcript_id TEXT NOT NULL REFERENCES tb_transcripts(id) ON DELETE CASCADE,
-    PRIMARY KEY (exercise_id, transcript_id)
-  );
-
-  -- Resumable/idempotent import jobs, mirroring pdf_import_jobs's pattern
-  -- (see routes/books.js): source_files_json keeps the uploaded files' paths
-  -- so a resumed job (after a server restart) doesn't need them re-uploaded.
-  CREATE TABLE IF NOT EXISTS tb_import_jobs (
+  CREATE TABLE IF NOT EXISTS worksheets (
     id TEXT PRIMARY KEY,
     user_id TEXT NOT NULL,
-    book_id TEXT NOT NULL,
-    lesson_number INTEGER,
-    status TEXT NOT NULL DEFAULT 'running',
-    stage TEXT,
-    current_page INTEGER NOT NULL DEFAULT 0,
-    total_pages INTEGER,
-    exercises_found INTEGER NOT NULL DEFAULT 0,
-    errors_json TEXT NOT NULL DEFAULT '[]',
-    error TEXT,
-    source_files_json TEXT NOT NULL DEFAULT '{}',
-    cancelled INTEGER NOT NULL DEFAULT 0,
-    created_at TEXT NOT NULL,
-    finished_at TEXT
+    title TEXT NOT NULL,
+    file_path TEXT NOT NULL,
+    created_at TEXT NOT NULL
   );
 
-  CREATE INDEX IF NOT EXISTS idx_tb_lessons_book ON tb_lessons(book_id);
-  CREATE INDEX IF NOT EXISTS idx_tb_exercises_lesson ON tb_exercises(lesson_id);
-  CREATE INDEX IF NOT EXISTS idx_tb_exercises_needs_review ON tb_exercises(needs_review);
-  CREATE INDEX IF NOT EXISTS idx_tb_exercise_images_exercise ON tb_exercise_images(exercise_id);
-  CREATE INDEX IF NOT EXISTS idx_tb_audio_files_lesson ON tb_audio_files(lesson_id);
-  CREATE INDEX IF NOT EXISTS idx_tb_import_jobs_user ON tb_import_jobs(user_id);
+  CREATE INDEX IF NOT EXISTS idx_worksheets_user ON worksheets(user_id);
+`);
+
+// Freely-placed notes a learner adds anywhere in a worksheet via right-click
+// -> "Notiz" (see client/src/views/worksheets.js's splitBlockAndInsertNote),
+// not tied to any one question the way the baked-in "+ Notiz" boxes are.
+// block_index identifies WHICH text block (p/li/td/... - the same "leaf
+// text-bearing element" list computeBlocks() builds, in document order)
+// this note splits, and char_offset is the character position within that
+// block's full text content where the split happens (0 = right before the
+// block's own text; the block's full length = right after it) - both
+// computed fresh from the pristine, unmodified worksheet HTML every time it
+// loads, which is what makes the position reproducible across sessions
+// without storing anything about the DOM itself.
+db.exec(`
+  CREATE TABLE IF NOT EXISTS worksheet_notes (
+    id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    worksheet_id TEXT NOT NULL REFERENCES worksheets(id) ON DELETE CASCADE,
+    block_index INTEGER NOT NULL,
+    char_offset INTEGER NOT NULL,
+    text TEXT NOT NULL DEFAULT '',
+    created_at TEXT NOT NULL
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_worksheet_notes_worksheet ON worksheet_notes(worksheet_id, user_id);
 `);

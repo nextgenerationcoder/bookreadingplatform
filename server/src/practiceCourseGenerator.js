@@ -49,7 +49,7 @@ const DEFAULT_SETTINGS = {
   lesson_count: 5,
   max_new_words_per_lesson: 5,
   max_primary_grammar_targets_per_lesson: 1,
-  steps_per_lesson: 14,
+  steps_per_lesson: 3,
 };
 
 function buildLearnerInput(userId, courseId, title) {
@@ -104,6 +104,14 @@ function isValidPracticeStep(step) {
   return typeof step.say === 'string' && step.say.trim() && typeof step.answer === 'string' && step.answer.trim();
 }
 
+// A matching step needs at least 2 pairs to be a meaningful exercise (one
+// pair alone has nothing to confuse it with) - a single straggler pair the
+// AI meant as matching but couldn't fill out falls back to being dropped
+// rather than kept as a degenerate one-pair "exercise".
+function isValidMatchingStep(step) {
+  return step.exercise_type === 'matching' && Array.isArray(step.words) && step.words.length >= 2;
+}
+
 function convertWords(words) {
   return (Array.isArray(words) ? words : [])
     .filter((w) => w && typeof w.german === 'string' && w.german.trim() && typeof w.translation === 'string' && w.translation.trim())
@@ -111,17 +119,26 @@ function convertWords(words) {
 }
 
 // Converts one raw generated step into LessonPlayer's step shape, or null
-// if it doesn't match either valid step type (see the skill's "Step Types"
+// if it doesn't match any valid step type (see the skill's "Step Types"
 // section) - dropped rather than failing the whole course over one
-// malformed step from the AI.
+// malformed step from the AI. `type` tells LessonPlayer.js which exercise
+// UI to render ('translate' is the default/fallback so older stored
+// courses from before this field existed keep rendering exactly as before).
 function convertStep(rawStep) {
   if (!rawStep || typeof rawStep !== 'object') return null;
   const software = convertWords(rawStep.words);
+
+  if (isValidMatchingStep(rawStep)) {
+    const pairs = convertWords(rawStep.words);
+    if (pairs.length < 2) return null; // words present but none passed convertWords's own validation
+    return { software: pairs, promptFa: null, expectedAnswer: null, noteFa: rawStep.note || null, type: 'matching', pairs };
+  }
   if (isValidPracticeStep(rawStep)) {
-    return { software, promptFa: rawStep.say.trim(), expectedAnswer: rawStep.answer.trim(), noteFa: rawStep.note || null };
+    const type = rawStep.exercise_type === 'scramble' ? 'scramble' : 'translate';
+    return { software, promptFa: rawStep.say.trim(), expectedAnswer: rawStep.answer.trim(), noteFa: rawStep.note || null, type };
   }
   if (isValidVocabStep(rawStep) && software.length) {
-    return { software, promptFa: null, expectedAnswer: null, noteFa: rawStep.note || null };
+    return { software, promptFa: null, expectedAnswer: null, noteFa: rawStep.note || null, type: 'vocab' };
   }
   return null;
 }
@@ -194,4 +211,13 @@ export function getPracticeCourseForUser(userId, courseId) {
     lessons: JSON.parse(row.lessons_json),
     createdAt: row.created_at,
   };
+}
+
+// Removes one generated course entirely (e.g. an old 14-step-per-lesson
+// one, or a course the learner just doesn't want anymore) - a course is
+// never edited in place, just regenerated or deleted, so there's no
+// partial-delete case to handle here.
+export function deletePracticeCourseForUser(userId, courseId) {
+  const result = db.prepare('DELETE FROM practice_courses WHERE id = ? AND user_id = ?').run(courseId, userId);
+  return result.changes > 0;
 }

@@ -72,6 +72,12 @@ button:disabled { opacity: .35 }
 .bookCardMeta { font-size: 13px; color: var(--muted) }
 .bookCardActions { display: flex; gap: 14px; margin-top: 10px; padding-top: 10px; border-top: 1px solid #eee8dc }
 .linkButton { background: none; border: none; padding: 0; font-size: 13px; color: var(--accent); cursor: pointer }
+.deleteWordBtn, .markKnownBtn { display: inline-flex; align-items: center; padding: 2px }
+.deleteWordBtn { margin-left: 8px; color: var(--muted) }
+.deleteWordBtn:hover { color: #b3261e }
+.markKnownBtn { color: var(--known) }
+.markKnownBtn:hover { color: #237a3e }
+.colHidden { display: none }
 .renameBox { margin-top: 10px; padding-top: 10px; border-top: 1px solid #eee8dc }
 .renameInput { width: 100%; padding: 7px 10px; border: 1px solid var(--line); border-radius: 8px; font-size: 14px; background: var(--paper) }
 .renameActions { display: flex; gap: 10px; margin-top: 8px }
@@ -147,9 +153,24 @@ button:disabled { opacity: .35 }
 .mistakeGrammarLink { display: inline-block; margin-top: 2px; font-size: 13px; color: var(--accent) }
 .lessonFeedback-correct { color: #1a7a3d }
 .lessonFeedback-wrong { color: #b3261e }
-.lessonHint { margin-top: 6px; font-size: 15px; color: var(--muted); text-align: left }
+.lessonHint { margin-top: 6px; font-size: 15px; color: var(--muted); text-align: left; display: flex; flex-wrap: wrap; gap: 6px }
+.hintSlotBtn { min-width: 28px; padding: 4px 8px; border-radius: 6px; border: 1px solid var(--line); background: var(--paper); color: var(--muted); cursor: pointer; font-size: 14px }
+.hintSlotBtn.hintSlotRevealed { background: #fff7e0; border-color: #e3c878; color: var(--ink); font-weight: 600; cursor: default }
 .lessonSummary { text-align: center; padding: 60px 10px }
 .lessonSummary h2 { font-size: 22px; margin: 0 0 8px }
+
+.scrambleBuilt { display: flex; flex-wrap: wrap; gap: 6px; min-height: 42px; padding: 8px; border: 1px dashed var(--line); border-radius: 10px; margin-bottom: 10px }
+.scrambleTiles { display: flex; flex-wrap: wrap; gap: 6px }
+.scrambleTile { padding: 7px 14px; border-radius: 8px; border: 1px solid var(--line); background: var(--paper); color: var(--ink); cursor: pointer; font-size: 15px }
+.scrambleTile:disabled { opacity: 0.5; cursor: default }
+.scrambleTileBuilt { background: #eef3f8; border-color: var(--accent) }
+
+.matchingBoard { display: flex; gap: 14px; margin-top: 10px }
+.matchingCol { flex: 1; display: flex; flex-direction: column; gap: 8px }
+.matchingChip { padding: 10px 12px; border-radius: 8px; border: 1px solid var(--line); background: var(--paper); color: var(--ink); cursor: pointer; font-size: 15px; text-align: center }
+.matchingChip:disabled { cursor: default }
+.matchingChip.matchingChipSelected { border-color: var(--accent); background: #eef3f8 }
+.matchingChip.matchingChipMatched { background: #eaf7ec; border-color: #b8dfc0; color: #1a7a3d; opacity: 0.8 }
 
 @media (max-width: 600px) {
   .microStep { padding: 16px 14px; border-radius: 14px }
@@ -187,6 +208,9 @@ button:disabled { opacity: .35 }
 .wordCell { font-family: Georgia, "Times New Roman", serif; font-size: 16px; text-align: left }
 .wordsSectionTitle { font-size: 16px; margin: 26px 0 4px }
 .wordsSectionTitle:first-of-type { margin-top: 10px }
+.toLearnTabs { display: flex; gap: 8px; margin: 14px 0 18px }
+.toLearnTabBtn { padding: 8px 16px; border-radius: 8px; border: 1px solid var(--line); background: var(--paper); cursor: pointer; font-size: 14px; color: var(--muted) }
+.toLearnTabBtn.active { background: var(--accent); color: #fff; border-color: var(--accent) }
 .vocabTabs { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin: 10px 0 12px }
 .vocabTabBtn { padding: 6px 14px; border: 1px solid var(--line); border-radius: 999px; background: var(--paper); font-size: 13px; cursor: pointer }
 .vocabTabBtn.active { background: var(--accent); color: #fff; border-color: var(--accent) }
@@ -247,6 +271,9 @@ header.pageHeader { display: flex; justify-content: space-between; align-items: 
 .word.wordKnown { color: var(--known) }
 .word.wordLearning { color: var(--learned) }
 .word.wordUnset { color: var(--unset) }
+/* clickableGermanText.js's own, simpler feedback (no tri-color status) -
+   a one-way "you added this" flag, not a tracked known/learning state. */
+.word.wordAdded { color: var(--known); font-weight: 600 }
 .word.speaking { font-weight: 700; background: #fdeecb; color: #7a4b06 }
 .word.compoundPart { border-bottom: 2px dotted var(--accent); padding-bottom: 0 }
 .word.compoundPart.compoundActive { background: #e8f0f8; color: #173e64 }
@@ -285,3 +312,17 @@ header.pageHeader { display: flex; justify-content: space-between; align-items: 
   .de { font-size: 20px; line-height: 1.7 }
   .fa { font-size: 17px }
 }
+
+/* --- Worksheets (upload + show an HTML page as-is) --- */
+.wsRow { display: flex; align-items: center; gap: 12px; padding: 8px 0; border-bottom: 1px solid var(--line) }
+.wsRow a { flex: 1 }
+.wsDate { color: var(--muted); font-size: 12px }
+.wsDeleteBtn { padding: 4px 10px; border-radius: 6px; border: 1px solid var(--line); background: var(--paper); cursor: pointer; color: #b00 }
+
+/* left/right/bottom pin it edge-to-edge (full width, escaping #app's
+   900px cap, since worksheets are often authored wider than that); `top`
+   is set from JS to the main nav's own rendered bottom edge, so the nav
+   bar stays visible above it instead of being covered like the old
+   position:fixed;inset:0 full-screen overlay was - see renderWorksheetViewer. */
+.wsViewerPage { position: fixed; left: 0; right: 0; bottom: 0; display: flex; flex-direction: column; background: #fff; z-index: 5 }
+.wsViewerFrame { flex: 1; border: none; width: 100%; }

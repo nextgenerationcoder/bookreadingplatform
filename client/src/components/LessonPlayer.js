@@ -8,12 +8,25 @@ import { blobToWav } from '../lessonEngine/audioToWav.js';
 // expectedAnswer before the learner produces it themselves.
 //
 // lesson: { id, title, backHref, backLabel, storageKey, steps, registerHotwords?, promptLang? }
-// steps[i]: { id, software: [{german, persian}], promptFa, expectedAnswer, noteFa? }
+// steps[i]: { id, software: [{german, persian}], promptFa, expectedAnswer, noteFa?, type?, pairs? }
 //   - software.length && promptFa && expectedAnswer  -> teach + practice
 //   - !software.length && promptFa && expectedAnswer  -> practice only (recall)
 //   - promptFa === null && expectedAnswer === null    -> teach only (no input)
 //   - noteFa (optional): a short grammar aside shown under the prompt -
 //     not part of the input/answer, just context.
+//   - type (optional, defaults to 'translate' if absent - every step from
+//     before this field existed, or from a non-Practice lesson source, is
+//     implicitly 'translate'): which exercise UI to use for a practice step.
+//     'translate' - type the whole sentence (the original/default shape).
+//     'scramble' - the SAME shape (promptFa + expectedAnswer), but shown as
+//       shuffled word tiles the learner taps back into order instead of a
+//       text box - see renderStep's scramble branch below.
+//     'matching' - connect each of `pairs` (same shape as software) to its
+//       translation; has no promptFa/expectedAnswer of its own (promptFa
+//       and expectedAnswer are both null, like a teach-only step) - see
+//       renderMatchingStep below, a separate render path from the rest of
+//       this file since it shares none of the text-input/hint/mic/mistake-
+//       explanation machinery a sentence-construction step needs.
 //
 // Field names (promptFa/noteFa/w.persian) are legacy from when every lesson
 // was German-Persian - they now just hold "the gloss/prompt/note text",
@@ -47,6 +60,9 @@ const UI_STRINGS = {
     transcribeError: (msg) => `خطا در تبدیل صدا: ${msg}`,
     micDenied: 'دسترسی به میکروفون ممکن نیست — لطفاً تایپ کنید.',
     doneTitle: 'درس تمام شد',
+    scrambleInstruction: 'کلمات را به ترتیب درست لمس کن:',
+    matchingInstruction: 'هر کلمه را به معنی‌اش وصل کن:',
+    matchingDone: '✓ همه‌ی جفت‌ها درست وصل شدند',
   },
   en: {
     dir: 'ltr',
@@ -66,6 +82,9 @@ const UI_STRINGS = {
     transcribeError: (msg) => `Transcription error: ${msg}`,
     micDenied: 'Microphone unavailable — please type instead.',
     doneTitle: 'Lesson complete',
+    scrambleInstruction: 'Tap the words in the right order:',
+    matchingInstruction: 'Connect each word to its meaning:',
+    matchingDone: '✓ All pairs matched',
   },
 };
 
@@ -117,8 +136,15 @@ export function renderLessonPlayer(host, lesson) {
 
   function renderStep(step) {
     const body = host.querySelector('#lessonBody');
+
+    if (step.type === 'matching') {
+      renderMatchingStep(body, step);
+      return;
+    }
+
     const isTeachOnly = step.promptFa === null && step.expectedAnswer === null;
     const hasWords = step.software.length > 0;
+    const isScramble = step.type === 'scramble';
 
     body.innerHTML = `
       <div class="microStep">
@@ -141,15 +167,21 @@ export function renderLessonPlayer(host, lesson) {
             ? ''
             : `<p class="lessonPromptFa" dir="${promptDir}">${escapeHtml(step.promptFa)}</p>
                ${step.noteFa ? `<p class="lessonNoteFa" dir="${promptDir}">${escapeHtml(step.noteFa)}</p>` : ''}
-               <p class="stepInstruction" dir="${t.dir}">${t.instruction}</p>
+               <p class="stepInstruction" dir="${t.dir}">${isScramble ? t.scrambleInstruction : t.instruction}</p>
                <form id="answerForm" autocomplete="off">
-                 <input type="text" id="answerInput" class="answerInput" dir="ltr" autocomplete="off" autocapitalize="off" spellcheck="false">
+                 ${
+                   isScramble
+                     ? `<div class="scrambleBuilt" id="scrambleBuilt" dir="ltr"></div>
+                        <div class="scrambleTiles" id="scrambleTiles" dir="ltr"></div>
+                        <input type="hidden" id="answerInput">`
+                     : `<input type="text" id="answerInput" class="answerInput" dir="ltr" autocomplete="off" autocapitalize="off" spellcheck="false">`
+                 }
                  <div class="lessonFeedback" id="lessonFeedback" dir="${t.dir}"></div>
                  <div class="mistakeExplanation" id="mistakeExplanation" dir="${t.dir}" hidden></div>
                  <div class="lessonHint" id="lessonHint" dir="ltr" hidden></div>
                  <div class="formActions">
-                   <button type="button" id="micBtn">${t.micStart}</button>
-                   <button type="button" id="hintBtn">${t.hint}</button>
+                   <button type="button" id="micBtn"${isScramble ? ' hidden' : ''}>${t.micStart}</button>
+                   <button type="button" id="hintBtn"${isScramble ? ' hidden' : ''}>${t.hint}</button>
                    <button type="submit" id="primaryBtn">${t.check}</button>
                  </div>
                </form>`
@@ -174,7 +206,7 @@ export function renderLessonPlayer(host, lesson) {
     const micBtn = body.querySelector('#micBtn');
 
     let correct = false;
-    let hintLevel = 0;
+    const revealedWordIndexes = new Set();
     let explainRequestId = 0;
     // isWrong drives the red "try again" feedback; explanation/lessons are
     // the (optional, separately-arriving) AI mistake explanation for it -
@@ -229,17 +261,96 @@ export function renderLessonPlayer(host, lesson) {
     pendingExplanation = null;
     pendingLessons = [];
 
-    input.focus();
+    if (!isScramble) input.focus();
     input.addEventListener('input', () => {
       if (!correct) persistState();
     });
 
+    // Scramble: tap `expectedAnswer`'s own words, shown shuffled, back into
+    // order - tapping a tile moves it between the "remaining" row and the
+    // "built" row; the hidden #answerInput is kept in sync with the built
+    // order so everything below (check/hint/explain-mistake/persistState)
+    // works unchanged, exactly as if the learner had typed that text. Not
+    // restored across a reload (see the draft-restore block above) - the
+    // tiles just reset, a minor gap worth accepting for now.
+    let refreshScrambleTiles = () => {};
+    if (isScramble) {
+      const builtEl = body.querySelector('#scrambleBuilt');
+      const tilesEl = body.querySelector('#scrambleTiles');
+      const words = step.expectedAnswer.split(' ');
+      const order = shuffleIndexes(words.length);
+      let builtIndexes = [];
+
+      function renderTiles() {
+        builtEl.innerHTML = '';
+        for (const idx of builtIndexes) {
+          const tile = document.createElement('button');
+          tile.type = 'button';
+          tile.className = 'scrambleTile scrambleTileBuilt';
+          tile.textContent = words[idx];
+          tile.disabled = correct;
+          tile.onclick = () => {
+            builtIndexes = builtIndexes.filter((i) => i !== idx);
+            syncAndRender();
+          };
+          builtEl.appendChild(tile);
+        }
+        tilesEl.innerHTML = '';
+        for (const idx of order) {
+          if (builtIndexes.includes(idx)) continue;
+          const tile = document.createElement('button');
+          tile.type = 'button';
+          tile.className = 'scrambleTile';
+          tile.textContent = words[idx];
+          tile.disabled = correct;
+          tile.onclick = () => {
+            builtIndexes.push(idx);
+            syncAndRender();
+          };
+          tilesEl.appendChild(tile);
+        }
+      }
+
+      function syncAndRender() {
+        input.value = builtIndexes.map((idx) => words[idx]).join(' ');
+        input.dispatchEvent(new Event('input'));
+        renderTiles();
+      }
+
+      renderTiles();
+      refreshScrambleTiles = renderTiles;
+    }
+
+    // Per-word hint: a row of slot buttons, one per expected word, each
+    // revealing only ITS OWN word when clicked - not "the first N words in
+    // order" the way a single progressive reveal would. The word the
+    // learner is actually stuck on is rarely the first one, and a lesson's
+    // Persian prompt already tells them the meaning - what they're missing
+    // is the German form of one specific word, not a prefix of the whole
+    // sentence that would give away every word before it too.
+    function renderHintSlots() {
+      hintEl.hidden = false;
+      hintEl.className = 'lessonHint';
+      hintEl.innerHTML = '';
+      expectedWords.forEach((word, i) => {
+        const slotBtn = document.createElement('button');
+        slotBtn.type = 'button';
+        slotBtn.className = 'hintSlotBtn';
+        const revealed = revealedWordIndexes.has(i);
+        slotBtn.textContent = revealed ? word : String(i + 1);
+        slotBtn.classList.toggle('hintSlotRevealed', revealed);
+        slotBtn.disabled = revealed;
+        slotBtn.onclick = () => {
+          revealedWordIndexes.add(i);
+          renderHintSlots();
+        };
+        hintEl.appendChild(slotBtn);
+      });
+    }
+
     hintBtn.onclick = () => {
       if (correct) return;
-      hintLevel = Math.min(hintLevel + 1, expectedWords.length);
-      hintEl.hidden = false;
-      const shown = expectedWords.slice(0, hintLevel).join(' ');
-      hintEl.textContent = hintLevel >= expectedWords.length ? shown : `${shown} …`;
+      renderHintSlots();
     };
 
     // Only this step's newly-taught words plus the lesson-wide register
@@ -300,6 +411,7 @@ export function renderLessonPlayer(host, lesson) {
         micBtn.hidden = true;
         primaryBtn.textContent = t.continueBtn;
         input.setAttribute('readonly', 'readonly');
+        refreshScrambleTiles();
         recordVocabForStep(step, true);
         persistState();
       } else {
@@ -312,6 +424,102 @@ export function renderLessonPlayer(host, lesson) {
         requestMistakeExplanation(input.value);
       }
     };
+  }
+
+  // Connect each of step.pairs' German words to its translation - two
+  // shuffled columns, tap one from each side to try a pair. A correct tap
+  // locks both in green and removes them from play; a wrong tap flashes
+  // red briefly and un-selects, no penalty beyond having to look again -
+  // there's no "wrong answer" state worth persisting/explaining the way a
+  // sentence-construction mistake is, so this step type skips
+  // persistState/explain-mistake/hint/mic entirely, unlike every other
+  // step type in this file.
+  function renderMatchingStep(body, step) {
+    const pairs = step.pairs;
+    const germanOrder = shuffleIndexes(pairs.length);
+    const persianOrder = shuffleIndexes(pairs.length);
+    const matched = new Set();
+    let selectedGerman = null;
+    let selectedPersian = null;
+
+    body.innerHTML = `
+      <div class="microStep">
+        <p class="stepInstruction" dir="${t.dir}">${t.matchingInstruction}</p>
+        ${step.noteFa ? `<p class="lessonNoteFa" dir="${promptDir}">${escapeHtml(step.noteFa)}</p>` : ''}
+        <div class="matchingBoard">
+          <div class="matchingCol" id="matchingGerman" dir="ltr"></div>
+          <div class="matchingCol" id="matchingPersian" dir="${promptDir}"></div>
+        </div>
+        <div class="formActions" id="matchingDoneRow" hidden>
+          <button type="button" id="continueBtn">${t.continueBtn}</button>
+        </div>
+      </div>
+    `;
+
+    const germanCol = body.querySelector('#matchingGerman');
+    const persianCol = body.querySelector('#matchingPersian');
+    const doneRow = body.querySelector('#matchingDoneRow');
+
+    function renderCols() {
+      germanCol.innerHTML = '';
+      for (const idx of germanOrder) {
+        const chip = document.createElement('button');
+        chip.type = 'button';
+        chip.className = 'matchingChip';
+        chip.textContent = pairs[idx].german;
+        if (matched.has(idx)) chip.classList.add('matchingChipMatched');
+        if (selectedGerman === idx) chip.classList.add('matchingChipSelected');
+        chip.disabled = matched.has(idx);
+        chip.onclick = () => {
+          selectedGerman = idx;
+          tryMatch();
+          renderCols();
+        };
+        germanCol.appendChild(chip);
+      }
+      persianCol.innerHTML = '';
+      for (const idx of persianOrder) {
+        const chip = document.createElement('button');
+        chip.type = 'button';
+        chip.className = 'matchingChip';
+        chip.textContent = pairs[idx].persian;
+        if (matched.has(idx)) chip.classList.add('matchingChipMatched');
+        if (selectedPersian === idx) chip.classList.add('matchingChipSelected');
+        chip.disabled = matched.has(idx);
+        chip.onclick = () => {
+          selectedPersian = idx;
+          tryMatch();
+          renderCols();
+        };
+        persianCol.appendChild(chip);
+      }
+    }
+
+    function tryMatch() {
+      if (selectedGerman === null || selectedPersian === null) return;
+      if (selectedGerman === selectedPersian) {
+        matched.add(selectedGerman);
+        selectedGerman = null;
+        selectedPersian = null;
+        if (matched.size === pairs.length) {
+          recordVocabForStep(step, true);
+          doneRow.hidden = false;
+        }
+      } else {
+        // Brief wrong flash, then clear both - handled via a short timeout
+        // so the learner sees which two chips they tried before they reset.
+        const wrongGerman = selectedGerman;
+        const wrongPersian = selectedPersian;
+        setTimeout(() => {
+          if (selectedGerman === wrongGerman) selectedGerman = null;
+          if (selectedPersian === wrongPersian) selectedPersian = null;
+          renderCols();
+        }, 500);
+      }
+    }
+
+    renderCols();
+    doneRow.querySelector('#continueBtn').onclick = () => advance();
   }
 
   // Fire-and-forget mastery tracking for this step's newly-taught words - see
@@ -392,6 +600,18 @@ export function renderLessonPlayer(host, lesson) {
       </div>
     `;
   }
+}
+
+// Fisher-Yates shuffle of [0, 1, ..., n-1] - used by both the scramble
+// (word order) and matching (column order) step types so neither ever
+// just shows items in their original, already-correct order.
+function shuffleIndexes(n) {
+  const arr = Array.from({ length: n }, (_, i) => i);
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
 }
 
 function escapeHtml(str) {

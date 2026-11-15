@@ -7,8 +7,16 @@
 # compiled against musl in the build stage wouldn't load in an Alpine runtime
 # stage anyway - keeping both stages on the same glibc base avoids both
 # problems at once.
+#
+# Node 22+ (not 20): pdfjs-dist's worker code (server/src/textbookImporter.js,
+# the Step 1/2/3 textbook import pipeline) calls Buffer.prototype.
+# transferToFixedLength, which doesn't exist before Node 22 - under Node 20
+# this doesn't fail at import time, only when a page is actually rendered
+# ("buffer.transferToFixedLength is not a function"), silently producing a
+# blank/corrupted page image. Confirmed by testing the real pipeline against
+# a node:20-bookworm-slim container before this bump.
 
-FROM node:20-bookworm-slim AS build
+FROM node:22-bookworm-slim AS build
 RUN apt-get update && apt-get install -y --no-install-recommends python3 make g++ && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
 
@@ -21,7 +29,7 @@ COPY server/ server/
 COPY client/ client/
 RUN npm run build --workspace client
 
-FROM node:20-bookworm-slim
+FROM node:22-bookworm-slim
 WORKDIR /app
 
 # python3/pip for Piper TTS (server/src/tts.js spawns it as a child process).

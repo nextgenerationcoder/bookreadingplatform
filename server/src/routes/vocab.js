@@ -208,4 +208,45 @@ router.post('/mark-unknown', (req, res) => {
   res.json({ ok: true });
 });
 
+// POST /api/vocab/update-translation { german, persian } — unconditionally
+// overwrites the saved translation for a word, unlike mark-known/
+// mark-unknown above (both of those only fill persian in if the existing
+// row's is blank, which is correct for "I already know this word, stop
+// flagging it" but wrong for "the translation I saved is actually
+// incorrect"). Used by clickableGermanText.js's Ctrl/Cmd+Alt+click AI
+// re-translation to fix a wrong gloss that was already saved via a casual
+// click. Creates the row (status 'learning', matching a fresh
+// Ctrl/Cmd+click save) if this word was never saved before; leaves
+// status/streak/learned_at untouched if it already existed, so correcting
+// the text of an already-'learned' word doesn't quietly demote it.
+router.post('/update-translation', (req, res) => {
+  const { german, persian } = req.body || {};
+  if (!german || typeof german !== 'string') {
+    return res.status(400).json({ error: 'german is required' });
+  }
+  if (!persian || typeof persian !== 'string') {
+    return res.status(400).json({ error: 'persian is required' });
+  }
+
+  const now = new Date().toISOString();
+  db.prepare(
+    `INSERT INTO vocab_progress (user_id, german, persian, times_seen, times_correct_total, correct_streak, status, first_seen_at, last_seen_at, learned_at)
+     VALUES (?, ?, ?, 1, 0, 0, 'learning', ?, ?, NULL)
+     ON CONFLICT(user_id, german) DO UPDATE SET
+       persian = excluded.persian,
+       last_seen_at = excluded.last_seen_at`
+  ).run(req.userId, german, persian, now, now);
+
+  res.json({ ok: true });
+});
+
+// DELETE /api/vocab/:german — removes a word (or structure - same table,
+// see myWords.js's isStructure split) from this account's list entirely.
+// Used by the delete button on My Words/To Learn - unlike mark-known/
+// mark-unknown, this doesn't just change status, it drops the row.
+router.delete('/:german', (req, res) => {
+  db.prepare('DELETE FROM vocab_progress WHERE user_id = ? AND german = ?').run(req.userId, req.params.german);
+  res.json({ ok: true });
+});
+
 export default router;

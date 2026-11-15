@@ -1,7 +1,12 @@
 import { Router } from 'express';
 import { db } from '../db.js';
 import { decrypt } from '../crypto.js';
-import { generatePracticeCourseForUser, listPracticeCoursesForUser, getPracticeCourseForUser } from '../practiceCourseGenerator.js';
+import {
+  generatePracticeCourseForUser,
+  listPracticeCoursesForUser,
+  getPracticeCourseForUser,
+  deletePracticeCourseForUser,
+} from '../practiceCourseGenerator.js';
 
 const router = Router();
 
@@ -13,6 +18,12 @@ router.get('/courses/:courseId', (req, res) => {
   const course = getPracticeCourseForUser(req.userId, req.params.courseId);
   if (!course) return res.status(404).json({ error: 'practice course not found' });
   res.json(course);
+});
+
+router.delete('/courses/:courseId', (req, res) => {
+  const ok = deletePracticeCourseForUser(req.userId, req.params.courseId);
+  if (!ok) return res.status(404).json({ error: 'practice course not found' });
+  res.json({ ok: true });
 });
 
 // POST /api/practice/generate { title? } — generates a new personalized

@@ -336,239 +336,6 @@ export async function formatPageFromText({ provider, apiKey, rawText, chapter })
   return validateSentences(result);
 }
 
-// Textbook exercise extraction (server/src/textbookImporter.js) - reads one
-// rendered textbook page image directly and reports the exercises printed on
-// it as structured data. Vision-only (same providers as formatPageFromImage
-// above), since OCR-then-guess loses the layout cues (question numbers,
-// option bullets, grammar-table columns, audio-icon track numbers) a vision
-// model reads directly off the page.
-//
-// contentJson is a JSON *string* rather than a nested schema, because the
-// actual shape varies by exerciseType (a reading passage's {text, questions}
-// is nothing like a grammar table's {headers, rows}) and OpenAI's strict
-// Structured Outputs mode requires one fixed, fully-required schema - a
-// free-form string sidesteps that while still giving Anthropic/OpenAI a
-// concrete schema to force tool-call compliance against. Parsed and validated
-// in textbookImporter.js, not here (same "provider returns the envelope, the
-// caller interprets the payload" split as the courses/practice pipeline).
-const EXERCISE_TOOL_SCHEMA = {
-  type: 'object',
-  properties: {
-    pageHasNoExercises: {
-      type: 'boolean',
-      description: 'True only if this page has no numbered exercises at all (e.g. a pure title/divider page).',
-    },
-    exercises: {
-      type: 'array',
-      description: 'Every numbered exercise on this page, in reading/printed order. Empty if pageHasNoExercises is true.',
-      items: {
-        type: 'object',
-        properties: {
-          exerciseNumber: { type: 'string', description: 'The printed exercise number, exactly as shown, e.g. "4". Numbering restarts inside each lettered section (A/B/C/D), so this is only unique together with sectionLetter.' },
-          subNumber: { type: 'string', description: 'Sub-question number if this is one row of a numbered list inside exercise, e.g. "1" for item 1 of exercise 4; empty string if the exercise has no sub-numbering.' },
-          sectionLetter: { type: 'string', description: 'The current lettered section (A, B, C or D) this exercise belongs to, as printed in the teal section-header box, e.g. "A". Empty string for an exercise printed before any lettered section appears (the lesson-opener warm-up).' },
-          sectionTitle: { type: 'string', description: 'That section\'s own title, as printed next to its letter, e.g. "Fremdschauen". Empty string if sectionLetter is empty, or if this page doesn\'t show the title (only report it once per section, the first page it appears on).' },
-          exerciseType: {
-            type: 'string',
-            enum: ['multiple_choice', 'true_false', 'fill_blank', 'matching', 'reading', 'writing', 'listening', 'speaking', 'grammar_table', 'other'],
-            description: 'Best-fitting exercise type for how a learner answers it.',
-          },
-          instructions: { type: 'string', description: 'The exercise\'s instruction line(s), exactly as printed (German), e.g. "Zu zweit. Lesen Sie 1 noch einmal. Was ist richtig? Kreuzen Sie an."' },
-          contentJson: {
-            type: 'string',
-            description:
-              'A JSON string (not nested here) holding the exercise\'s actual content, shaped to its exerciseType: ' +
-              'reading -> {"passage": "...", "questions": [{"number": "1", "text": "...", "options": ["...", "..."]}]}; ' +
-              'multiple_choice/true_false -> {"questions": [{"number": "1", "text": "...", "options": ["...", "..."]}]}; ' +
-              'fill_blank -> {"items": [{"number": "1", "prompt": "... ______ ...", "wordBank": ["..."]}]}; ' +
-              'matching -> {"left": ["..."], "right": ["..."]}; ' +
-              'grammar_table -> {"headers": ["..."], "rows": [["...", "..."]]}; ' +
-              'writing/speaking/other -> {"prompt": "..."}. Never invent a question, option or table cell not actually printed on the page.',
-          },
-          images: {
-            type: 'array',
-            description:
-              'Bounding box(es) of any photo/illustration/diagram belonging to this exercise, as fractions ' +
-              'of the full page (0.0 = left/top edge, 1.0 = right/bottom edge) - NOT pixels, so this works at ' +
-              'any render resolution. Only an image this exercise\'s instructions or content actually sit ' +
-              'beside or reference; never a decorative background or an image that belongs to a different ' +
-              'exercise on the same page. Empty if this exercise has no image.',
-            items: {
-              type: 'object',
-              properties: {
-                x0: { type: 'number', description: 'Left edge, 0 to 1.' },
-                y0: { type: 'number', description: 'Top edge, 0 to 1.' },
-                x1: { type: 'number', description: 'Right edge, 0 to 1, greater than x0.' },
-                y1: { type: 'number', description: 'Bottom edge, 0 to 1, greater than y0.' },
-                caption: { type: 'string', description: 'A short caption if the image has a printed one; empty string otherwise.' },
-              },
-              required: ['x0', 'y0', 'x1', 'y1', 'caption'],
-            },
-          },
-          audioTrackRef: {
-            type: 'string',
-            description: 'The audio-icon track number printed next to this exercise (e.g. a speaker icon marked "4"), exactly as printed. Empty string if this exercise has no audio icon.',
-          },
-          confidence: {
-            type: 'number',
-            description: 'Your own confidence (0 to 1) that exerciseType, instructions and contentJson above are correctly and completely read off the page.',
-          },
-        },
-        required: ['exerciseNumber', 'subNumber', 'sectionLetter', 'sectionTitle', 'exerciseType', 'instructions', 'contentJson', 'images', 'audioTrackRef', 'confidence'],
-      },
-    },
-  },
-  required: ['pageHasNoExercises', 'exercises'],
-};
-
-function buildExerciseSystemPrompt() {
-  return [
-    'You read one page photo of a German-language textbook (for learners of German) and report every',
-    'numbered exercise printed on it as structured data. Transcribe instructions, questions, answer',
-    'options and grammar-table content exactly as printed - never invent, paraphrase away, or silently',
-    'correct anything; if a word is genuinely illegible, write "[unleserlich]" there instead of guessing.',
-    'For each exercise that has a photo/illustration/diagram, report its bounding box as a fraction of',
-    'the full page (images field) so it can be cropped out of the page image separately - be as precise',
-    'as you can about where that image actually starts and ends.',
-    'This book restarts exercise numbering inside each lettered section (a teal box marked A, B, C or D) -',
-    'exercise "2" in section A and exercise "2" in section B are different exercises, so always report',
-    'sectionLetter too (empty string only for the handful of warm-up exercises printed before any lettered',
-    'section appears). Call the record_exercises tool with the result.',
-  ].join('\n');
-}
-
-function anthropicExerciseToolInput(data) {
-  const toolUse = data.content?.find((block) => block.type === 'tool_use');
-  if (!toolUse) throw new Error('Anthropic response had no tool_use block');
-  return toolUse.input;
-}
-
-function openAiExerciseJsonSchema() {
-  return {
-    type: 'json_schema',
-    json_schema: {
-      name: 'page_exercises',
-      strict: true,
-      schema: {
-        type: 'object',
-        properties: {
-          pageHasNoExercises: { type: 'boolean' },
-          exercises: {
-            type: 'array',
-            items: {
-              type: 'object',
-              properties: {
-                exerciseNumber: { type: 'string' },
-                subNumber: { type: 'string' },
-                sectionLetter: { type: 'string' },
-                sectionTitle: { type: 'string' },
-                exerciseType: {
-                  type: 'string',
-                  enum: ['multiple_choice', 'true_false', 'fill_blank', 'matching', 'reading', 'writing', 'listening', 'speaking', 'grammar_table', 'other'],
-                },
-                instructions: { type: 'string' },
-                contentJson: { type: 'string' },
-                images: {
-                  type: 'array',
-                  items: {
-                    type: 'object',
-                    properties: {
-                      x0: { type: 'number' }, y0: { type: 'number' }, x1: { type: 'number' }, y1: { type: 'number' },
-                      caption: { type: 'string' },
-                    },
-                    required: ['x0', 'y0', 'x1', 'y1', 'caption'],
-                    additionalProperties: false,
-                  },
-                },
-                audioTrackRef: { type: 'string' },
-                confidence: { type: 'number' },
-              },
-              required: ['exerciseNumber', 'subNumber', 'sectionLetter', 'sectionTitle', 'exerciseType', 'instructions', 'contentJson', 'images', 'audioTrackRef', 'confidence'],
-              additionalProperties: false,
-            },
-          },
-        },
-        required: ['pageHasNoExercises', 'exercises'],
-        additionalProperties: false,
-      },
-    },
-  };
-}
-
-function validateExercisePage(parsed) {
-  if (!parsed || typeof parsed.pageHasNoExercises !== 'boolean' || !Array.isArray(parsed.exercises)) {
-    throw new Error('AI response was not in the expected {pageHasNoExercises, exercises: [...]} shape');
-  }
-  return parsed;
-}
-
-const EXERCISE_VISION_PROVIDERS = {
-  anthropic: {
-    model: VISION_PROVIDERS.anthropic.model,
-    async call(apiKey, systemPrompt, imageBase64, mimeType) {
-      const res = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: { 'content-type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
-        body: JSON.stringify({
-          model: EXERCISE_VISION_PROVIDERS.anthropic.model,
-          max_tokens: 4000,
-          system: systemPrompt,
-          tools: [{ name: 'record_exercises', description: 'Records the exercises found on this page.', input_schema: EXERCISE_TOOL_SCHEMA }],
-          tool_choice: { type: 'tool', name: 'record_exercises' },
-          messages: [
-            {
-              role: 'user',
-              content: [
-                { type: 'image', source: { type: 'base64', media_type: mimeType, data: imageBase64 } },
-                { type: 'text', text: 'Report every exercise on this page as instructed.' },
-              ],
-            },
-          ],
-        }),
-        signal: AbortSignal.timeout(90000),
-      });
-      if (!res.ok) throw new Error(`Anthropic API error (${res.status}): ${await res.text().catch(() => res.statusText)}`);
-      const data = await res.json();
-      return anthropicExerciseToolInput(data);
-    },
-  },
-  openai: {
-    model: VISION_PROVIDERS.openai.model,
-    async call(apiKey, systemPrompt, imageBase64, mimeType) {
-      const res = await fetch('https://api.openai.com/v1/chat/completions', {
-        method: 'POST',
-        headers: { 'content-type': 'application/json', authorization: `Bearer ${apiKey}` },
-        body: JSON.stringify({
-          model: EXERCISE_VISION_PROVIDERS.openai.model,
-          response_format: openAiExerciseJsonSchema(),
-          messages: [
-            { role: 'system', content: systemPrompt },
-            {
-              role: 'user',
-              content: [
-                { type: 'text', text: 'Report every exercise on this page as instructed.' },
-                { type: 'image_url', image_url: { url: `data:${mimeType};base64,${imageBase64}` } },
-              ],
-            },
-          ],
-        }),
-        signal: AbortSignal.timeout(90000),
-      });
-      if (!res.ok) throw new Error(`OpenAI API error (${res.status}): ${await res.text().catch(() => res.statusText)}`);
-      const data = await res.json();
-      return JSON.parse(data.choices?.[0]?.message?.content || '{}');
-    },
-  },
-};
-
-export async function extractExercisesFromImage({ provider, apiKey, imageBase64, mimeType }) {
-  const impl = EXERCISE_VISION_PROVIDERS[provider];
-  if (!impl) throw new Error(`"${provider}" doesn't support reading photos (no vision API) - use Anthropic or OpenAI for this.`);
-  const systemPrompt = buildExerciseSystemPrompt();
-  const result = await impl.call(apiKey, systemPrompt, imageBase64, mimeType);
-  return validateExercisePage(result);
-}
-
 // Explains why a wrong LessonPlayer answer is wrong (used by both Courses'
 // active-recall lessons and Interview lessons - see LessonPlayer.js's
 // onsubmit "wrong" branch). Uses the account's own Translation API key,
@@ -707,8 +474,13 @@ export async function explainMistake({ provider, apiKey, promptText, expectedAns
     `learner actually typed. Respond with ONLY a JSON object of the exact shape`,
     `{"isGrammarMistake": true/false, "errorTags": ["..."], "explanation": "..."} - no commentary, explanation`,
     `text outside that object, or markdown fences.`,
-    `explanation: a short explanation (1-2 sentences, in ${explanationLanguage}) of what's wrong with the`,
-    `learner's answer (word order, wrong case, wrong verb form, missing word, wrong vocabulary, spelling, etc).`,
+    `explanation: a short, SPECIFIC explanation (1-2 sentences, in ${explanationLanguage}) of what's wrong -`,
+    `point to the actual spot in what they wrote (e.g. "the word you used for X" or "the ending on Y"), not a`,
+    `vague general category like just "word order" or "wrong case" with nothing else. Write for a complete`,
+    `beginner who has never studied linguistics: plain, everyday words only - NEVER technical grammar terms in`,
+    `either language (no "ضمیر وجهی", "حالت مفعولی", "modal", "accusative case", "subordinate clause", etc.),`,
+    `even if that IS the textbook name for the mistake - describe it the way a friend would explain it out loud,`,
+    `not a textbook.`,
     `CRITICAL: never state, spell out, or closely paraphrase the expected answer itself in explanation - the`,
     `learner must still work it out themselves.`,
     `isGrammarMistake: true only if the mistake is about German grammar, not just vocabulary/spelling.`,
@@ -943,4 +715,123 @@ export async function generatePracticeCourse({ provider, apiKey, systemPrompt, l
   if (!LLM_PROVIDERS.includes(provider)) throw new Error(`Unsupported AI provider: ${provider}`);
   const userText = JSON.stringify(learnerInput);
   return courseProviderCall(provider, apiKey, systemPrompt, userText);
+}
+
+// Plain free-text question -> plain free-text answer - the "/ai ... ---"
+// command in a worksheet note (see routes/worksheets.js's /ask-ai) needs
+// nothing structured, just a short written answer, so this skips every
+// other call in this file's forced-tool-schema/JSON-mode machinery and
+// talks to each provider's plain chat endpoint directly.
+export async function answerQuestion({ provider, apiKey, question }) {
+  if (!LLM_PROVIDERS.includes(provider)) throw new Error(`Unsupported AI provider: ${provider}`);
+  const systemPrompt = 'You are a helpful assistant answering a short question a learner typed into a note field on a German-learning worksheet. Answer concisely and directly, in the same language the question was asked in.';
+
+  if (provider === 'anthropic') {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
+      body: JSON.stringify({
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 800,
+        system: systemPrompt,
+        messages: [{ role: 'user', content: question }],
+      }),
+      signal: AbortSignal.timeout(45000),
+    });
+    if (!res.ok) throw new Error(`Anthropic API error (${res.status}): ${await res.text().catch(() => res.statusText)}`);
+    const data = await res.json();
+    const text = data.content?.find((block) => block.type === 'text')?.text;
+    if (!text) throw new Error('Anthropic response had no text content');
+    return text.trim();
+  }
+
+  const impl =
+    provider === 'openai'
+      ? { url: 'https://api.openai.com/v1/chat/completions', model: 'gpt-4o-mini' }
+      : provider === 'deepseek'
+        ? { url: 'https://api.deepseek.com/chat/completions', model: 'deepseek-chat' }
+        : null;
+  if (!impl) throw new Error(`Unsupported AI provider: ${provider}`);
+
+  const res = await fetch(impl.url, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json', authorization: `Bearer ${apiKey}` },
+    body: JSON.stringify({
+      model: impl.model,
+      max_tokens: 800,
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: question },
+      ],
+    }),
+    signal: AbortSignal.timeout(45000),
+  });
+  if (!res.ok) throw new Error(`API error (${res.status}): ${await res.text().catch(() => res.statusText)}`);
+  const data = await res.json();
+  const text = data.choices?.[0]?.message?.content;
+  if (!text) throw new Error('AI response had no text content');
+  return text.trim();
+}
+
+// Context-aware single-word translation - "Ctrl/Cmd+Alt+click a word" in
+// clickableGermanText.js, for when the dictionary's standalone gloss is
+// wrong for how the word is actually used in this specific sentence (e.g.
+// a word with several unrelated meanings, an idiom, a separable verb used
+// split). Deliberately NOT routed through answerQuestion: that's meant for
+// free-form Q&A replies, which a learner wants to read in full - this needs
+// a clean, short Persian gloss usable the same way a dictionary entry is,
+// not a sentence of explanation wrapped around it.
+export async function translateWordInContext({ provider, apiKey, word, sentence }) {
+  if (!LLM_PROVIDERS.includes(provider)) throw new Error(`Unsupported AI provider: ${provider}`);
+  const systemPrompt =
+    'You translate one German word into Persian, as it is actually used in the given sentence (not just its most ' +
+    'common dictionary meaning - pick the sense/idiom that fits this specific context). Respond with ONLY the ' +
+    'Persian translation itself - a word or very short phrase, no explanation, no quotes, no punctuation around it.';
+  const userText = `Sentence: ${sentence}\nWord to translate (in context): ${word}`;
+
+  if (provider === 'anthropic') {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
+      body: JSON.stringify({
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 100,
+        system: systemPrompt,
+        messages: [{ role: 'user', content: userText }],
+      }),
+      signal: AbortSignal.timeout(30000),
+    });
+    if (!res.ok) throw new Error(`Anthropic API error (${res.status}): ${await res.text().catch(() => res.statusText)}`);
+    const data = await res.json();
+    const text = data.content?.find((block) => block.type === 'text')?.text;
+    if (!text) throw new Error('Anthropic response had no text content');
+    return text.trim();
+  }
+
+  const impl =
+    provider === 'openai'
+      ? { url: 'https://api.openai.com/v1/chat/completions', model: 'gpt-4o-mini' }
+      : provider === 'deepseek'
+        ? { url: 'https://api.deepseek.com/chat/completions', model: 'deepseek-chat' }
+        : null;
+  if (!impl) throw new Error(`Unsupported AI provider: ${provider}`);
+
+  const res = await fetch(impl.url, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json', authorization: `Bearer ${apiKey}` },
+    body: JSON.stringify({
+      model: impl.model,
+      max_tokens: 100,
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: userText },
+      ],
+    }),
+    signal: AbortSignal.timeout(30000),
+  });
+  if (!res.ok) throw new Error(`API error (${res.status}): ${await res.text().catch(() => res.statusText)}`);
+  const data = await res.json();
+  const text = data.choices?.[0]?.message?.content;
+  if (!text) throw new Error('AI response had no text content');
+  return text.trim();
 }

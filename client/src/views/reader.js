@@ -708,6 +708,15 @@ export async function renderReader(host, bookId, kind = 'book') {
         showPatternConfirm(faEl, pattern, translation, async (finalPattern, finalTranslation) => {
           await api.updateDictionaryGloss(finalPattern, finalTranslation);
           dictionary[normalize(finalPattern)] = finalTranslation;
+          // Also save it to the learner's own To Learn list (vocab_progress),
+          // same as any other saved phrase (e.g. "Change translation" on a
+          // multi-word selection) - updateDictionaryGloss alone only updates
+          // the shared dictionary, which My Words/To Learn's "Structure" tab
+          // doesn't read from, so without this a confirmed pattern would
+          // never actually show up there. Status 'learning' (via
+          // markWordUnknown - see its own doc comment for why that's the
+          // one that means "learning"), same as any other freshly-saved item.
+          await api.markWordUnknown(finalPattern, finalTranslation);
         });
       })
       .catch((err) => {

@@ -59,13 +59,27 @@ function renderCourseCards(grid, courses) {
   }
   grid.innerHTML = '';
   for (const course of courses) {
-    const card = document.createElement('a');
+    const card = document.createElement('div');
     card.className = 'bookCard';
-    card.href = `#/practice/${encodeURIComponent(course.id)}`;
     card.innerHTML = `
-      <span class="bookCardTitle">${escapeHtml(course.title)}</span>
+      <a class="bookCardTitle" href="#/practice/${encodeURIComponent(course.id)}">${escapeHtml(course.title)}</a>
       <div class="bookCardMeta">${course.lessonCount} lesson${course.lessonCount === 1 ? '' : 's'}</div>
+      <div class="bookCardActions">
+        <button class="linkButton" data-action="delete" style="color:#b3261e">🗑️ Delete</button>
+      </div>
     `;
+    card.querySelector('[data-action="delete"]').addEventListener('click', async () => {
+      if (!confirm(`Delete "${course.title}"? This can't be undone.`)) return;
+      try {
+        await api.deletePracticeCourse(course.id);
+        card.remove();
+        if (!grid.children.length) {
+          grid.innerHTML = '<div class="loading">No practice courses yet — generate your first one above.</div>';
+        }
+      } catch (err) {
+        alert(`Could not delete: ${err.message}`);
+      }
+    });
     grid.appendChild(card);
   }
 }

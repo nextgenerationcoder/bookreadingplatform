@@ -577,11 +577,14 @@ The learner's native language may still be supplied as metadata for future use, 
 
 # Step Types
 
-Internally, each step is one of two types.
+Internally, each step is one of several types, distinguished by the optional `exercise_type` field plus which
+of `words`/`say`/`answer` are present. Vary exercise types across a lesson - do not make every practice step a
+plain typed translation; a lesson that mixes 2-3 different types from this list feels far less repetitive to
+the learner than one exercise type used over and over.
 
 ## Vocabulary-only step
 
-Contains `words`, but no `say` or `answer`.
+Contains `words`, but no `say` or `answer`, and no `exercise_type` (or `exercise_type` omitted/`"translate"`).
 
 Example:
 
@@ -596,9 +599,12 @@ Example:
 }
 ```
 
-## Practice step
+Prefer the `matching` type below instead of this plain vocabulary-only shape whenever there are 3 or more new
+words to introduce together - actively connecting a word to its meaning teaches better than just reading a list.
 
-Contains `say` and `answer`, with optional `note` and optional `words`.
+## Practice step (typed translation)
+
+Contains `say` and `answer`, with optional `note` and optional `words`. `exercise_type` omitted or `"translate"`.
 
 Example:
 
@@ -615,7 +621,53 @@ Example:
 }
 ```
 
+## Scramble step (reorder given words)
+
+Exactly the same shape as a practice step, with `"exercise_type": "scramble"` added. The learner is shown
+`answer`'s own words out of order and taps them back into the correct order, instead of typing from scratch -
+so `answer` must be a sentence the learner can correctly reconstruct from its own words alone (natural word
+order, no words that need to change form depending on position). Good for reinforcing word order itself as
+the skill being tested, once the vocabulary in the sentence is no longer brand new.
+
+Example:
+
+```json
+{
+  "exercise_type": "scramble",
+  "say": "I need it.",
+  "answer": "Ich brauche es."
+}
+```
+
+## Matching step (connect word to meaning)
+
+Contains `words` (3-5 pairs) and `"exercise_type": "matching"` - no `say`/`answer`. The learner taps a German
+word and its matching translation to connect them; all pairs must be matched correctly to continue. Use this
+instead of a plain vocabulary-only step when introducing several new words at once (see above), or as a
+stand-alone review step recombining words from earlier in the course.
+
+Example:
+
+```json
+{
+  "exercise_type": "matching",
+  "words": [
+    { "german": "brauchen", "translation": "to need" },
+    { "german": "warum", "translation": "why" },
+    { "german": "bringen", "translation": "to bring" }
+  ]
+}
+```
+
 Never provide `say` without `answer`, or `answer` without `say`.
+
+CRITICAL: a word listed in a step's `words` must actually appear in THAT SAME step's own `answer` (or, for a
+vocabulary-only or matching step, in the very next step's `answer`) - never introduce a word the learner is
+never actually asked to use nearby. This matters most when `steps_per_lesson` is small (e.g. 3-5): there is no
+later step in the lesson to defer practice to, so a word that doesn't fit into immediate use in this short
+lesson should simply be left out of `words` rather than listed anyway. A mismatched word (e.g. introducing
+"Teil" when the step's own sentence and grammar target have nothing to do with it) is a hard error, not a
+minor imperfection.
 
 ---
 
@@ -891,6 +943,9 @@ Before returning the course, verify every lesson.
 - No unexpected low-frequency content word appears without a reason.
 - Known words are used as scaffolding.
 - New words recur multiple times.
+- Every word in a step's `words` is actually used in that step's (or the immediately following step's)
+  `answer` - a new word that has no connection to the sentence it's attached to is a hard failure, not a
+  stylistic nitpick, and must be removed or replaced before output.
 
 ## Grammar validation
 

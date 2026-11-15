@@ -182,7 +182,12 @@ export function showPatternConfirm(anchorEl, pattern, translation, onSave) {
   closeTranslationPicker();
   closeVerbLinkPicker();
 
-  patternEl = document.createElement('div');
+  // anchorEl may live in a different document than this module's own
+  // top-level `document` (e.g. a worksheet's same-origin iframe) -
+  // insertAdjacentElement below places this next to anchorEl wherever that
+  // is, so the element itself must belong to that same document too.
+  const ownerDoc = anchorEl.ownerDocument;
+  patternEl = ownerDoc.createElement('div');
   patternEl.className = 'patternConfirm';
   patternEl.innerHTML = `
     <span>AI-suggested pattern - edit if needed, then Save:</span>

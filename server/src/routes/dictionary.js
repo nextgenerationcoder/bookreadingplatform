@@ -3,7 +3,7 @@ import { db } from '../db.js';
 import { parseDictionaryText, importDictionaryEntries } from '../dictionaryImporter.js';
 import { translateWord } from '../translate.js';
 import { decrypt } from '../crypto.js';
-import { extractPhrasePattern } from '../llm.js';
+import { extractPhrasePattern, translateWordInContext } from '../llm.js';
 
 const router = Router();
 
@@ -98,6 +98,43 @@ router.post('/extract-pattern', async (req, res) => {
     res.json(result);
   } catch (err) {
     console.error('extract-pattern: AI call failed:', err);
+    res.status(502).json({ error: err.message });
+  }
+});
+
+// POST /api/dictionary/contextual-translate { word, sentence } -
+// clickableGermanText.js's "Ctrl/Cmd+Alt+click a word" action, for when the
+// dictionary's standalone gloss doesn't fit how the word is actually used
+// here. Uses the account's own Translation API key, same as extract-pattern
+// above. Returns a one-off translation for the client to show in the popup;
+// doesn't touch the shared dictionary table or the learner's saved
+// vocabulary - a context-specific sense isn't necessarily the right gloss
+// for every other occurrence of this word, so nothing here is persisted
+// automatically.
+router.post('/contextual-translate', async (req, res) => {
+  const { word, sentence } = req.body || {};
+  if (!word || typeof word !== 'string') {
+    return res.status(400).json({ error: 'word is required' });
+  }
+
+  const row = db.prepare('SELECT llm_provider, llm_api_key_enc FROM users WHERE id = ?').get(req.userId);
+  if (!row?.llm_provider || !row?.llm_api_key_enc) {
+    return res.status(400).json({ error: 'no Translation API key configured — add one in Settings first' });
+  }
+
+  let apiKey;
+  try {
+    apiKey = await decrypt(row.llm_api_key_enc);
+  } catch (err) {
+    console.error('contextual-translate: failed to decrypt Translation API key:', err);
+    return res.status(500).json({ error: 'Failed to read your Translation API key — try re-saving it in Settings.' });
+  }
+
+  try {
+    const translation = await translateWordInContext({ provider: row.llm_provider, apiKey, word, sentence: sentence || word });
+    res.json({ translation });
+  } catch (err) {
+    console.error('contextual-translate: AI call failed:', err);
     res.status(502).json({ error: err.message });
   }
 });

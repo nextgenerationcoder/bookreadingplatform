@@ -18,7 +18,7 @@ import { renderImportUrl } from './views/importUrl.js';
 import { renderLessonPlayer as renderInteractiveLessonPlayer } from './components/LessonPlayer.js';
 import { renderInterviewHome } from './views/interviewHome.js';
 import { renderAddInterviewLesson } from './views/addInterviewLesson.js';
-import { renderAddTextbook } from './views/addTextbook.js';
+import { renderWorksheets, renderWorksheetViewer } from './views/worksheets.js';
 import { renderInterviewShell, teardownInterviewShell } from './components/interviewSidebar.js';
 import { lesson1 } from './lessons/lesson1.js';
 import { lektion2 } from './lessons/lektion2.js';
@@ -90,7 +90,9 @@ function parseRoute() {
   if (interviewLessonMatch) return { view: 'reader', kind: 'learning', bookId: decodeURIComponent(interviewLessonMatch[1]) };
   if (hash === '/interview') return { view: 'interview' };
   if (hash === '/add-interview-lesson') return { view: 'addInterviewLesson' };
-  if (hash === '/add-textbook') return { view: 'addTextbook' };
+  if (hash === '/worksheets') return { view: 'worksheets' };
+  const worksheetMatch = hash.match(/^\/worksheets\/([^/]+)$/);
+  if (worksheetMatch) return { view: 'worksheetViewer', worksheetId: decodeURIComponent(worksheetMatch[1]) };
 
   const grammarLevelMatch = hash.match(/^\/courses\/(A1|A2|B1|B2|C1|C2)\/grammar$/);
   if (grammarLevelMatch) return { view: 'grammarLevel', level: grammarLevelMatch[1] };
@@ -159,9 +161,9 @@ function buildShell() {
         <a href="#/courses">Courses</a>
         <a href="#/interview">Interview</a>
         <a href="#/practice">Practice</a>
-        <a href="#/words">My Words</a>
+        <a href="#/words">To Learn</a>
         <a href="#/import-url">Import Text</a>
-        <a href="#/add-textbook">Add Textbook</a>
+        <a href="#/worksheets">Worksheets</a>
       </div>
       <button id="menuBtn" class="menuBtn" type="button" aria-label="Open menu">
         <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
@@ -251,7 +253,7 @@ async function renderInterviewLesson(host, courseId) {
 }
 
 async function route() {
-  const { view, kind, bookId, pageNumber, level, lessonId, courseId } = parseRoute();
+  const { view, kind, bookId, pageNumber, level, lessonId, courseId, worksheetId } = parseRoute();
   const navKey = kind ? `${view}:${kind}` : view;
   setActiveNav(navKey);
   const host = document.getElementById('viewHost');
@@ -270,8 +272,10 @@ async function route() {
   } else if (view === 'addInterviewLesson') {
     const contentHost = await renderInterviewShell(host, STATIC_INTERVIEW_LESSONS, null);
     renderAddInterviewLesson(contentHost);
-  } else if (view === 'addTextbook') {
-    await renderAddTextbook(host);
+  } else if (view === 'worksheets') {
+    await renderWorksheets(host);
+  } else if (view === 'worksheetViewer') {
+    await renderWorksheetViewer(host, worksheetId);
   } else if (view === 'addPages') {
     await renderAddPages(host, bookId, kind);
   } else if (view === 'editPage') {

@@ -102,6 +102,7 @@ export const api = {
   listPracticeCourses: () => get('/api/practice/courses'),
   getPracticeCourse: (courseId) => get(`/api/practice/courses/${encodeURIComponent(courseId)}`),
   generatePracticeCourse: (title) => post('/api/practice/generate', { title }),
+  deletePracticeCourse: (courseId) => del(`/api/practice/courses/${encodeURIComponent(courseId)}`),
 
   getDictionary: () => get('/api/dictionary'),
   importDictionary: (text) => post('/api/dictionary/import', { text }),
@@ -158,6 +159,16 @@ export const api = {
   // The opposite manual override - right-click menu's "Mark unknown".
   markWordUnknown: (german, persian) => post('/api/vocab/mark-unknown', { german, persian }),
 
+  // Forcibly overwrites a word's saved translation, unlike markWordKnown/
+  // markWordUnknown (which only fill persian in if blank) - used by
+  // clickableGermanText.js's Ctrl/Cmd+Alt+click to fix a wrong translation
+  // that was already saved.
+  updateWordTranslation: (german, persian) => post('/api/vocab/update-translation', { german, persian }),
+
+  // Removes a word/structure from My Words/To Learn entirely - the delete
+  // button on both the Words and Structure tabs (see myWords.js).
+  deleteVocabWord: (german) => del(`/api/vocab/${encodeURIComponent(german)}`),
+
   // Right-click menu's "Change translation" for a single word - reuses the
   // same "word = gloss" bulk-import parser the Add Words admin page uses
   // (see dictionaryImporter.js), just with one line, so it updates the
@@ -171,6 +182,11 @@ export const api = {
   // for the client to show in an editable confirm step before saving.
   extractPattern: (text, sentence, persian) => post('/api/dictionary/extract-pattern', { text, sentence, persian }),
 
+  // clickableGermanText.js's "Ctrl/Cmd+Alt+click" - a context-aware
+  // re-translation of one word, for when the dictionary's standalone gloss
+  // doesn't fit how it's used in this specific sentence.
+  contextualTranslate: (word, sentence) => post('/api/dictionary/contextual-translate', { word, sentence }),
+
   // words: string[] - returns { word: rank } for whichever of these words
   // are in the top 200k frequency list (see server/data/word-frequency.seed.json).
   getWordFrequency: (words) => post('/api/word-frequency/lookup', { words }),
@@ -180,23 +196,27 @@ export const api = {
   // key configured in Settings (same one PDF import uses).
   importPastedText: (text, title) => post('/api/import-url', { text, title }),
 
-  // Private interactive-textbook import (Step 1) - see
-  // server/src/textbookImporter.js and routes/textbooks.js.
-  importTextbookLesson: ({ textbookPdf, transcriptPdf, audioFiles, bookId, bookTitle, lessonNumber, lessonTitle, printedPageStart }) => {
+  // Worksheets: upload a self-contained HTML page and get it back exactly
+  // as uploaded, shown in an iframe - no parsing, see server/src/worksheets.js.
+  uploadWorksheet: (file, title) => {
     const fd = new FormData();
-    fd.append('textbookPdf', textbookPdf);
-    if (transcriptPdf) fd.append('transcriptPdf', transcriptPdf);
-    for (const file of audioFiles || []) fd.append('audio', file);
-    fd.append('bookId', bookId);
-    fd.append('bookTitle', bookTitle);
-    fd.append('lessonNumber', lessonNumber);
-    fd.append('lessonTitle', lessonTitle);
-    if (printedPageStart) fd.append('printedPageStart', printedPageStart);
-    return postForm('/api/textbooks/import', fd);
+    fd.append('file', file);
+    if (title) fd.append('title', title);
+    return postForm('/api/worksheets', fd);
   },
-  getTextbookImportStatus: (jobId) => get(`/api/textbooks/import/${jobId}`),
-  listTextbookExercises: (bookId, lessonNumber, onlyNeedsReview = false) =>
-    get(`/api/textbooks/${encodeURIComponent(bookId)}/lessons/${lessonNumber}/exercises${onlyNeedsReview ? '?needsReview=1' : ''}`),
-  updateTextbookExercise: (id, body) => patch(`/api/textbooks/exercises/${id}`, body),
-  textbookMediaUrl: (id) => `/api/textbooks/media/${id}`,
+  listWorksheets: () => get('/api/worksheets'),
+  worksheetViewUrl: (id) => `/api/worksheets/${id}/view`,
+  deleteWorksheet: (id) => del(`/api/worksheets/${id}`),
+
+  // Freely-placed notes (right-click -> "Notiz" anywhere in a worksheet).
+  listWorksheetNotes: (worksheetId) => get(`/api/worksheets/${worksheetId}/notes`),
+  createWorksheetNote: (worksheetId, blockIndex, charOffset, text) =>
+    post(`/api/worksheets/${worksheetId}/notes`, { blockIndex, charOffset, text }),
+  updateWorksheetNoteText: (worksheetId, noteId, text) => put(`/api/worksheets/${worksheetId}/notes/${noteId}`, { text }),
+  deleteWorksheetNote: (worksheetId, noteId) => del(`/api/worksheets/${worksheetId}/notes/${noteId}`),
+
+  // Backs the "/ai <question> --- " command typeable into any worksheet
+  // note (free-form or the worksheet's own static boxes) - see
+  // worksheets.js's parseAiCommand and routes/worksheets.js's /ask-ai.
+  askWorksheetAi: (question) => post('/api/worksheets/ask-ai', { question }),
 };
