@@ -90,7 +90,6 @@ function injectStyles(doc) {
     .patternConfirm .patternStatus { color: #777 }
     .faWordAi { cursor: pointer; border-bottom: 1px dotted #a9a9a9 }
     .faWordAi:hover { background: #f3f0ff }
-    .aiHighlight { background: #fff3b0; border-radius: 3px; transition: background 1.2s ease }
   `;
   doc.head.appendChild(style);
 }
@@ -305,7 +304,7 @@ function wireUpPersianWordLookup(doc, getFrameRect) {
           const selection = doc.getSelection();
           const hasSelection = selection && !selection.isCollapsed && selection.containsNode(span, true);
           const phrase = hasSelection ? selection.toString().trim() : token;
-          lookupPersianWord(doc, span, phrase || token, germanSentence, persianSentence, deFull, box, getFrameRect);
+          lookupPersianWord(doc, span, phrase || token, germanSentence, persianSentence, box, getFrameRect);
         });
         frag.appendChild(span);
       }
@@ -314,7 +313,7 @@ function wireUpPersianWordLookup(doc, getFrameRect) {
   }
 }
 
-async function lookupPersianWord(doc, anchorEl, persianPhrase, germanSentence, persianSentence, deFull, box, getFrameRect) {
+async function lookupPersianWord(doc, anchorEl, persianPhrase, germanSentence, persianSentence, box, getFrameRect) {
   const frameRect = getFrameRect ? getFrameRect() : undefined;
   showPopupFor(anchorEl, persianPhrase, 'در حال بررسی…', frameRect);
 
@@ -330,44 +329,30 @@ async function lookupPersianWord(doc, anchorEl, persianPhrase, germanSentence, p
     showPopupFor(anchorEl, persianPhrase, 'معادل مشخصی پیدا نشد', frameRect);
     return;
   }
-  showPopupFor(anchorEl, persianPhrase, german, frameRect);
 
-  // Reveal the sentence (if it's still covered) so the highlighted match
-  // below is actually visible, not just named in the popup - a real click
-  // on the box itself, so its own click handler (and the sliding-door
-  // animation) runs exactly as if the learner had clicked it.
-  if (box && !box.classList.contains('revealed')) box.click();
-  requestAnimationFrame(() => highlightGermanMatch(deFull, german));
+  // Shown the same way the worksheet's own "select a curated word" feature
+  // shows its answer - appended to .word-list, box switched to its
+  // word-mode styling - instead of revealing the full German sentence.
+  // Finding one word's meaning shouldn't give away the rest of the answer,
+  // which a full reveal would.
+  hidePopup();
+  appendToWordList(doc, box, german);
 }
 
-// Finds the shortest contiguous run of deFull's .word spans whose joined
-// text matches `answer` (case-insensitive, ignoring trailing punctuation -
-// the AI was asked for a verbatim substring, but a trailing "." it copied
-// along with the last word shouldn't break the match) and briefly
-// highlights it. A multi-word answer like "ein verbreitetes Phänomen"
-// spans several adjacent .word spans, which is exactly why this walks runs
-// of them rather than looking for one exact span.
-function highlightGermanMatch(deFull, answer) {
-  const spans = [...deFull.querySelectorAll('.word')];
-  const normalize = (s) => s.toLowerCase().replace(/[.,!?;:]+$/, '').trim();
-  const target = normalize(answer);
-  if (!target || !spans.length) return;
-
-  for (let start = 0; start < spans.length; start++) {
-    let joined = '';
-    for (let end = start; end < spans.length && end < start + 8; end++) {
-      joined = joined ? `${joined} ${spans[end].textContent}` : spans[end].textContent;
-      if (normalize(joined) === target) {
-        for (let i = start; i <= end; i++) {
-          spans[i].classList.add('aiHighlight');
-          setTimeout(() => spans[i].classList.remove('aiHighlight'), 3000);
-        }
-        spans[start].scrollIntoView({ behavior: 'smooth', block: 'center' });
-        return;
-      }
-      if (normalize(joined).length > target.length + 10) break; // overshot - no point extending this start further
-    }
-  }
+// Mirrors the worksheet's own renderWords() output for one entry (see
+// shared/worksheet.js), without needing access to its closured `state` -
+// this is a one-off AI-found entry, not a toggleable selection tied to a
+// particular .fa-word button, so it's just appended, never rebuilt from an
+// ids array the way a curated selection's list is.
+function appendToWordList(doc, box, text) {
+  const list = box?.querySelector('.word-list');
+  if (!list) return;
+  box.classList.add('word-mode');
+  box.classList.remove('revealed');
+  const span = doc.createElement('span');
+  span.textContent = text;
+  list.appendChild(span);
+  list.hidden = false;
 }
 
 function autoGrowTextarea(ta) {
