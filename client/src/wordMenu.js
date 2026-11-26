@@ -90,6 +90,7 @@ export function showTranslationPicker(faEl, label, onSave) {
     <span class="pickStatus"></span>
   `;
   faEl.insertAdjacentElement('afterend', pickerEl);
+  pickerEl.addEventListener('click', (e) => e.stopPropagation()); // see showPatternConfirm's own comment on this
 
   const statusEl = pickerEl.querySelector('.pickStatus');
   pickerEl.querySelector('.pickCancelBtn').onclick = () => closeTranslationPicker();
@@ -154,6 +155,7 @@ export function showVerbLinkPicker(sentenceEl, firstEl, label, onPick) {
     <button type="button" class="linkCancelBtn">Cancel</button>
   `;
   sentenceEl.querySelector('.de')?.insertAdjacentElement('afterend', linkBannerEl);
+  linkBannerEl.addEventListener('click', (e) => e.stopPropagation()); // see showPatternConfirm's own comment on this
 
   linkBannerEl.querySelector('.linkCancelBtn').onclick = () => closeVerbLinkPicker();
 
@@ -200,6 +202,12 @@ export function showPatternConfirm(anchorEl, pattern, translation, onSave) {
     <span class="patternStatus"></span>
   `;
   anchorEl.insertAdjacentElement('afterend', patternEl);
+  // anchorEl can be a worksheet/course page's own text block, which may sit
+  // inside a container with its OWN click behavior (e.g. a Sprechen
+  // worksheet's reveal-box, which toggles open/closed on any click inside
+  // it) - without this, editing the pattern fields or clicking Save/Cancel
+  // bubbles up and triggers that, instead of just interacting with this box.
+  patternEl.addEventListener('click', (e) => e.stopPropagation());
 
   const patternInput = patternEl.querySelector('.patternInput');
   const translationInput = patternEl.querySelector('.patternTranslationInput');

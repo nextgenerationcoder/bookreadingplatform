@@ -355,6 +355,28 @@ function appendToWordList(doc, box, text) {
   list.hidden = false;
 }
 
+// The Sprechen kit's own "Learn" section (pick a word via a .fa-word
+// click or "Extract pattern", then confirm it with the ✓/✕ buttons that
+// show up below) is entirely local to the worksheet - it only moves the
+// candidate between its own in-page `pending`/`saved` lists, persisted to
+// this browser's localStorage, with no concept of this app's real To
+// Learn list at all. The kit's own engine already anticipates exactly
+// this gap: it dispatches a `worksheet:learn-decision` CustomEvent (see
+// shared/worksheet.js's `decide()`) specifically so a host app can hook
+// in its own save - this is that hook. Confirming "بله" (save) calls the
+// same markWordUnknown the rest of the app already uses for "add to To
+// Learn" (status 'learning', not 'learned' - a word just confirmed here
+// isn't mastered yet); "خیر" (dismiss) does nothing extra, matching the
+// kit's own behavior of just dropping the candidate.
+function wireUpLearnDecisionBridge(doc) {
+  doc.addEventListener('worksheet:learn-decision', (e) => {
+    const { item, decision } = e.detail || {};
+    const german = item?.de?.trim();
+    if (decision !== 'save' || !german) return;
+    api.markWordUnknown(german, item.fa || '').catch(() => {});
+  });
+}
+
 function autoGrowTextarea(ta) {
   ta.style.height = 'auto';
   ta.style.height = `${ta.scrollHeight + 2}px`;
@@ -803,6 +825,7 @@ export function applyClickableTextInsideFrame(iframe, callbacks) {
     }
 
     wireUpPersianWordLookup(doc, getFrameRect);
+    wireUpLearnDecisionBridge(doc);
 
     // popup.js's own "click outside a .word closes the popup" listener is
     // registered on THIS document only - a click inside the iframe's
