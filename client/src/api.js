@@ -37,6 +37,17 @@ async function patch(url, body) {
   return res.json();
 }
 
+async function put(url, body) {
+  const res = await fetch(url, {
+    method: 'PUT',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) throw new Error(await extractError(res));
+  return res.json();
+}
+
 async function del(url) {
   const res = await fetch(url, { method: 'DELETE', credentials: 'include' });
   if (!res.ok) throw new Error(await extractError(res));
@@ -93,6 +104,38 @@ export const api = {
   appendToCourse: (courseId, text) => post(`/api/courses/${courseId}/append`, { text }),
   renameCourse: (courseId, title) => patch(`/api/courses/${courseId}`, { title }),
   deleteCoursePage: (courseId, pageNumber) => del(`/api/courses/${courseId}/pages/${pageNumber}`),
+
+  // HTML-type course pages - same "upload your own HTML" idea as
+  // worksheets (see server/src/routes/courses.js), reused so a course page
+  // can get the same clickable-word/"Notiz"/"Extract pattern" interactivity.
+  createCourseFromHtml: (file, { courseId, title, level, pageNumber, chapter }) => {
+    const fd = new FormData();
+    fd.append('file', file);
+    fd.append('courseId', courseId);
+    fd.append('title', title);
+    fd.append('level', level);
+    fd.append('pageNumber', pageNumber);
+    fd.append('chapter', chapter || '');
+    return postForm('/api/courses/html', fd);
+  },
+  addCourseHtmlPage: (courseId, file, { pageNumber, chapter }) => {
+    const fd = new FormData();
+    fd.append('file', file);
+    fd.append('pageNumber', pageNumber);
+    fd.append('chapter', chapter || '');
+    return postForm(`/api/courses/${courseId}/pages/html`, fd);
+  },
+  coursePageViewUrl: (courseId, pageNumber) => `/api/courses/${courseId}/pages/${pageNumber}/view`,
+
+  // Freely-placed notes (right-click -> "Notiz" on an HTML course page) -
+  // same shape as the worksheet notes below, just keyed by (courseId, pageNumber).
+  listCoursePageNotes: (courseId, pageNumber) => get(`/api/courses/${courseId}/pages/${pageNumber}/notes`),
+  createCoursePageNote: (courseId, pageNumber, blockIndex, charOffset, text) =>
+    post(`/api/courses/${courseId}/pages/${pageNumber}/notes`, { blockIndex, charOffset, text }),
+  updateCoursePageNoteText: (courseId, pageNumber, noteId, text) =>
+    put(`/api/courses/${courseId}/pages/${pageNumber}/notes/${noteId}`, { text }),
+  deleteCoursePageNote: (courseId, pageNumber, noteId) =>
+    del(`/api/courses/${courseId}/pages/${pageNumber}/notes/${noteId}`),
 
   getGrammarLevels: () => get('/api/grammar/levels'),
   listGrammarLessons: (level) => get(`/api/grammar${level ? `?level=${encodeURIComponent(level)}` : ''}`),
@@ -219,4 +262,21 @@ export const api = {
   // note (free-form or the worksheet's own static boxes) - see
   // worksheets.js's parseAiCommand and routes/worksheets.js's /ask-ai.
   askWorksheetAi: (question) => post('/api/worksheets/ask-ai', { question }),
+
+  // Office roleplay game (see docs/office-game.md) - the client only ever
+  // sends a choice INDEX, never scene content; the current scene/choices
+  // live server-side (see routes/game.js's pending_json).
+  startGame: () => post('/api/game/start', {}),
+  getCurrentGame: () => get('/api/game/current'),
+  chooseGameOption: (choice) => post('/api/game/choose', { choice }),
+
+  // Skill checks ("Probe!") - answers[i] is a string for translate/
+  // scramble, or an array of {german, persian} pairs for matching.
+  submitSkillCheckAnswers: (answers) => post('/api/game/skill-check-answer', { answers }),
+
+  // The game page's "Notiz hinzufügen" note - same "/ai ... ---" AI call as
+  // worksheets' askWorksheetAi, except the server also feeds it the
+  // current scene/choices as context (never tags/numbers - see
+  // routes/game.js's /ask-ai).
+  askGameAi: (question) => post('/api/game/ask-ai', { question }),
 };

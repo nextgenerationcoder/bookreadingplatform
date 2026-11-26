@@ -32,54 +32,98 @@ export async function renderEditPage(host, bookId, pageNumber, kind = 'book') {
     return;
   }
 
+  const isHtmlPage = isCourse && Boolean(page.html);
+
   host.innerHTML = `
     <div class="formPage">
       <a href="${contentHref}">← Back to "${escapeHtml(book.title)}"</a>
       <h1>Edit page ${pageNumber}</h1>
-      <p class="hint">
-        Edit the text below and save to replace this page, or delete it entirely. Deleting cannot
-        be undone.
-      </p>
-      <textarea id="pageText" dir="ltr">${escapeHtml(pageToText(page))}</textarea>
-      <div class="formActions">
-        <button id="saveBtn">Save Changes</button>
-        <button id="deleteBtn" class="dangerButton" type="button">Delete Page</button>
-        <a href="${contentHref}">Cancel</a>
-      </div>
+      ${
+        isHtmlPage
+          ? `<p class="hint">
+               This is an HTML page. Upload a new file to replace it, or delete it entirely. Deleting
+               cannot be undone.
+             </p>
+             <input type="file" id="htmlFile" accept="text/html,.html">
+             <div class="formActions">
+               <button id="saveBtn">Replace</button>
+               <button id="deleteBtn" class="dangerButton" type="button">Delete Page</button>
+               <a href="${contentHref}">Cancel</a>
+             </div>`
+          : `<p class="hint">
+               Edit the text below and save to replace this page, or delete it entirely. Deleting cannot
+               be undone.
+             </p>
+             <textarea id="pageText" dir="ltr">${escapeHtml(pageToText(page))}</textarea>
+             <div class="formActions">
+               <button id="saveBtn">Save Changes</button>
+               <button id="deleteBtn" class="dangerButton" type="button">Delete Page</button>
+               <a href="${contentHref}">Cancel</a>
+             </div>`
+      }
       <div id="editStatus" class="importStatus"></div>
     </div>
   `;
 
-  const textarea = host.querySelector('#pageText');
   const status = host.querySelector('#editStatus');
   const saveBtn = host.querySelector('#saveBtn');
   const deleteBtn = host.querySelector('#deleteBtn');
 
-  saveBtn.onclick = async () => {
-    const text = textarea.value.trim();
-    if (!text) {
-      status.textContent = 'Page text cannot be empty — use Delete Page instead if you want to remove it.';
-      status.className = 'importStatus error';
-      return;
-    }
-    saveBtn.disabled = true;
-    deleteBtn.disabled = true;
-    status.textContent = 'Saving…';
-    status.className = 'importStatus';
-    try {
-      await appendContent(bookId, text);
-      status.textContent = 'Saved.';
-      status.className = 'importStatus success';
-      setTimeout(() => {
-        window.location.hash = contentHref;
-      }, 700);
-    } catch (err) {
-      status.textContent = `Error: ${err.message}`;
-      status.className = 'importStatus error';
-      saveBtn.disabled = false;
-      deleteBtn.disabled = false;
-    }
-  };
+  if (isHtmlPage) {
+    const fileInput = host.querySelector('#htmlFile');
+    saveBtn.onclick = async () => {
+      const file = fileInput.files[0];
+      if (!file) {
+        status.textContent = 'Choose a replacement HTML file first.';
+        status.className = 'importStatus error';
+        return;
+      }
+      saveBtn.disabled = true;
+      deleteBtn.disabled = true;
+      status.textContent = 'Saving…';
+      status.className = 'importStatus';
+      try {
+        await api.addCourseHtmlPage(bookId, file, { pageNumber, chapter: page.chapter || '' });
+        status.textContent = 'Saved.';
+        status.className = 'importStatus success';
+        setTimeout(() => {
+          window.location.hash = contentHref;
+        }, 700);
+      } catch (err) {
+        status.textContent = `Error: ${err.message}`;
+        status.className = 'importStatus error';
+        saveBtn.disabled = false;
+        deleteBtn.disabled = false;
+      }
+    };
+  } else {
+    const textarea = host.querySelector('#pageText');
+    saveBtn.onclick = async () => {
+      const text = textarea.value.trim();
+      if (!text) {
+        status.textContent = 'Page text cannot be empty — use Delete Page instead if you want to remove it.';
+        status.className = 'importStatus error';
+        return;
+      }
+      saveBtn.disabled = true;
+      deleteBtn.disabled = true;
+      status.textContent = 'Saving…';
+      status.className = 'importStatus';
+      try {
+        await appendContent(bookId, text);
+        status.textContent = 'Saved.';
+        status.className = 'importStatus success';
+        setTimeout(() => {
+          window.location.hash = contentHref;
+        }, 700);
+      } catch (err) {
+        status.textContent = `Error: ${err.message}`;
+        status.className = 'importStatus error';
+        saveBtn.disabled = false;
+        deleteBtn.disabled = false;
+      }
+    };
+  }
 
   deleteBtn.onclick = async () => {
     if (!window.confirm(`Delete page ${pageNumber} from "${book.title}"? This cannot be undone.`)) {

@@ -3,6 +3,7 @@ import { getDictionary, normalizeWord } from '../state.js';
 import { showPopupFor, hidePopup } from '../popup.js';
 import { findSeparableCompounds, SEPARABLE_PREFIX_SET, likelyInfinitive } from '../separableVerbs.js';
 import { showWordMenu, showTranslationPicker, closeTranslationPicker, showVerbLinkPicker, closeVerbLinkPicker, showPatternConfirm, closePatternConfirm } from '../wordMenu.js';
+import { applyClickableTextInsideFrame } from './worksheets.js';
 
 const TOKEN_RE = /[A-Za-zÀ-ÖØ-öø-ÿ'’-]+|[^A-Za-zÀ-ÖØ-öø-ÿ'’-]+/g;
 const NO_GLOSS = 'Not yet in the dictionary.';
@@ -102,9 +103,9 @@ export async function renderReader(host, bookId, kind = 'book') {
       <button id="nextSentenceBtn" type="button" title="Next sentence">⏭</button>
       <span id="ttsStatus" class="importStatus"></span>
     </div>
-    <div class="hint">Tap any German word to see its meaning. Words you tap are saved automatically.</div>
+    <div class="hint" id="wordHint">Tap any German word to see its meaning. Words you tap are saved automatically.</div>
     <div id="pageHost"></div>
-    <div class="pageFinishBar">
+    <div class="pageFinishBar" id="pageFinishBar">
       <button id="finishPageBtn" type="button">✓ Finish Page</button>
       <span id="finishPageStatus" class="importStatus"></span>
     </div>
@@ -118,6 +119,9 @@ export async function renderReader(host, bookId, kind = 'book') {
   const gotoPageStatus = host.querySelector('#gotoPageStatus');
   const editPageLink = host.querySelector('#editPageLink');
   const pageHost = host.querySelector('#pageHost');
+  const wordHint = host.querySelector('#wordHint');
+  const ttsBar = host.querySelector('.ttsBar');
+  const pageFinishBar = host.querySelector('#pageFinishBar');
   const playPauseBtn = host.querySelector('#playPauseBtn');
   const prevSentenceBtn = host.querySelector('#prevSentenceBtn');
   const nextSentenceBtn = host.querySelector('#nextSentenceBtn');
@@ -347,27 +351,43 @@ export async function renderReader(host, bookId, kind = 'book') {
     pageHost.innerHTML = '';
     wordIndexCounter = 0;
     lastCommittedIndex = -1;
-    const section = document.createElement('section');
-    section.className = 'page';
 
-    const header = document.createElement('header');
-    header.className = 'pageHeader';
-    header.innerHTML = `<span>${page.chapter || ''}</span><strong>Seite ${page.page}</strong>`;
-    section.appendChild(header);
+    // An HTML-type course page (see courseImporter.js's course_pages.html
+    // comment) has no .word spans / sentences of its own to read aloud or
+    // "Finish Page" over - it's shown in an iframe instead, same as a
+    // worksheet, with the same clickable-word/"Notiz"/"Extract pattern"
+    // interactivity (see renderHtmlCoursePage below).
+    const isHtmlPage = isCourse && Boolean(page.html);
+    ttsBar.hidden = isHtmlPage;
+    wordHint.hidden = isHtmlPage;
+    pageFinishBar.hidden = isHtmlPage;
 
-    let lastChapter = page.chapter;
-    for (const sentence of page.sentences) {
-      if (sentence.chapter && sentence.chapter !== lastChapter) {
-        const divider = document.createElement('div');
-        divider.className = 'chapterDivider';
-        divider.textContent = sentence.chapter;
-        section.appendChild(divider);
-        lastChapter = sentence.chapter;
+    if (isHtmlPage) {
+      renderHtmlCoursePage(page);
+    } else {
+      const section = document.createElement('section');
+      section.className = 'page';
+
+      const header = document.createElement('header');
+      header.className = 'pageHeader';
+      header.innerHTML = `<span>${page.chapter || ''}</span><strong>Seite ${page.page}</strong>`;
+      section.appendChild(header);
+
+      let lastChapter = page.chapter;
+      for (const sentence of page.sentences) {
+        if (sentence.chapter && sentence.chapter !== lastChapter) {
+          const divider = document.createElement('div');
+          divider.className = 'chapterDivider';
+          divider.textContent = sentence.chapter;
+          section.appendChild(divider);
+          lastChapter = sentence.chapter;
+        }
+        section.appendChild(renderSentence(sentence, page.page));
       }
-      section.appendChild(renderSentence(sentence, page.page));
+
+      pageHost.appendChild(section);
     }
 
-    pageHost.appendChild(section);
     window.scrollTo({ top: 0, behavior: 'instant' });
     hidePopup();
 
@@ -375,6 +395,28 @@ export async function renderReader(host, bookId, kind = 'book') {
     finishPageStatus.className = 'importStatus';
 
     api.setProgress(bookId, page.page).catch(() => {});
+  }
+
+  // Shown exactly like a worksheet (same sandboxed same-origin iframe, same
+  // applyClickableTextInsideFrame pass once it loads) - see
+  // worksheets.js's renderWorksheetViewer for the original of this.
+  function renderHtmlCoursePage(page) {
+    const iframe = document.createElement('iframe');
+    iframe.className = 'coursePageFrame';
+    iframe.src = api.coursePageViewUrl(bookId, page.page);
+    iframe.sandbox = 'allow-scripts allow-forms allow-same-origin allow-modals allow-popups';
+    iframe.title = 'Course page';
+    iframe.addEventListener('load', () =>
+      applyClickableTextInsideFrame(iframe, {
+        listNotes: () => api.listCoursePageNotes(bookId, page.page),
+        createNote: (blockIndex, charOffset, text) => api.createCoursePageNote(bookId, page.page, blockIndex, charOffset, text),
+        updateNote: (noteId, text) => api.updateCoursePageNoteText(bookId, page.page, noteId, text),
+        deleteNote: (noteId) => api.deleteCoursePageNote(bookId, page.page, noteId),
+        askAi: (question) => api.askWorksheetAi(question),
+        bookId,
+      })
+    );
+    pageHost.appendChild(iframe);
   }
 
   function renderSentence(sentence, pageNum) {

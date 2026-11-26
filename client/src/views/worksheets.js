@@ -183,7 +183,7 @@ function autoGrowTextarea(ta) {
 // worksheets' stored HTML, so free-form notes and a worksheet's own static
 // "+ Notiz" boxes behave identically. Strips any previous [KI]/[Fehler]
 // result line so re-asking replaces it instead of stacking duplicates.
-function parseAiCommand(raw) {
+export function parseAiCommand(raw) {
   const lines = raw.split('\n');
   const startIdx = lines.findIndex((l) => l.trim() === '/ai' || l.trim().startsWith('/ai '));
   if (startIdx === -1) return null;
@@ -197,10 +197,13 @@ function parseAiCommand(raw) {
 }
 
 // A freely-placed note: id is null until the first save completes (created
-// on first keystroke, then just updated/deleted after that) - worksheetId
-// is passed in from the caller since this module itself has no per-call
-// state of its own to remember it between renderWorksheets/renderWorksheetViewer calls.
-function buildFreeNote(doc, { worksheetId, id, text }) {
+// on first keystroke, then just updated/deleted after that).
+//
+// askAi/onCreate/onUpdate/onDelete let any view (worksheets, course pages,
+// game.js, ...) reuse this exact component - same "/ai ... ---" convention,
+// same textarea/Enter/delete UI - against its own backing store and its own
+// AI call.
+export function buildFreeNote(doc, { id, text, askAi, onCreate, onUpdate, onDelete }) {
   const wrap = doc.createElement('div');
   wrap.className = 'freeNote';
   wrap.innerHTML = `
@@ -219,11 +222,10 @@ function buildFreeNote(doc, { worksheetId, id, text }) {
   async function save() {
     try {
       if (!noteId) {
-        const meta = wrap._noteMeta;
-        const result = await api.createWorksheetNote(worksheetId, meta.blockIndex, meta.charOffset, textarea.value);
-        noteId = result.id;
+        const result = await onCreate(textarea.value);
+        noteId = result?.id ?? null;
       } else {
-        await api.updateWorksheetNoteText(worksheetId, noteId, textarea.value);
+        await onUpdate(noteId, textarea.value);
       }
     } catch {
       // best-effort - the note stays visible either way, just may not
@@ -253,7 +255,7 @@ function buildFreeNote(doc, { worksheetId, id, text }) {
     enterBtn.textContent = '…';
     let resultLine;
     try {
-      const { answer } = await api.askWorksheetAi(parsed.question);
+      const { answer } = await askAi(parsed.question);
       resultLine = `[KI] ${answer}`;
     } catch (e) {
       resultLine = `[Fehler: ${e.message}]`;
@@ -273,7 +275,7 @@ function buildFreeNote(doc, { worksheetId, id, text }) {
     wrap.remove();
     if (noteId) {
       try {
-        await api.deleteWorksheetNote(worksheetId, noteId);
+        await onDelete(noteId);
       } catch {
         // already removed from view; a failed delete just leaves an orphan
         // row the learner won't see again unless they look it up directly
@@ -296,10 +298,10 @@ function buildFreeNote(doc, { worksheetId, id, text }) {
 // since without them a later right-click landing in text that comes AFTER
 // an already-saved note would resolve to no block at all (see
 // wireUpAddNoteContextMenu's blockMeta).
-async function applySavedNotes(doc, worksheetId, blocks) {
+async function applySavedNotes(doc, blocks, callbacks) {
   let notes;
   try {
-    ({ notes } = await api.listWorksheetNotes(worksheetId));
+    ({ notes } = await callbacks.listNotes());
   } catch {
     return [];
   }
@@ -315,7 +317,13 @@ async function applySavedNotes(doc, worksheetId, blocks) {
     const sorted = [...notesForBlock].sort((a, b) => b.charOffset - a.charOffset);
     for (const note of sorted) {
       if (!currentBlock) break;
-      const noteEl = buildFreeNote(doc, { worksheetId, id: note.id, text: note.text });
+      const noteEl = buildFreeNote(doc, {
+        id: note.id,
+        text: note.text,
+        askAi: callbacks.askAi,
+        onUpdate: callbacks.updateNote,
+        onDelete: callbacks.deleteNote,
+      });
       currentBlock = splitBlockAtOffset(doc, currentBlock, note.charOffset, noteEl);
       const afterEl = noteEl.nextSibling;
       if (afterEl && afterEl.nodeType === 1 && afterEl.textContent.trim()) {
@@ -359,7 +367,7 @@ function getLineRects(doc, el) {
 // where the click landed, regardless of its horizontal position within
 // that gap - see getLineRects() above. Clicking above the first line or
 // below the last line of a block puts the note before/after that whole block.
-function wireUpAddNoteContextMenu(doc, iframe, worksheetId, blocks, extraFragments = [], dictionary) {
+function wireUpAddNoteContextMenu(doc, iframe, blocks, extraFragments = [], dictionary, callbacks) {
   const blockIndexOf = new Map(blocks.map((el, i) => [el, i]));
   // When a block gets split (by a saved note on load, or a new one added
   // here), the resulting pieces need to still resolve back to the ORIGINAL
@@ -456,8 +464,14 @@ function wireUpAddNoteContextMenu(doc, iframe, worksheetId, blocks, extraFragmen
 
         const meta = blockMeta.get(blockEl);
         const globalOffset = meta.baseOffset + localOffset;
-        const noteEl = buildFreeNote(doc, { worksheetId, id: null, text: '' });
-        noteEl._noteMeta = { blockIndex: meta.index, charOffset: globalOffset };
+        const noteEl = buildFreeNote(doc, {
+          id: null,
+          text: '',
+          askAi: callbacks.askAi,
+          onCreate: (text) => callbacks.createNote(meta.index, globalOffset, text),
+          onUpdate: callbacks.updateNote,
+          onDelete: callbacks.deleteNote,
+        });
 
         const remainder = splitBlockAtOffset(doc, blockEl, localOffset, noteEl);
         if (remainder) {
@@ -515,12 +529,22 @@ function startExtractPatternInWorksheet(doc, anchorEl, text, dictionary) {
     });
 }
 
-function textareaFocus(noteWrap) {
+export function textareaFocus(noteWrap) {
   const ta = noteWrap.querySelector('.freeNoteBox');
   ta?.focus();
 }
 
-function applyClickableTextInsideFrame(iframe, worksheetId) {
+// Reusable across any "show this stored HTML with Worksheet-style
+// interactivity" view (currently: worksheets themselves, and HTML-type
+// course pages - see reader.js). `callbacks` supplies the backing store and
+// AI call so this stays agnostic of which one it's talking to:
+//   - listNotes() => Promise<{ notes }>
+//   - createNote(blockIndex, charOffset, text) => Promise<{ id }>
+//   - updateNote(noteId, text) => Promise<void>
+//   - deleteNote(noteId) => Promise<void>
+//   - askAi(question) => Promise<{ answer }>
+//   - bookId: passed through to clickableGermanText.js's word-click options
+export function applyClickableTextInsideFrame(iframe, callbacks) {
   let doc;
   try {
     doc = iframe.contentDocument;
@@ -538,8 +562,8 @@ function applyClickableTextInsideFrame(iframe, worksheetId) {
     // anything below touches the DOM - block indices/offsets are only
     // reproducible if computed against the worksheet exactly as uploaded.
     const blocks = computeBlocks(doc);
-    const extraFragments = await applySavedNotes(doc, worksheetId, blocks);
-    wireUpAddNoteContextMenu(doc, iframe, worksheetId, blocks, extraFragments, dictionary);
+    const extraFragments = await applySavedNotes(doc, blocks, callbacks);
+    wireUpAddNoteContextMenu(doc, iframe, blocks, extraFragments, dictionary, callbacks);
 
     // Some AI-made worksheets build their OWN "click a word to mark it"
     // feature site-wide, using the exact same class name ("word") this app
@@ -566,7 +590,7 @@ function applyClickableTextInsideFrame(iframe, worksheetId) {
     for (const textNode of textNodes) {
       const span = doc.createElement('span');
       textNode.parentNode.replaceChild(span, textNode);
-      renderClickableGermanText(span, textNode.nodeValue, { dictionary, getFrameRect, bookId: 'worksheet', page: 0 });
+      renderClickableGermanText(span, textNode.nodeValue, { dictionary, getFrameRect, bookId: callbacks.bookId || 'worksheet', page: 0 });
     }
 
     // Add our translate/save/context actions on TOP of each pre-existing
@@ -584,7 +608,7 @@ function applyClickableTextInsideFrame(iframe, worksheetId) {
       attachWordClickHandlers(el, word, {
         dictionary,
         getFrameRect,
-        bookId: 'worksheet',
+        bookId: callbacks.bookId || 'worksheet',
         page: 0,
         sentence: context ? context.textContent.trim() : word,
       });
@@ -694,7 +718,16 @@ export async function renderWorksheetViewer(host, worksheetId) {
   `;
   const page = host.querySelector('.wsViewerPage');
   const iframe = host.querySelector('.wsViewerFrame');
-  iframe.addEventListener('load', () => applyClickableTextInsideFrame(iframe, worksheetId));
+  iframe.addEventListener('load', () =>
+    applyClickableTextInsideFrame(iframe, {
+      listNotes: () => api.listWorksheetNotes(worksheetId),
+      createNote: (blockIndex, charOffset, text) => api.createWorksheetNote(worksheetId, blockIndex, charOffset, text),
+      updateNote: (noteId, text) => api.updateWorksheetNoteText(worksheetId, noteId, text),
+      deleteNote: (noteId) => api.deleteWorksheetNote(worksheetId, noteId),
+      askAi: (question) => api.askWorksheetAi(question),
+      bookId: 'worksheet',
+    })
+  );
 
   // Pins the viewer to start exactly where the app's own top nav ends,
   // instead of hardcoding its height (which varies - it wraps onto a

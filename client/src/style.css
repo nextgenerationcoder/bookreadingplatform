@@ -172,6 +172,47 @@ button:disabled { opacity: .35 }
 .matchingChip.matchingChipSelected { border-color: var(--accent); background: #eef3f8 }
 .matchingChip.matchingChipMatched { background: #eaf7ec; border-color: #b8dfc0; color: #1a7a3d; opacity: 0.8 }
 
+.gameOutcome { font-style: italic; color: var(--muted); padding: 10px 14px; border-left: 3px solid var(--line); margin: 10px 0 }
+.gameScene { font-size: 16px; line-height: 1.7; white-space: pre-wrap; margin: 10px 0 16px }
+.gameChoices { display: flex; flex-direction: column; gap: 10px }
+.gameChoiceBtn { padding: 12px 16px; border-radius: 10px; border: 1px solid var(--line); background: var(--paper); color: var(--ink); cursor: pointer; font-size: 15px; text-align: left }
+.gameChoiceBtn:hover { border-color: var(--accent) }
+.gameChoiceBtn.gameChoiceDisabled { opacity: 0.6; cursor: default; pointer-events: none }
+.gameTargetWord { text-decoration: underline; text-decoration-style: dotted; text-decoration-color: var(--accent) }
+
+.gameStats { display: flex; flex-direction: column; gap: 8px; margin: 10px 0 16px }
+.gameStatRow { display: flex; align-items: center; gap: 8px; position: relative }
+.gameStatLabel { width: 90px; flex: none; font-size: 13px; color: var(--muted) }
+.gameBarTrack { flex: 1; height: 10px; border-radius: 6px; background: var(--line); overflow: hidden }
+.gameBarFill { height: 100%; border-radius: 6px; transition: width 0.4s ease }
+.gameBarXp { background: #2a5c8a }
+.gameBarChef { background: #d98c2b }
+.gameStatValue { width: 32px; flex: none; text-align: right; font-size: 13px; color: var(--muted) }
+.gameFloatAnchor { position: relative; width: 0 }
+.gameFloatingDelta {
+  position: absolute; top: -6px; right: 0; font-size: 13px; font-weight: 700;
+  animation: gameFloatUp 1.6s ease forwards; pointer-events: none; white-space: nowrap;
+}
+.gameFloatingDeltaUp { color: #1a7a3d }
+.gameFloatingDeltaDown { color: #b3261e }
+@keyframes gameFloatUp {
+  0% { opacity: 1; transform: translateY(0); }
+  100% { opacity: 0; transform: translateY(-18px); }
+}
+
+.skillCheckExercise { padding: 14px; border: 1px solid var(--line); border-radius: 10px; margin-bottom: 12px; background: #fffaf0 }
+
+/* Freely-placed note ("Notiz hinzufügen") - same look worksheets.js injects
+   into its own iframe document (see its injectStyles), duplicated here for
+   views (like game.js) that render directly into the main document. */
+.freeNote { margin: 10px 0; border: 1px solid #e8d28a; background: #fffbea; border-radius: 8px; padding: 8px 10px; display: block }
+.freeNoteBar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px }
+.freeNoteLabel { font-size: 12px; color: #8a6d1f; font-weight: 600 }
+.freeNoteDelete { background: none; border: none; cursor: pointer; font-size: 13px; color: #8a6d1f; padding: 0 4px }
+.freeNoteBox { width: 100%; resize: none; overflow: hidden; border: 1px solid #e8d28a; border-radius: 5px; padding: 6px 8px; font: inherit; box-sizing: border-box; background: #fffef8 }
+.freeNoteEnter { margin-top: 6px; font-size: 13px; padding: 3px 10px; border-radius: 6px; border: 1px solid #e8d28a; background: #fff; color: #8a6d1f; cursor: pointer }
+.freeNoteEnter:disabled { opacity: 0.6; cursor: default }
+
 @media (max-width: 600px) {
   .microStep { padding: 16px 14px; border-radius: 14px }
   .newElementText { font-size: 18px }
@@ -326,3 +367,9 @@ header.pageHeader { display: flex; justify-content: space-between; align-items: 
    position:fixed;inset:0 full-screen overlay was - see renderWorksheetViewer. */
 .wsViewerPage { position: fixed; left: 0; right: 0; bottom: 0; display: flex; flex-direction: column; background: #fff; z-index: 5 }
 .wsViewerFrame { flex: 1; border: none; width: 100%; }
+
+/* An HTML-type course page, shown inline (in normal page flow, inside the
+   reader's own toolbar/page-nav chrome) rather than full-screen like a
+   worksheet - needs its own explicit height since there's no flex parent
+   to stretch it. */
+.coursePageFrame { display: block; width: 100%; height: 80vh; border: none; }

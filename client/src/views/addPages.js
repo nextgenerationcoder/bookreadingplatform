@@ -44,6 +44,25 @@ export async function renderAddPages(host, bookId, kind = 'book') {
       <a href="${backHref}">${backLabel}</a>
       <h1>Add pages to "${escapeHtml(book.title)}"</h1>
 
+      ${
+        isCourse
+          ? `<div class="ocrBox">
+               <p class="hint" style="padding-top:0">
+                 Or add a page as a self-contained HTML file (e.g. one an AI assistant made for you) -
+                 shown exactly as uploaded, with the same clickable-word/"Notiz"/"Extract pattern"
+                 interactivity as a worksheet.
+               </p>
+               <div class="ocrControls">
+                 <input type="file" id="htmlPageFile" accept="text/html,.html">
+                 <input type="number" id="htmlPageNumber" value="${lastPage + 1}" min="1" style="width:90px">
+                 <input type="text" id="htmlPageChapter" placeholder="Chapter (optional)">
+                 <button id="htmlPageBtn" type="button">Add HTML Page</button>
+               </div>
+               <div id="htmlPageStatus" class="importStatus"></div>
+             </div>`
+          : ''
+      }
+
       <div class="ocrBox">
         <p class="hint" style="padding-top:0">
           Upload up to ${MAX_PHOTOS} page photos at once — an AI reads each one directly and writes
@@ -105,6 +124,38 @@ export async function renderAddPages(host, bookId, kind = 'book') {
 
   if (!isCourse) {
     wirePdfImportSection(host, { fixedBookId: bookId, defaultTitle: book.title });
+  }
+
+  const htmlPageBtn = host.querySelector('#htmlPageBtn');
+  if (htmlPageBtn) {
+    htmlPageBtn.onclick = async () => {
+      const file = host.querySelector('#htmlPageFile').files[0];
+      const htmlPageStatus = host.querySelector('#htmlPageStatus');
+      if (!file) {
+        htmlPageStatus.textContent = 'Choose an HTML file first.';
+        htmlPageStatus.className = 'importStatus error';
+        return;
+      }
+      const pageNumber = Number(host.querySelector('#htmlPageNumber').value) || lastPage + 1;
+      const chapter = host.querySelector('#htmlPageChapter').value.trim();
+
+      htmlPageBtn.disabled = true;
+      htmlPageStatus.textContent = 'Adding…';
+      htmlPageStatus.className = 'importStatus';
+      try {
+        const meta = await api.addCourseHtmlPage(bookId, file, { pageNumber, chapter });
+        htmlPageStatus.textContent = `Added — "${meta.title}" now has ${meta.pageCount} pages (up to page ${meta.lastPage}).`;
+        htmlPageStatus.className = 'importStatus success';
+        setTimeout(() => {
+          window.location.hash = contentHref;
+        }, 900);
+      } catch (err) {
+        htmlPageStatus.textContent = `Error: ${err.message}`;
+        htmlPageStatus.className = 'importStatus error';
+      } finally {
+        htmlPageBtn.disabled = false;
+      }
+    };
   }
 
   if (batchBtn) {

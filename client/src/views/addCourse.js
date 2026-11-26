@@ -17,6 +17,8 @@ CHAPTER: Lektion 1
 1: Noch eine Seite.
 یک صفحهٔ دیگر.`;
 
+const CEFR_LEVELS = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'];
+
 export function renderAddCourse(host, defaultLevel) {
   host.innerHTML = `
     <div class="formPage">
@@ -38,6 +40,28 @@ export function renderAddCourse(host, defaultLevel) {
         <a href="#/courses">Cancel</a>
       </div>
       <div id="importStatus" class="importStatus"></div>
+
+      <h2>Or create from an HTML page</h2>
+      <p class="hint" style="padding-top:0">
+        Upload a self-contained HTML page (e.g. one an AI assistant made for you) as the course's
+        first page - shown exactly as uploaded, with the same clickable-word/"Notiz"/"Extract pattern"
+        interactivity as a worksheet. More HTML (or text) pages can be added afterwards.
+      </p>
+      <div class="ocrBox">
+        <div class="ocrControls">
+          <input type="text" id="htmlCourseId" placeholder="course-id">
+          <input type="text" id="htmlCourseTitle" placeholder="Title">
+          <select id="htmlCourseLevel">
+            ${CEFR_LEVELS.map((lvl) => `<option value="${lvl}" ${lvl === defaultLevel ? 'selected' : ''}>${lvl}</option>`).join('')}
+          </select>
+          <input type="text" id="htmlCourseChapter" placeholder="Chapter (optional)">
+        </div>
+        <div class="ocrControls">
+          <input type="file" id="htmlCourseFile" accept="text/html,.html">
+          <button id="htmlCourseBtn" type="button">Create from HTML</button>
+        </div>
+        <div id="htmlCourseStatus" class="importStatus"></div>
+      </div>
     </div>
   `;
 
@@ -71,6 +95,44 @@ export function renderAddCourse(host, defaultLevel) {
       status.className = 'importStatus error';
     } finally {
       btn.disabled = false;
+    }
+  };
+
+  const htmlCourseBtn = host.querySelector('#htmlCourseBtn');
+  const htmlCourseStatus = host.querySelector('#htmlCourseStatus');
+  htmlCourseBtn.onclick = async () => {
+    const courseId = host.querySelector('#htmlCourseId').value.trim();
+    const title = host.querySelector('#htmlCourseTitle').value.trim();
+    const level = host.querySelector('#htmlCourseLevel').value;
+    const chapter = host.querySelector('#htmlCourseChapter').value.trim();
+    const file = host.querySelector('#htmlCourseFile').files[0];
+
+    if (!courseId || !title) {
+      htmlCourseStatus.textContent = 'Course id and title are required.';
+      htmlCourseStatus.className = 'importStatus error';
+      return;
+    }
+    if (!file) {
+      htmlCourseStatus.textContent = 'Choose an HTML file first.';
+      htmlCourseStatus.className = 'importStatus error';
+      return;
+    }
+
+    htmlCourseBtn.disabled = true;
+    htmlCourseStatus.textContent = 'Creating…';
+    htmlCourseStatus.className = 'importStatus';
+    try {
+      const meta = await api.createCourseFromHtml(file, { courseId, title, level, pageNumber: 1, chapter });
+      htmlCourseStatus.textContent = `"${meta.title}" was added successfully.`;
+      htmlCourseStatus.className = 'importStatus success';
+      setTimeout(() => {
+        window.location.hash = `#/course/${encodeURIComponent(meta.id)}`;
+      }, 800);
+    } catch (err) {
+      htmlCourseStatus.textContent = `Error: ${err.message}`;
+      htmlCourseStatus.className = 'importStatus error';
+    } finally {
+      htmlCourseBtn.disabled = false;
     }
   };
 }

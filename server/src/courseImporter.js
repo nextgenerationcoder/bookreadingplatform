@@ -13,6 +13,7 @@
 //   <Persian translation>
 //   ...
 
+import crypto from 'node:crypto';
 import { db } from './db.js';
 
 export const CEFR_LEVELS = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'];
@@ -142,6 +143,80 @@ function replacePage(courseId, page) {
   }
 }
 
+// An HTML course page (see db.js's course_pages.html comment) replaces
+// whatever was at that page number before, same as replacePage() above -
+// no sentences get inserted for it.
+function replaceHtmlPage(courseId, pageNumber, chapter, html) {
+  db.prepare('DELETE FROM course_pages WHERE course_id = ? AND page_number = ?').run(courseId, pageNumber);
+  db.prepare(
+    'INSERT INTO course_pages (course_id, page_number, chapter, html) VALUES (?, ?, ?, ?)'
+  ).run(courseId, pageNumber, chapter || null, html);
+}
+
+// Creates (or replaces, if courseId already exists) a course whose first
+// page is an uploaded HTML page rather than bilingual sentence pairs - the
+// HTML-upload counterpart to saveImportedCourse() above. `lang` defaults to
+// de -> fa, matching parseCourseText's own default.
+export function createCourseFromHtml({ courseId, title, level, lang, pageNumber, chapter, html }) {
+  if (!CEFR_LEVELS.includes(level)) {
+    throw new Error(`LEVEL must be one of: ${CEFR_LEVELS.join(', ')}`);
+  }
+  const { source, target } = lang || { source: 'de', target: 'fa' };
+  const tx = db.transaction(() => {
+    db.prepare(
+      `INSERT INTO courses (id, level, title, source_lang, target_lang) VALUES (?, ?, ?, ?, ?)
+       ON CONFLICT(id) DO UPDATE SET level = excluded.level, title = excluded.title, source_lang = excluded.source_lang, target_lang = excluded.target_lang`
+    ).run(courseId, level, title, source, target);
+    replaceHtmlPage(courseId, pageNumber, chapter, html);
+  });
+  tx();
+  return courseMeta(courseId);
+}
+
+// Adds (or replaces) one HTML page on an already-existing course.
+export function addHtmlPageToCourse(courseId, { pageNumber, chapter, html }) {
+  const existing = courseMeta(courseId);
+  if (!existing) throw new Error(`Course "${courseId}" not found`);
+  replaceHtmlPage(courseId, pageNumber, chapter, html);
+  return courseMeta(courseId);
+}
+
+// --- Freely-placed notes (right-click -> "Notiz" on an HTML course page) -
+// See db.js's course_page_notes comment for what blockIndex/charOffset mean.
+
+function parseCourseNoteRow(row) {
+  return { id: row.id, blockIndex: row.block_index, charOffset: row.char_offset, text: row.text, createdAt: row.created_at };
+}
+
+export function listCoursePageNotes(userId, courseId, pageNumber) {
+  return db
+    .prepare('SELECT * FROM course_page_notes WHERE user_id = ? AND course_id = ? AND page_number = ? ORDER BY created_at ASC')
+    .all(userId, courseId, pageNumber)
+    .map(parseCourseNoteRow);
+}
+
+export function createCoursePageNote({ userId, courseId, pageNumber, blockIndex, charOffset, text }) {
+  const id = crypto.randomUUID();
+  db.prepare(
+    'INSERT INTO course_page_notes (id, user_id, course_id, page_number, block_index, char_offset, text, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
+  ).run(id, userId, courseId, pageNumber, blockIndex, charOffset, text || '', new Date().toISOString());
+  return id;
+}
+
+export function updateCoursePageNoteText(userId, courseId, pageNumber, noteId, text) {
+  const result = db
+    .prepare('UPDATE course_page_notes SET text = ? WHERE id = ? AND user_id = ? AND course_id = ? AND page_number = ?')
+    .run(text, noteId, userId, courseId, pageNumber);
+  return result.changes > 0;
+}
+
+export function deleteCoursePageNote(userId, courseId, pageNumber, noteId) {
+  const result = db
+    .prepare('DELETE FROM course_page_notes WHERE id = ? AND user_id = ? AND course_id = ? AND page_number = ?')
+    .run(noteId, userId, courseId, pageNumber);
+  return result.changes > 0;
+}
+
 export function saveImportedCourse(course) {
   const tx = db.transaction(() => {
     db.prepare(
@@ -181,6 +256,15 @@ export function deleteCoursePage(courseId, pageNumber) {
   return courseMeta(courseId);
 }
 
+// The raw HTML for one page, for GET /api/courses/:courseId/pages/:pageNumber/view
+// to serve back exactly as uploaded (same idea as worksheets' /:id/view).
+export function getCoursePageHtml(courseId, pageNumber) {
+  const row = db
+    .prepare('SELECT html FROM course_pages WHERE course_id = ? AND page_number = ?')
+    .get(courseId, pageNumber);
+  return row?.html || null;
+}
+
 export function renameCourse(courseId, title) {
   const result = db.prepare('UPDATE courses SET title = ? WHERE id = ?').run(title, courseId);
   if (result.changes === 0) throw new Error(`Course "${courseId}" not found`);
@@ -199,7 +283,7 @@ export function getCourse(courseId) {
   if (!meta) return null;
 
   const pages = db
-    .prepare('SELECT id, page_number, chapter FROM course_pages WHERE course_id = ? ORDER BY page_number')
+    .prepare('SELECT id, page_number, chapter, html FROM course_pages WHERE course_id = ? ORDER BY page_number')
     .all(courseId);
   const sentenceStmt = db.prepare(
     'SELECT num, de, fa, chapter FROM course_sentences WHERE page_id = ? ORDER BY num'
@@ -213,7 +297,8 @@ export function getCourse(courseId) {
     pages: pages.map((p) => ({
       page: p.page_number,
       chapter: p.chapter,
-      sentences: sentenceStmt.all(p.id),
+      html: p.html || null,
+      sentences: p.html ? [] : sentenceStmt.all(p.id),
     })),
   };
 }

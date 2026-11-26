@@ -198,6 +198,40 @@ if (!pdfImportJobColumns.includes('finished_at')) {
   db.exec('ALTER TABLE pdf_import_jobs ADD COLUMN finished_at TEXT');
 }
 
+// A course page is either the original bilingual sentence-pair shape
+// (course_sentences rows, html left NULL) or a self-contained HTML page
+// (html set, no course_sentences rows) - the same "upload your own HTML"
+// feature worksheets.js offers, reused here so a course page can have the
+// same clickable-word/"Notiz"/"Extract pattern" interactivity. Stored
+// inline rather than on disk (unlike worksheets): course content is shared,
+// already DB-resident content like books/sentences, not a private per-user
+// upload.
+const coursePageColumns = db.prepare('PRAGMA table_info(course_pages)').all().map((c) => c.name);
+if (!coursePageColumns.includes('html')) {
+  db.exec('ALTER TABLE course_pages ADD COLUMN html TEXT');
+}
+
+// Freely-placed notes a learner adds anywhere in an HTML course page via
+// right-click -> "Notiz" - same feature and same block_index/char_offset
+// meaning as worksheet_notes (see that table's comment), just keyed by
+// (course_id, page_number) instead of a worksheet id, since a course page
+// gets replaced (deleted + re-inserted) by course_pages.id whenever its
+// content changes, but its page_number stays stable.
+db.exec(`
+  CREATE TABLE IF NOT EXISTS course_page_notes (
+    id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    course_id TEXT NOT NULL REFERENCES courses(id) ON DELETE CASCADE,
+    page_number INTEGER NOT NULL,
+    block_index INTEGER NOT NULL,
+    char_offset INTEGER NOT NULL,
+    text TEXT NOT NULL DEFAULT '',
+    created_at TEXT NOT NULL
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_course_page_notes_page ON course_page_notes(course_id, page_number, user_id);
+`);
+
 const userColumns = db.prepare('PRAGMA table_info(users)').all().map((c) => c.name);
 if (!userColumns.includes('llm_provider')) {
   db.exec('ALTER TABLE users ADD COLUMN llm_provider TEXT');
@@ -375,3 +409,69 @@ db.exec(`
 
   CREATE INDEX IF NOT EXISTS idx_worksheet_notes_worksheet ON worksheet_notes(worksheet_id, user_id);
 `);
+
+// Office roleplay game (see docs/office-game.md) - Step 2, the minimal
+// playable loop only (no XP/boss-opinion/vocab/exercises yet, see that
+// doc's "Planned mechanics"). state_json carries whatever persists ACROSS
+// turns (currently just a short running summary of the story, fed back to
+// the AI as context instead of replaying the whole history every turn -
+// see game/prompt.js); pending_json is the CURRENT scene+choices waiting
+// for the player's pick - the client is only ever sent this, and only
+// ever sends back a choice INDEX, never scene content, so there's no way
+// for a client-side bug or a tampered request to inject story text. turn
+// counts from 1. status is unused in Step 2 (always 'active') - reserved
+// for the later "boss opinion reaches 0 -> fired -> game over" mechanic.
+// "Neu anfangen" doesn't delete the old session, it just starts a new row -
+// GET /api/game/current always resolves to the most recently created one.
+db.exec(`
+  CREATE TABLE IF NOT EXISTS game_sessions (
+    id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL REFERENCES users(id),
+    state_json TEXT NOT NULL,
+    pending_json TEXT,
+    turn INTEGER NOT NULL DEFAULT 0,
+    status TEXT NOT NULL DEFAULT 'active',
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_game_sessions_user ON game_sessions(user_id, created_at);
+
+  -- Full turn history, one row per turn of a session - scene_json is that
+  -- turn's own {outcome, scene, choices} (the same shape pending_json held
+  -- while it was current), choice_index is which of the two the player
+  -- picked (NULL until they choose, e.g. for the latest/current turn),
+  -- and effects_json is reserved for the later numeric-mechanics tasks
+  -- (XP/boss-opinion deltas this turn caused) - NULL in Step 2.
+  CREATE TABLE IF NOT EXISTS game_turns (
+    session_id TEXT NOT NULL REFERENCES game_sessions(id) ON DELETE CASCADE,
+    turn INTEGER NOT NULL,
+    scene_json TEXT NOT NULL,
+    choice_index INTEGER,
+    effects_json TEXT,
+    created_at TEXT NOT NULL,
+    PRIMARY KEY (session_id, turn)
+  );
+
+  -- One row per request to an AI-calling game route (see game/rateLimit.js) -
+  -- purely a sliding-window rate-limit counter, not a usage/history log.
+  -- Rows older than the window are deleted by the limiter itself on every
+  -- check, so this table never grows past "recent calls per active user".
+  CREATE TABLE IF NOT EXISTS game_ai_calls (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id TEXT NOT NULL REFERENCES users(id),
+    called_at TEXT NOT NULL
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_game_ai_calls_user ON game_ai_calls(user_id, called_at);
+`);
+
+// game_sessions already existed in production before this column was added
+// (unlike game_ai_calls above, a brand-new table) - same ALTER-if-missing
+// pattern as every other column patch in this file. Counts CONSECUTIVE AI
+// call failures for this session (see game/ai.js's runGameTurnWithFallback);
+// reset to 0 on any successful turn, real or recovered-via-fallback.
+const gameSessionColumns = db.prepare('PRAGMA table_info(game_sessions)').all().map((c) => c.name);
+if (!gameSessionColumns.includes('ai_failure_count')) {
+  db.exec('ALTER TABLE game_sessions ADD COLUMN ai_failure_count INTEGER NOT NULL DEFAULT 0');
+}

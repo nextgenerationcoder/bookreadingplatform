@@ -8,6 +8,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { db } from './db.js';
 import { parseBookText, saveImportedBook } from './bookImporter.js';
+import { createCourseFromHtml, addHtmlPageToCourse } from './courseImporter.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const SEED_DICTIONARY = path.join(__dirname, '..', 'data', 'dictionary.seed.json');
@@ -15,6 +16,7 @@ const SEED_CONTENT_DIR = path.join(__dirname, '..', 'content');
 const WIKIDICT_SEED = path.join(__dirname, '..', 'data', 'wikidict-de-fa.json');
 const WORD_FREQUENCY_SEED = path.join(__dirname, '..', 'data', 'word-frequency.seed.json');
 const GRAMMAR_LESSONS_SEED = path.join(__dirname, '..', 'data', 'grammar-lessons.seed.json');
+const SPRECHEN_B1_TEIL1_DIR = path.join(__dirname, '..', 'content-courses', 'sprechen-b1-teil1');
 
 async function seedDictionary() {
   const { count } = db.prepare('SELECT COUNT(*) AS count FROM dictionary').get();
@@ -218,6 +220,88 @@ function cleanupOldA1Lektionen() {
   tx();
 }
 
+// B1's four skill sections (Hören/Reden/Sprechen/Schreiben) are each their
+// own course row, not a new taxonomy column - simplest fit for the
+// existing courses/course_pages schema, and each shows up as its own card
+// on the B1 course list. Guarded per-id (not just "table is empty" like
+// seedBooks above) so re-running this after a user has edited one of these
+// courses (renamed it, added/replaced pages) never overwrites that work -
+// it only ever fills in whichever of the four doesn't exist yet.
+const B1_SKILL_PLACEHOLDER_COURSES = [
+  { id: 'b1-hoeren', title: 'Hören' },
+  { id: 'b1-reden', title: 'Reden' },
+  { id: 'b1-schreiben', title: 'Schreiben' },
+];
+
+function placeholderSkillHtml(title) {
+  return `<!doctype html><html lang="fa" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>${title} · B1</title><style>body{background:#f0f6f7;color:#213841;font:16px/1.7 system-ui,Tahoma,sans-serif;max-width:650px;margin:auto;padding:40px 20px;text-align:center}h1{color:#075c70}</style></head><body><h1>${title}</h1><p>این بخش هنوز محتوایی ندارد - به‌زودی تکمیل می‌شود.</p></body></html>`;
+}
+
+async function seedB1SkillSections() {
+  for (const { id, title } of B1_SKILL_PLACEHOLDER_COURSES) {
+    const exists = db.prepare('SELECT 1 FROM courses WHERE id = ?').get(id);
+    if (exists) continue;
+    createCourseFromHtml({
+      courseId: id,
+      title,
+      level: 'B1',
+      lang: { source: 'de', target: 'fa' },
+      pageNumber: 1,
+      chapter: null,
+      html: placeholderSkillHtml(title),
+    });
+    console.log(`Seeded B1 skill section "${title}" (${id}).`);
+  }
+}
+
+// Sprechen Teil 1: 10 curated, self-contained HTML worksheets (one per
+// exam topic, each with its own embedded clickable-word/translation/
+// Struktur-pattern UI - see server/content-courses/sprechen-b1-teil1/ and
+// its own REVIEW_FIRST10_FA.md for how they were curated) - one page per
+// topic, in the exam booklet's own order, all under chapter "Teil 1".
+// Guarded on the course id already existing (same reasoning as the
+// placeholders above): never re-imports over a "b1-sprechen" a user has
+// since edited.
+const SPRECHEN_B1_TEIL1_TOPICS = [
+  'auswanderung',
+  'bio-essen',
+  'computer-fur-jeden-kursraum',
+  'computerspiele-sollte-man-computerspiele-spielen',
+  'online-einkauf-einkaufen-im-internet',
+  'einkaufszentrum-was-denken-sie-daruber',
+  'englisch-soll-man-englisch-lernen',
+  'extreme-sport-soll-man-extreme-sport-treiben',
+  'fertiggerichte-fertigessen-fastfood',
+  'mehrere-fremdsprachen-lernen',
+];
+
+async function seedSprechenB1Teil1() {
+  const exists = db.prepare('SELECT 1 FROM courses WHERE id = ?').get('b1-sprechen');
+  if (exists) return;
+
+  let html;
+  try {
+    html = await fs.readFile(path.join(SPRECHEN_B1_TEIL1_DIR, `${SPRECHEN_B1_TEIL1_TOPICS[0]}.html`), 'utf-8');
+  } catch (err) {
+    if (err.code === 'ENOENT') return;
+    throw err;
+  }
+  createCourseFromHtml({
+    courseId: 'b1-sprechen',
+    title: 'Sprechen',
+    level: 'B1',
+    lang: { source: 'de', target: 'fa' },
+    pageNumber: 1,
+    chapter: 'Teil 1',
+    html,
+  });
+  for (let i = 1; i < SPRECHEN_B1_TEIL1_TOPICS.length; i++) {
+    const pageHtml = await fs.readFile(path.join(SPRECHEN_B1_TEIL1_DIR, `${SPRECHEN_B1_TEIL1_TOPICS[i]}.html`), 'utf-8');
+    addHtmlPageToCourse('b1-sprechen', { pageNumber: i + 1, chapter: 'Teil 1', html: pageHtml });
+  }
+  console.log(`Seeded "Sprechen" (b1-sprechen) with ${SPRECHEN_B1_TEIL1_TOPICS.length} Teil 1 pages.`);
+}
+
 export async function seedIfEmpty() {
   await seedDictionary();
   await seedWikidict();
@@ -225,4 +309,6 @@ export async function seedIfEmpty() {
   await seedGrammarLessons();
   await seedBooks();
   cleanupOldA1Lektionen();
+  await seedB1SkillSections();
+  await seedSprechenB1Teil1();
 }
