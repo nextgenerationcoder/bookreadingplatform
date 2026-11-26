@@ -3,7 +3,7 @@ import { db } from '../db.js';
 import { parseDictionaryText, importDictionaryEntries } from '../dictionaryImporter.js';
 import { translateWord } from '../translate.js';
 import { decrypt } from '../crypto.js';
-import { extractPhrasePattern, translateWordInContext } from '../llm.js';
+import { extractPhrasePattern, translateWordInContext, findGermanForPersian } from '../llm.js';
 
 const router = Router();
 
@@ -135,6 +135,49 @@ router.post('/contextual-translate', async (req, res) => {
     res.json({ translation });
   } catch (err) {
     console.error('contextual-translate: AI call failed:', err);
+    res.status(502).json({ error: err.message });
+  }
+});
+
+// POST /api/dictionary/find-german-for-persian { persianPhrase, germanSentence,
+// persianSentence } - the reverse of contextual-translate, for a bilingual
+// worksheet/course page's Persian side: given both sentences, the AI finds
+// the German substring (verbatim, so the caller can highlight it) that
+// matches the clicked Persian word/phrase. Returns german: null when the
+// AI reports no specific match (see findGermanForPersian's "NONE" case).
+router.post('/find-german-for-persian', async (req, res) => {
+  const { persianPhrase, germanSentence, persianSentence } = req.body || {};
+  if (!persianPhrase || typeof persianPhrase !== 'string') {
+    return res.status(400).json({ error: 'persianPhrase is required' });
+  }
+  if (!germanSentence || typeof germanSentence !== 'string') {
+    return res.status(400).json({ error: 'germanSentence is required' });
+  }
+
+  const row = db.prepare('SELECT llm_provider, llm_api_key_enc FROM users WHERE id = ?').get(req.userId);
+  if (!row?.llm_provider || !row?.llm_api_key_enc) {
+    return res.status(400).json({ error: 'no Translation API key configured — add one in Settings first' });
+  }
+
+  let apiKey;
+  try {
+    apiKey = await decrypt(row.llm_api_key_enc);
+  } catch (err) {
+    console.error('find-german-for-persian: failed to decrypt Translation API key:', err);
+    return res.status(500).json({ error: 'Failed to read your Translation API key — try re-saving it in Settings.' });
+  }
+
+  try {
+    const answer = await findGermanForPersian({
+      provider: row.llm_provider,
+      apiKey,
+      persianPhrase,
+      germanSentence,
+      persianSentence: persianSentence || '',
+    });
+    res.json({ german: answer.trim().toUpperCase() === 'NONE' ? null : answer });
+  } catch (err) {
+    console.error('find-german-for-persian: AI call failed:', err);
     res.status(502).json({ error: err.message });
   }
 });

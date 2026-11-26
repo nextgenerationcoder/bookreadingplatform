@@ -229,6 +229,8 @@ export const api = {
   // re-translation of one word, for when the dictionary's standalone gloss
   // doesn't fit how it's used in this specific sentence.
   contextualTranslate: (word, sentence) => post('/api/dictionary/contextual-translate', { word, sentence }),
+  findGermanForPersian: (persianPhrase, germanSentence, persianSentence) =>
+    post('/api/dictionary/find-german-for-persian', { persianPhrase, germanSentence, persianSentence }),
 
   // words: string[] - returns { word: rank } for whichever of these words
   // are in the top 200k frequency list (see server/data/word-frequency.seed.json).

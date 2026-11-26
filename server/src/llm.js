@@ -1349,3 +1349,72 @@ export async function translateWordInContext({ provider, apiKey, word, sentence 
   if (!text) throw new Error('AI response had no text content');
   return text.trim();
 }
+
+// The reverse of translateWordInContext: a learner clicked a Persian word
+// in a bilingual worksheet/course page that has no pre-made German link
+// (some curated content only links the words/phrases the curator was
+// confident about - see server/content-courses/sprechen-b1-teil1's
+// REVIEW_FIRST10_FA.md - everything else is plain, unlinked Persian text).
+// Rather than hand-fixing every such gap one at a time, this asks the AI,
+// given BOTH sentences, which German substring the clicked Persian word
+// corresponds to - returned verbatim so the caller can find and highlight
+// that exact text in the German sentence, not just show it in a popup.
+export async function findGermanForPersian({ provider, apiKey, persianPhrase, germanSentence, persianSentence }) {
+  if (!LLM_PROVIDERS.includes(provider)) throw new Error(`Unsupported AI provider: ${provider}`);
+  const systemPrompt =
+    'You are given a German sentence, its Persian translation, and one Persian word or short phrase taken from ' +
+    'that Persian sentence. Respond with ONLY the exact substring of the German sentence that means the same ' +
+    "thing as the given Persian word/phrase - copied character-for-character from the German sentence (same " +
+    'spelling, same capitalization, no translation of your own), nothing else: no quotes, no explanation, no ' +
+    "added punctuation. If the Persian word/phrase doesn't correspond to any specific substring of the German " +
+    'sentence (e.g. it\'s just sentence structure with nothing to point at), respond with exactly: NONE';
+  const userText =
+    `German sentence: ${germanSentence}\nPersian translation: ${persianSentence}\n` +
+    `Persian word/phrase to match: ${persianPhrase}`;
+
+  if (provider === 'anthropic') {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
+      body: JSON.stringify({
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 100,
+        system: systemPrompt,
+        messages: [{ role: 'user', content: userText }],
+      }),
+      signal: AbortSignal.timeout(30000),
+    });
+    if (!res.ok) throw new Error(`Anthropic API error (${res.status}): ${await res.text().catch(() => res.statusText)}`);
+    const data = await res.json();
+    const text = data.content?.find((block) => block.type === 'text')?.text;
+    if (!text) throw new Error('Anthropic response had no text content');
+    return text.trim();
+  }
+
+  const impl =
+    provider === 'openai'
+      ? { url: 'https://api.openai.com/v1/chat/completions', model: 'gpt-4o-mini' }
+      : provider === 'deepseek'
+        ? { url: 'https://api.deepseek.com/chat/completions', model: 'deepseek-chat' }
+        : null;
+  if (!impl) throw new Error(`Unsupported AI provider: ${provider}`);
+
+  const res = await fetch(impl.url, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json', authorization: `Bearer ${apiKey}` },
+    body: JSON.stringify({
+      model: impl.model,
+      max_tokens: 100,
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: userText },
+      ],
+    }),
+    signal: AbortSignal.timeout(30000),
+  });
+  if (!res.ok) throw new Error(`API error (${res.status}): ${await res.text().catch(() => res.statusText)}`);
+  const data = await res.json();
+  const text = data.choices?.[0]?.message?.content;
+  if (!text) throw new Error('AI response had no text content');
+  return text.trim();
+}

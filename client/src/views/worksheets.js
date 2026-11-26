@@ -1,6 +1,7 @@
 import { api } from '../api.js';
 import { getDictionary, normalizeWord } from '../state.js';
 import { renderClickableGermanText, attachWordClickHandlers, hidePopup } from '../components/clickableGermanText.js';
+import { showPopupFor } from '../popup.js';
 import { showWordMenu, hideWordMenu, showPatternConfirm } from '../wordMenu.js';
 
 // "Show my own HTML worksheet" - upload a self-contained HTML page, see it
@@ -87,6 +88,9 @@ function injectStyles(doc) {
     .patternConfirm .patternActions { display: flex; gap: 6px }
     .patternConfirm button { padding: 4px 10px; border-radius: 6px; border: 1px solid #ccc; background: #fff; cursor: pointer; font-size: 13px }
     .patternConfirm .patternStatus { color: #777 }
+    .faWordAi { cursor: pointer; border-bottom: 1px dotted #a9a9a9 }
+    .faWordAi:hover { background: #f3f0ff }
+    .aiHighlight { background: #fff3b0; border-radius: 3px; transition: background 1.2s ease }
   `;
   doc.head.appendChild(style);
 }
@@ -244,6 +248,114 @@ function wrapWithCuratedPhrases(container, text, phrases, options) {
     renderClickableGermanText(chunk, text.slice(i, j), options);
     while (chunk.firstChild) container.appendChild(chunk.firstChild);
     i = j;
+  }
+}
+
+// A Sprechen-kit row's curated .fa-word buttons only cover the
+// words/phrases the curator was confident about (see
+// collectCuratedPhrases's own comment) - the rest of .fa-text is plain,
+// unclickable Persian text today, which reads as a dead click rather than
+// "this word was never curated". Wraps every remaining Persian word in a
+// clickable span that asks the AI (findGermanForPersian below) which
+// German substring it corresponds to, given BOTH sentences - a generic
+// fallback for exactly the gap a human curator left, not a replacement for
+// the curated links (those stay instant and free, with no AI call).
+function wireUpPersianWordLookup(doc, getFrameRect) {
+  for (const row of doc.querySelectorAll('.worksheet-row')) {
+    const faText = row.querySelector('.fa-text');
+    const deFull = row.querySelector('.de-full');
+    const box = row.querySelector('.reveal-box');
+    if (!faText || !deFull) continue;
+    const germanSentence = deFull.textContent.trim();
+    const persianSentence = faText.textContent.trim();
+
+    const walker = doc.createTreeWalker(faText, NodeFilter.SHOW_TEXT, {
+      acceptNode(node) {
+        if (!/[؀-ۿ]/.test(node.nodeValue || '')) return NodeFilter.FILTER_REJECT;
+        for (let el = node.parentElement; el && el !== faText; el = el.parentElement) {
+          if (el.tagName === 'BUTTON') return NodeFilter.FILTER_REJECT; // already a curated .fa-word
+        }
+        return NodeFilter.FILTER_ACCEPT;
+      },
+    });
+    const textNodes = [];
+    for (let n = walker.nextNode(); n; n = walker.nextNode()) textNodes.push(n);
+
+    for (const textNode of textNodes) {
+      const frag = doc.createDocumentFragment();
+      for (const token of textNode.nodeValue.split(/(\s+)/)) {
+        if (!token || !/[؀-ۿ]/.test(token)) {
+          frag.appendChild(doc.createTextNode(token));
+          continue;
+        }
+        const span = doc.createElement('span');
+        span.className = 'faWordAi';
+        span.textContent = token;
+        span.title = 'یافتن معادل آلمانی با هوش مصنوعی';
+        span.addEventListener('click', (e) => {
+          e.stopPropagation();
+          lookupPersianWord(doc, span, token, germanSentence, persianSentence, deFull, box, getFrameRect);
+        });
+        frag.appendChild(span);
+      }
+      textNode.parentNode.replaceChild(frag, textNode);
+    }
+  }
+}
+
+async function lookupPersianWord(doc, anchorEl, persianPhrase, germanSentence, persianSentence, deFull, box, getFrameRect) {
+  const frameRect = getFrameRect ? getFrameRect() : undefined;
+  showPopupFor(anchorEl, persianPhrase, 'در حال بررسی…', frameRect);
+
+  let german;
+  try {
+    ({ german } = await api.findGermanForPersian(persianPhrase, germanSentence, persianSentence));
+  } catch (err) {
+    showPopupFor(anchorEl, persianPhrase, `خطا: ${err.message}`, frameRect);
+    return;
+  }
+
+  if (!german) {
+    showPopupFor(anchorEl, persianPhrase, 'معادل مشخصی پیدا نشد', frameRect);
+    return;
+  }
+  showPopupFor(anchorEl, persianPhrase, german, frameRect);
+
+  // Reveal the sentence (if it's still covered) so the highlighted match
+  // below is actually visible, not just named in the popup - a real click
+  // on the box itself, so its own click handler (and the sliding-door
+  // animation) runs exactly as if the learner had clicked it.
+  if (box && !box.classList.contains('revealed')) box.click();
+  requestAnimationFrame(() => highlightGermanMatch(deFull, german));
+}
+
+// Finds the shortest contiguous run of deFull's .word spans whose joined
+// text matches `answer` (case-insensitive, ignoring trailing punctuation -
+// the AI was asked for a verbatim substring, but a trailing "." it copied
+// along with the last word shouldn't break the match) and briefly
+// highlights it. A multi-word answer like "ein verbreitetes Phänomen"
+// spans several adjacent .word spans, which is exactly why this walks runs
+// of them rather than looking for one exact span.
+function highlightGermanMatch(deFull, answer) {
+  const spans = [...deFull.querySelectorAll('.word')];
+  const normalize = (s) => s.toLowerCase().replace(/[.,!?;:]+$/, '').trim();
+  const target = normalize(answer);
+  if (!target || !spans.length) return;
+
+  for (let start = 0; start < spans.length; start++) {
+    let joined = '';
+    for (let end = start; end < spans.length && end < start + 8; end++) {
+      joined = joined ? `${joined} ${spans[end].textContent}` : spans[end].textContent;
+      if (normalize(joined) === target) {
+        for (let i = start; i <= end; i++) {
+          spans[i].classList.add('aiHighlight');
+          setTimeout(() => spans[i].classList.remove('aiHighlight'), 3000);
+        }
+        spans[start].scrollIntoView({ behavior: 'smooth', block: 'center' });
+        return;
+      }
+      if (normalize(joined).length > target.length + 10) break; // overshot - no point extending this start further
+    }
   }
 }
 
@@ -694,12 +806,14 @@ export function applyClickableTextInsideFrame(iframe, callbacks) {
       });
     }
 
+    wireUpPersianWordLookup(doc, getFrameRect);
+
     // popup.js's own "click outside a .word closes the popup" listener is
     // registered on THIS document only - a click inside the iframe's
     // document never bubbles up to it, so without this it'd never close
     // again once opened from inside the frame.
     doc.addEventListener('click', (e) => {
-      if (!e.target.closest?.('.word')) hidePopup();
+      if (!e.target.closest?.('.word') && !e.target.closest?.('.faWordAi')) hidePopup();
     });
   });
 }
