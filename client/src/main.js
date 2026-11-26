@@ -19,6 +19,7 @@ import { renderLessonPlayer as renderInteractiveLessonPlayer } from './component
 import { renderInterviewHome } from './views/interviewHome.js';
 import { renderAddInterviewLesson } from './views/addInterviewLesson.js';
 import { renderWorksheets, renderWorksheetViewer } from './views/worksheets.js';
+import { renderGame } from './views/game.js';
 import { renderInterviewShell, teardownInterviewShell } from './components/interviewSidebar.js';
 import { lesson1 } from './lessons/lesson1.js';
 import { lektion2 } from './lessons/lektion2.js';
@@ -90,6 +91,7 @@ function parseRoute() {
   if (interviewLessonMatch) return { view: 'reader', kind: 'learning', bookId: decodeURIComponent(interviewLessonMatch[1]) };
   if (hash === '/interview') return { view: 'interview' };
   if (hash === '/add-interview-lesson') return { view: 'addInterviewLesson' };
+  if (hash === '/game') return { view: 'game' };
   if (hash === '/worksheets') return { view: 'worksheets' };
   const worksheetMatch = hash.match(/^\/worksheets\/([^/]+)$/);
   if (worksheetMatch) return { view: 'worksheetViewer', worksheetId: decodeURIComponent(worksheetMatch[1]) };
@@ -164,6 +166,7 @@ function buildShell() {
         <a href="#/words">To Learn</a>
         <a href="#/import-url">Import Text</a>
         <a href="#/worksheets">Worksheets</a>
+        <a href="#/game">Game</a>
       </div>
       <button id="menuBtn" class="menuBtn" type="button" aria-label="Open menu">
         <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
@@ -217,7 +220,7 @@ function setActiveNav(view) {
     'grammarLevel', 'grammarLesson',
   ];
   const interviewViews = ['reader:learning', 'interview', 'addInterviewLesson'];
-  const map = { books: 0, courses: 1, learning: 2, practice: 3, words: 4, importUrl: 5 };
+  const map = { books: 0, courses: 1, learning: 2, practice: 3, words: 4, importUrl: 5, game: 7 };
   let group = null;
   if (bookViews.includes(view)) group = 'books';
   else if (courseViews.includes(view)) group = 'courses';
@@ -225,6 +228,7 @@ function setActiveNav(view) {
   else if (view === 'practice' || view === 'practiceCourse' || view === 'practiceLesson') group = 'practice';
   else if (view === 'words') group = 'words';
   else if (view === 'importUrl') group = 'importUrl';
+  else if (view === 'game') group = 'game';
   if (group) links[map[group]]?.classList.add('active');
 }
 
@@ -272,6 +276,8 @@ async function route() {
   } else if (view === 'addInterviewLesson') {
     const contentHost = await renderInterviewShell(host, STATIC_INTERVIEW_LESSONS, null);
     renderAddInterviewLesson(contentHost);
+  } else if (view === 'game') {
+    await renderGame(host);
   } else if (view === 'worksheets') {
     await renderWorksheets(host);
   } else if (view === 'worksheetViewer') {

@@ -124,7 +124,7 @@ function convertWords(words) {
 // malformed step from the AI. `type` tells LessonPlayer.js which exercise
 // UI to render ('translate' is the default/fallback so older stored
 // courses from before this field existed keep rendering exactly as before).
-function convertStep(rawStep) {
+export function convertStep(rawStep) {
   if (!rawStep || typeof rawStep !== 'object') return null;
   const software = convertWords(rawStep.words);
 

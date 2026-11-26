@@ -109,12 +109,16 @@ router.post('/record', (req, res) => {
 //     or 'learned' row is never downgraded just because this particular
 //     page didn't need a click for it - that'd erase real progress on a
 //     word the student happens to recognize today but is still practicing.
-router.post('/reading-page', (req, res) => {
-  const { toLearn, passive } = req.body || {};
-  if (!Array.isArray(toLearn) || !Array.isArray(passive)) {
-    return res.status(400).json({ error: 'toLearn and passive (arrays) are required' });
-  }
-
+// Bumps times_seen/last_seen_at (and nudges status back to 'learning' if
+// it had somehow regressed, same as the inline logic this replaced) for
+// words the learner was exposed to again passively elsewhere in the app -
+// originally just this route's own "toLearn" list for a finished book
+// page, now also reused by routes/game.js for a target word the office
+// game wove into a scene (see game/vocab.js's pickTargetWords). Exported
+// so that reuse doesn't have to re-implement this upsert - per
+// docs/office-game.md's instruction to use the EXISTING vocab functions,
+// not write new learning logic.
+export function recordWordsSeenAgain(userId, words) {
   const now = new Date().toISOString();
   const insertLearning = db.prepare(
     `INSERT INTO vocab_progress (user_id, german, persian, times_seen, times_correct_total, correct_streak, status, first_seen_at, last_seen_at, learned_at)
@@ -125,6 +129,22 @@ router.post('/reading-page', (req, res) => {
        persian = CASE WHEN vocab_progress.persian = '' THEN excluded.persian ELSE vocab_progress.persian END,
        status = CASE WHEN vocab_progress.status = 'learned' THEN 'learned' ELSE 'learning' END`
   );
+  const tx = db.transaction(() => {
+    for (const { german, persian } of words) {
+      if (!german) continue;
+      insertLearning.run(userId, german, persian || '', now, now);
+    }
+  });
+  tx();
+}
+
+router.post('/reading-page', (req, res) => {
+  const { toLearn, passive } = req.body || {};
+  if (!Array.isArray(toLearn) || !Array.isArray(passive)) {
+    return res.status(400).json({ error: 'toLearn and passive (arrays) are required' });
+  }
+
+  const now = new Date().toISOString();
   const insertPassive = db.prepare(
     `INSERT INTO vocab_progress (user_id, german, persian, times_seen, times_correct_total, correct_streak, status, first_seen_at, last_seen_at, learned_at)
      VALUES (?, ?, ?, 1, 0, 0, 'passive', ?, ?, NULL)
@@ -133,11 +153,8 @@ router.post('/reading-page', (req, res) => {
        last_seen_at = excluded.last_seen_at`
   );
 
+  recordWordsSeenAgain(req.userId, toLearn);
   const tx = db.transaction(() => {
-    for (const { german, persian } of toLearn) {
-      if (!german) continue;
-      insertLearning.run(req.userId, german, persian || '', now, now);
-    }
     for (const { german, persian } of passive) {
       if (!german) continue;
       insertPassive.run(req.userId, german, persian || '', now, now);

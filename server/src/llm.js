@@ -687,6 +687,514 @@ const PATTERN_PROVIDERS = {
   },
 };
 
+// Office roleplay game (see server/src/game/) - one AI call per turn, given
+// the game's own system prompt (setting/characters/tone, built in
+// game/prompt.js) and a short summary of the story so far plus the
+// player's last choice. The AI narrates; it never invents numbers (XP,
+// boss opinion, etc.) - those live entirely in game_sessions.state_json,
+// computed by game/engine.js's pure functions, never by the model. Each
+// choice also carries `tags` - the AI's own judgment of how cheeky/risky
+// that choice would be, used ONLY as input to engine.js's deterministic
+// math; the model never computes or reports an actual numeric effect.
+// outcome narrates what happened as a direct result of the player's last
+// choice (empty string on the very first turn, where there's no previous
+// choice to resolve yet) - the route tells the AI what engine.js already
+// computed (see game/prompt.js's describeEffects), so outcome narrates
+// exactly that instead of inventing its own version of what happened.
+// choices is normally exactly two options; exactly zero once the player
+// has just been fired (game/prompt.js's buildTurnPrompt asks for this
+// explicitly when it knows the game is over) - no other length is valid.
+// summary is a short (1-2 sentence) updated recap of the story so far, to
+// feed back in as context on the NEXT turn instead of replaying the whole
+// history - keeps the prompt small no matter how long a game session runs.
+// words_used self-reports which of the target vocabulary words (see
+// game/vocab.js's pickTargetWords) the model believes it wove into this
+// turn - routes/game.js verifies each one actually appears in the text
+// before recording it as "seen again" (game/vocab.js's verifyWordsUsed),
+// since this is the model's own claim, not a guarantee.
+const GAME_TURN_CHOICE_TAGS_SCHEMA = {
+  type: 'object',
+  properties: {
+    frech: {
+      type: 'integer',
+      description: 'How cheeky/mischievous this choice is: 0 (not at all) to 3 (very).',
+    },
+    chef_sieht: {
+      type: 'boolean',
+      description: 'Whether Frau Krüger would see or find out about this action.',
+    },
+    betrifft: {
+      type: ['string', 'null'],
+      enum: ['krueger', 'jonas', 'lena', 'becker', null],
+      description: 'Which fixed character (if any) this choice is mainly directed at or involves.',
+    },
+    flirt: {
+      type: 'boolean',
+      description: 'Whether this choice is a flirting action toward Lena.',
+    },
+    check: {
+      type: ['string', 'null'],
+      enum: ['easy', 'hard', null],
+      description:
+        'null for most choices. Set to "easy" or "hard" ONLY for an action that naturally needs skill to pull off well (writing a tricky email, persuading someone, lying convincingly, a phone call with a client) - roughly one choice in three, never every turn. "hard" for a bigger risk/higher stakes version of the same kind of action.',
+    },
+  },
+  required: ['frech', 'chef_sieht', 'betrifft', 'flirt', 'check'],
+};
+
+const GAME_TURN_TOOL_SCHEMA = {
+  type: 'object',
+  properties: {
+    outcome: {
+      type: 'string',
+      description:
+        "What happened as a direct result of the player's last choice, in German, narrating exactly the effects described to you - empty string if this is the very first turn of the game (no previous choice to resolve yet).",
+    },
+    scene: {
+      type: 'string',
+      description: 'The new scene/situation, in German, short (2-4 sentences, mostly dialogue), as instructed by the system prompt.',
+    },
+    choices: {
+      type: 'array',
+      description: 'Exactly two choices the player can make next, in German, each with its own tags - or exactly zero if the player has just been fired.',
+      items: {
+        type: 'object',
+        properties: {
+          text: { type: 'string', description: 'The choice text, in German.' },
+          tags: GAME_TURN_CHOICE_TAGS_SCHEMA,
+        },
+        required: ['text', 'tags'],
+      },
+    },
+    summary: {
+      type: 'string',
+      description: "A short (1-2 sentence) updated recap of the story so far, to carry forward as next turn's context instead of the full history.",
+    },
+    words_used: {
+      type: 'array',
+      description:
+        'Which of the target words you were given (if any) you actually used in this turn\'s scene/choices - exactly as given to you, not an inflected form. Empty array if you were given no target words, or used none of them.',
+      items: { type: 'string' },
+    },
+  },
+  required: ['outcome', 'scene', 'choices', 'summary', 'words_used'],
+};
+
+function openAiGameTurnJsonSchema() {
+  const tagsSchema = {
+    type: 'object',
+    properties: {
+      frech: { type: 'integer' },
+      chef_sieht: { type: 'boolean' },
+      betrifft: { type: ['string', 'null'], enum: ['krueger', 'jonas', 'lena', 'becker', null] },
+      flirt: { type: 'boolean' },
+      check: { type: ['string', 'null'], enum: ['easy', 'hard', null] },
+    },
+    required: ['frech', 'chef_sieht', 'betrifft', 'flirt', 'check'],
+    additionalProperties: false,
+  };
+  return {
+    type: 'json_schema',
+    json_schema: {
+      name: 'game_turn',
+      strict: true,
+      schema: {
+        type: 'object',
+        properties: {
+          outcome: { type: 'string' },
+          scene: { type: 'string' },
+          choices: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: { text: { type: 'string' }, tags: tagsSchema },
+              required: ['text', 'tags'],
+              additionalProperties: false,
+            },
+          },
+          summary: { type: 'string' },
+          words_used: { type: 'array', items: { type: 'string' } },
+        },
+        required: ['outcome', 'scene', 'choices', 'summary', 'words_used'],
+        additionalProperties: false,
+      },
+    },
+  };
+}
+
+const VALID_BETRIFFT = new Set(['krueger', 'jonas', 'lena', 'becker', null]);
+const VALID_CHECK = new Set(['easy', 'hard', null]);
+
+function validateChoiceTags(tags) {
+  return (
+    tags &&
+    Number.isInteger(tags.frech) &&
+    tags.frech >= 0 &&
+    tags.frech <= 3 &&
+    typeof tags.chef_sieht === 'boolean' &&
+    VALID_BETRIFFT.has(tags.betrifft ?? null) &&
+    typeof tags.flirt === 'boolean' &&
+    VALID_CHECK.has(tags.check ?? null)
+  );
+}
+
+// Hard ceiling on the carried-forward story summary - the system prompt
+// asks for "a short 1-2 sentence recap" every turn, but nothing stops a
+// model from drifting longer over many turns (each turn's summary is
+// itself built from the previous one), which would otherwise grow the
+// per-turn prompt's token cost turn after turn with no limit. Enforced
+// here, not trusted to the model's own compliance, since this is a
+// server-side cost/safety concern, not a narration quality one.
+const MAX_SUMMARY_CHARS = 600;
+
+function validateGameTurn(parsed) {
+  if (
+    !parsed ||
+    typeof parsed.outcome !== 'string' ||
+    typeof parsed.scene !== 'string' ||
+    !parsed.scene.trim() ||
+    typeof parsed.summary !== 'string' ||
+    !parsed.summary.trim() ||
+    !Array.isArray(parsed.choices) ||
+    (parsed.choices.length !== 2 && parsed.choices.length !== 0) ||
+    parsed.choices.some((c) => !c || typeof c.text !== 'string' || !c.text.trim() || !validateChoiceTags(c.tags)) ||
+    !Array.isArray(parsed.words_used) ||
+    parsed.words_used.some((w) => typeof w !== 'string')
+  ) {
+    throw new Error('AI response was not in the expected {outcome, scene, choices: [0 or 2x{text,tags}], summary, words_used} shape');
+  }
+  return {
+    outcome: parsed.outcome.trim(),
+    scene: parsed.scene.trim(),
+    choices: parsed.choices.map((c) => ({
+      text: c.text.trim(),
+      tags: {
+        frech: c.tags.frech,
+        chef_sieht: c.tags.chef_sieht,
+        betrifft: c.tags.betrifft ?? null,
+        flirt: c.tags.flirt,
+        check: c.tags.check ?? null,
+      },
+    })),
+    summary: parsed.summary.trim().slice(0, MAX_SUMMARY_CHARS),
+    wordsUsed: parsed.words_used.map((w) => w.trim()).filter(Boolean),
+  };
+}
+
+// Rough published per-1M-token USD rates for each game-turn model, used
+// ONLY to log an estimated cost per turn (see logGameTurnUsage below) -
+// never shown to the player, never used for billing. Update here if a
+// provider changes its pricing materially; being slightly off doesn't
+// matter for a log line meant to catch gross cost surprises, not account
+// for them to the cent.
+const GAME_TURN_PRICING_PER_1M_USD = {
+  anthropic: { inputTokens: 1, outputTokens: 5 },
+  openai: { inputTokens: 0.15, outputTokens: 0.6 },
+  deepseek: { inputTokens: 0.27, outputTokens: 1.1 },
+};
+
+function logGameTurnUsage(provider, model, usage) {
+  if (!usage) return;
+  const { inputTokens = 0, outputTokens = 0 } = usage;
+  const pricing = GAME_TURN_PRICING_PER_1M_USD[provider];
+  const estCostUsd = pricing ? (inputTokens / 1e6) * pricing.inputTokens + (outputTokens / 1e6) * pricing.outputTokens : null;
+  console.log(
+    `[game ai usage] provider=${provider} model=${model} inputTokens=${inputTokens} outputTokens=${outputTokens}` +
+      (estCostUsd !== null ? ` estCostUsd=${estCostUsd.toFixed(5)}` : ' estCostUsd=unknown')
+  );
+}
+
+const GAME_TURN_PROVIDERS = {
+  anthropic: {
+    model: 'claude-haiku-4-5-20251001',
+    async call(apiKey, systemPrompt, userText) {
+      const res = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
+        body: JSON.stringify({
+          model: GAME_TURN_PROVIDERS.anthropic.model,
+          max_tokens: 1200,
+          system: systemPrompt,
+          tools: [{ name: 'record_turn', description: 'Records this turn of the office roleplay game.', input_schema: GAME_TURN_TOOL_SCHEMA }],
+          tool_choice: { type: 'tool', name: 'record_turn' },
+          messages: [{ role: 'user', content: userText }],
+        }),
+        signal: AbortSignal.timeout(45000),
+      });
+      if (!res.ok) throw new Error(`Anthropic API error (${res.status}): ${await res.text().catch(() => res.statusText)}`);
+      const data = await res.json();
+      return { input: anthropicToolInput(data), usage: { inputTokens: data.usage?.input_tokens, outputTokens: data.usage?.output_tokens } };
+    },
+  },
+  openai: {
+    model: 'gpt-4o-mini',
+    async call(apiKey, systemPrompt, userText) {
+      const res = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', authorization: `Bearer ${apiKey}` },
+        body: JSON.stringify({
+          model: GAME_TURN_PROVIDERS.openai.model,
+          response_format: openAiGameTurnJsonSchema(),
+          messages: [
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: userText },
+          ],
+        }),
+        signal: AbortSignal.timeout(45000),
+      });
+      if (!res.ok) throw new Error(`OpenAI API error (${res.status}): ${await res.text().catch(() => res.statusText)}`);
+      const data = await res.json();
+      return {
+        input: JSON.parse(data.choices?.[0]?.message?.content || '{}'),
+        usage: { inputTokens: data.usage?.prompt_tokens, outputTokens: data.usage?.completion_tokens },
+      };
+    },
+  },
+  deepseek: {
+    model: 'deepseek-chat',
+    async call(apiKey, systemPrompt, userText) {
+      const res = await fetch('https://api.deepseek.com/chat/completions', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', authorization: `Bearer ${apiKey}` },
+        body: JSON.stringify({
+          model: GAME_TURN_PROVIDERS.deepseek.model,
+          response_format: { type: 'json_object' },
+          messages: [
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: userText },
+          ],
+        }),
+        signal: AbortSignal.timeout(45000),
+      });
+      if (!res.ok) throw new Error(`API error (${res.status}): ${await res.text().catch(() => res.statusText)}`);
+      const data = await res.json();
+      return {
+        input: extractJson(data.choices?.[0]?.message?.content || '{}'),
+        usage: { inputTokens: data.usage?.prompt_tokens, outputTokens: data.usage?.completion_tokens },
+      };
+    },
+  },
+};
+
+// Retries once on a malformed response (a strict schema makes this rare for
+// OpenAI, but Anthropic's forced tool-use and DeepSeek's plain JSON mode
+// can still occasionally miss, e.g. the wrong number of choices) - a second
+// bad response throws, which the route surfaces as a clear error rather
+// than ever handing the client a broken turn.
+export async function generateGameTurn({ provider, apiKey, systemPrompt, userText }) {
+  const impl = GAME_TURN_PROVIDERS[provider];
+  if (!impl) throw new Error(`Unsupported AI provider: ${provider}`);
+
+  try {
+    const { input, usage } = await impl.call(apiKey, systemPrompt, userText);
+    logGameTurnUsage(provider, impl.model, usage);
+    return validateGameTurn(input);
+  } catch (err) {
+    if (err.message.startsWith('AI response was not in the expected')) {
+      const { input, usage } = await impl.call(apiKey, systemPrompt, userText);
+      logGameTurnUsage(provider, impl.model, usage);
+      return validateGameTurn(input);
+    }
+    throw err;
+  }
+}
+
+// Skill checks (see docs/office-game.md / game/skillCheck.js) - generates
+// 1 (easy) or 2 (hard) quick exercises for a choice tagged "check", using
+// the EXACT SAME raw step shapes practiceCourseGenerator.js's own AI call
+// already produces and practiceCourseGenerator.js's convertStep already
+// parses ({say, answer, exercise_type} for a typed/scramble exercise,
+// {words, exercise_type: "matching"} for a matching one) - this is a
+// separate, much smaller/faster call (not the whole-course generator,
+// which is far too slow for an in-game ~30-second moment), but it
+// deliberately speaks the SAME output contract so the conversion/
+// rendering code never has to care which call produced a given step.
+const SKILL_CHECK_EXERCISE_SCHEMA = {
+  type: 'object',
+  properties: {
+    exercise_type: {
+      type: ['string', 'null'],
+      enum: ['translate', 'scramble', 'matching', null],
+      description: 'null or "translate" for a typed-translation exercise, "scramble" for reorder-the-words, "matching" for connect-word-to-meaning.',
+    },
+    say: { type: ['string', 'null'], description: 'For translate/scramble: the Persian prompt. null for matching.' },
+    answer: { type: ['string', 'null'], description: 'For translate/scramble: the expected German answer. null for matching.' },
+    words: {
+      type: ['array', 'null'],
+      description: 'For matching: 3-5 {german, translation} pairs. null for translate/scramble.',
+      items: {
+        type: 'object',
+        properties: { german: { type: 'string' }, translation: { type: 'string' } },
+        required: ['german', 'translation'],
+      },
+    },
+  },
+  required: ['exercise_type', 'say', 'answer', 'words'],
+};
+
+function skillCheckSystemPrompt() {
+  return [
+    'You generate SHORT German-learning exercises for a skill-check moment inside a roleplay game - the player',
+    'needs to solve this FAST (about 30 seconds), so keep it simple and quick, not a full lesson.',
+    'Each exercise is one of:',
+    '- translate: {"exercise_type": "translate", "say": "<Persian prompt>", "answer": "<expected German sentence>", "words": null}',
+    '- scramble: same shape, with "exercise_type": "scramble" - the answer should be a sentence the player can',
+    '  correctly reconstruct from its own words alone (natural order, no words that change form by position).',
+    '- matching: {"exercise_type": "matching", "say": null, "answer": null, "words": [{"german":"...","translation":"..."}, ... 3-5 pairs]}',
+    'Base the exercise on the CURRENT SCENE given to you - reuse its own vocabulary/situation where it makes',
+    'sense (e.g. if the scene is about writing an email, the exercise can be about email vocabulary), and prefer',
+    'the player\'s own target words (given to you) when they fit naturally. Keep it realistic and short - a',
+    'translate/scramble answer should be one short sentence (4-8 words), not a whole paragraph.',
+    'Respond with ONLY a JSON object of the exact shape {"exercises": [<exercise>, ...]} - the array must have',
+    'EXACTLY the requested number of exercises, no commentary, no markdown fences.',
+  ].join('\n');
+}
+
+function skillCheckUserText({ sceneText, choiceText, targetWords, count }) {
+  const lines = [
+    `Current scene: ${sceneText}`,
+    `The player just chose: "${choiceText}"`,
+    `Generate exactly ${count} exercise${count > 1 ? 's' : ''} for this skill check.`,
+  ];
+  if (targetWords && targetWords.length) {
+    lines.push(`Player's target words, prefer these if they fit naturally: ${targetWords.map((w) => `${w.german} (${w.persian})`).join(', ')}`);
+  }
+  return lines.join('\n');
+}
+
+function validateSkillCheckExercises(parsed, count) {
+  if (!parsed || !Array.isArray(parsed.exercises) || parsed.exercises.length !== count) {
+    throw new Error(`AI response was not in the expected {exercises: [${count}x exercise]} shape`);
+  }
+  return parsed.exercises;
+}
+
+function openAiSkillCheckJsonSchema() {
+  const exerciseSchema = {
+    type: 'object',
+    properties: {
+      exercise_type: { type: ['string', 'null'], enum: ['translate', 'scramble', 'matching', null] },
+      say: { type: ['string', 'null'] },
+      answer: { type: ['string', 'null'] },
+      words: {
+        type: ['array', 'null'],
+        items: {
+          type: 'object',
+          properties: { german: { type: 'string' }, translation: { type: 'string' } },
+          required: ['german', 'translation'],
+          additionalProperties: false,
+        },
+      },
+    },
+    required: ['exercise_type', 'say', 'answer', 'words'],
+    additionalProperties: false,
+  };
+  return {
+    type: 'json_schema',
+    json_schema: {
+      name: 'skill_check_exercises',
+      strict: true,
+      schema: {
+        type: 'object',
+        properties: { exercises: { type: 'array', items: exerciseSchema } },
+        required: ['exercises'],
+        additionalProperties: false,
+      },
+    },
+  };
+}
+
+const SKILL_CHECK_PROVIDERS = {
+  anthropic: {
+    model: 'claude-haiku-4-5-20251001',
+    async call(apiKey, systemPrompt, userText) {
+      const res = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
+        body: JSON.stringify({
+          model: SKILL_CHECK_PROVIDERS.anthropic.model,
+          max_tokens: 700,
+          system: systemPrompt,
+          tools: [
+            {
+              name: 'record_exercises',
+              description: 'Records the generated skill-check exercises.',
+              input_schema: { type: 'object', properties: { exercises: { type: 'array', items: SKILL_CHECK_EXERCISE_SCHEMA } }, required: ['exercises'] },
+            },
+          ],
+          tool_choice: { type: 'tool', name: 'record_exercises' },
+          messages: [{ role: 'user', content: userText }],
+        }),
+        signal: AbortSignal.timeout(30000),
+      });
+      if (!res.ok) throw new Error(`Anthropic API error (${res.status}): ${await res.text().catch(() => res.statusText)}`);
+      const data = await res.json();
+      return anthropicToolInput(data);
+    },
+  },
+  openai: {
+    model: 'gpt-4o-mini',
+    async call(apiKey, systemPrompt, userText) {
+      const res = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', authorization: `Bearer ${apiKey}` },
+        body: JSON.stringify({
+          model: SKILL_CHECK_PROVIDERS.openai.model,
+          response_format: openAiSkillCheckJsonSchema(),
+          messages: [
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: userText },
+          ],
+        }),
+        signal: AbortSignal.timeout(30000),
+      });
+      if (!res.ok) throw new Error(`OpenAI API error (${res.status}): ${await res.text().catch(() => res.statusText)}`);
+      const data = await res.json();
+      return JSON.parse(data.choices?.[0]?.message?.content || '{}');
+    },
+  },
+  deepseek: {
+    model: 'deepseek-chat',
+    async call(apiKey, systemPrompt, userText) {
+      const res = await fetch('https://api.deepseek.com/chat/completions', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', authorization: `Bearer ${apiKey}` },
+        body: JSON.stringify({
+          model: SKILL_CHECK_PROVIDERS.deepseek.model,
+          response_format: { type: 'json_object' },
+          messages: [
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: userText },
+          ],
+        }),
+        signal: AbortSignal.timeout(30000),
+      });
+      if (!res.ok) throw new Error(`API error (${res.status}): ${await res.text().catch(() => res.statusText)}`);
+      const data = await res.json();
+      return extractJson(data.choices?.[0]?.message?.content || '{}');
+    },
+  },
+};
+
+export async function generateSkillCheckExercises({ provider, apiKey, sceneText, choiceText, targetWords, count }) {
+  const impl = SKILL_CHECK_PROVIDERS[provider];
+  if (!impl) throw new Error(`Unsupported AI provider: ${provider}`);
+
+  const systemPrompt = skillCheckSystemPrompt();
+  const userText = skillCheckUserText({ sceneText, choiceText, targetWords, count });
+
+  try {
+    const result = await impl.call(apiKey, systemPrompt, userText);
+    return validateSkillCheckExercises(result, count);
+  } catch (err) {
+    if (err.message.startsWith('AI response was not in the expected')) {
+      const retryResult = await impl.call(apiKey, systemPrompt, userText);
+      return validateSkillCheckExercises(retryResult, count);
+    }
+    throw err;
+  }
+}
+
 export async function extractPhrasePattern({ provider, apiKey, phrase, sentence, sentenceTranslation }) {
   const impl = PATTERN_PROVIDERS[provider];
   if (!impl) throw new Error(`Unsupported AI provider: ${provider}`);
@@ -722,9 +1230,15 @@ export async function generatePracticeCourse({ provider, apiKey, systemPrompt, l
 // nothing structured, just a short written answer, so this skips every
 // other call in this file's forced-tool-schema/JSON-mode machinery and
 // talks to each provider's plain chat endpoint directly.
-export async function answerQuestion({ provider, apiKey, question }) {
+//
+// `context` is optional free text to ground the answer in (e.g. the game's
+// current scene - see routes/game.js's /ask-ai) - when omitted, the prompt
+// is byte-identical to the original worksheet-only version.
+export async function answerQuestion({ provider, apiKey, question, context }) {
   if (!LLM_PROVIDERS.includes(provider)) throw new Error(`Unsupported AI provider: ${provider}`);
-  const systemPrompt = 'You are a helpful assistant answering a short question a learner typed into a note field on a German-learning worksheet. Answer concisely and directly, in the same language the question was asked in.';
+  const systemPrompt = context
+    ? `You are a helpful assistant answering a short question a learner typed into a note field while playing a German-learning text-based roleplay game. Use the CURRENT SCENE below as context when the question refers to it (e.g. "why is it dem Chef here?", "what does this sentence mean?") - you can also just answer a general question normally if it doesn't relate to the scene. Answer concisely and directly, in the same language the question was asked in.\n\n${context}`
+    : 'You are a helpful assistant answering a short question a learner typed into a note field on a German-learning worksheet. Answer concisely and directly, in the same language the question was asked in.';
 
   if (provider === 'anthropic') {
     const res = await fetch('https://api.anthropic.com/v1/messages', {
