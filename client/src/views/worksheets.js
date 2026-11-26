@@ -294,7 +294,18 @@ function wireUpPersianWordLookup(doc, getFrameRect) {
         span.title = 'یافتن معادل آلمانی با هوش مصنوعی';
         span.addEventListener('click', (e) => {
           e.stopPropagation();
-          lookupPersianWord(doc, span, token, germanSentence, persianSentence, deFull, box, getFrameRect);
+          // A single Persian word is sometimes just a grammatical particle
+          // with no standalone German equivalent at all (e.g. "خواهم" in
+          // "خواهم کرد" - a future-tense auxiliary, meaningless on its own;
+          // only the whole phrase "will do" has a real German counterpart).
+          // If the learner drag-selected a chunk that includes this word
+          // before clicking it, send that whole selection instead of just
+          // this one token - same "a selection overrides the single word"
+          // rule reader.js's own right-click menu already uses.
+          const selection = doc.getSelection();
+          const hasSelection = selection && !selection.isCollapsed && selection.containsNode(span, true);
+          const phrase = hasSelection ? selection.toString().trim() : token;
+          lookupPersianWord(doc, span, phrase || token, germanSentence, persianSentence, deFull, box, getFrameRect);
         });
         frag.appendChild(span);
       }
