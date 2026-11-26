@@ -8,7 +8,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { db } from './db.js';
 import { parseBookText, saveImportedBook } from './bookImporter.js';
-import { createCourseFromHtml, addHtmlPageToCourse } from './courseImporter.js';
+import { createCourseFromHtml, addHtmlPageToCourse, setCoursePageAudio } from './courseImporter.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const SEED_DICTIONARY = path.join(__dirname, '..', 'data', 'dictionary.seed.json');
@@ -17,6 +17,7 @@ const WIKIDICT_SEED = path.join(__dirname, '..', 'data', 'wikidict-de-fa.json');
 const WORD_FREQUENCY_SEED = path.join(__dirname, '..', 'data', 'word-frequency.seed.json');
 const GRAMMAR_LESSONS_SEED = path.join(__dirname, '..', 'data', 'grammar-lessons.seed.json');
 const SPRECHEN_B1_TEIL1_DIR = path.join(__dirname, '..', 'content-courses', 'sprechen-b1-teil1');
+const SPRECHEN_B1_AUDIO_DIR = path.join(SPRECHEN_B1_TEIL1_DIR, 'audio');
 
 async function seedDictionary() {
   const { count } = db.prepare('SELECT COUNT(*) AS count FROM dictionary').get();
@@ -302,6 +303,39 @@ async function seedSprechenB1Teil1() {
   console.log(`Seeded "Sprechen" (b1-sprechen) with ${SPRECHEN_B1_TEIL1_TOPICS.length} Teil 1 pages.`);
 }
 
+// Attaches a narration MP3 to any b1-sprechen page that doesn't have one
+// yet (matching SPRECHEN_B1_TEIL1_TOPICS[pageNumber-1] to a file under
+// SPRECHEN_B1_AUDIO_DIR) - not every topic has a recording, so a missing
+// file is skipped, not an error. Unlike seedSprechenB1Teil1 above (gated
+// on the course not existing yet, since it creates it), this runs
+// whenever the course DOES exist and just fills in whichever pages are
+// still missing audio - so it also reaches a b1-sprechen that was already
+// seeded (without audio) by an earlier deploy, and picks up a later
+// topic's recording the moment its .mp3 is added here, without needing to
+// touch that topic's own HTML again.
+async function seedSprechenB1Audio() {
+  const course = db.prepare('SELECT 1 FROM courses WHERE id = ?').get('b1-sprechen');
+  if (!course) return;
+
+  for (let i = 0; i < SPRECHEN_B1_TEIL1_TOPICS.length; i++) {
+    const pageNumber = i + 1;
+    const page = db
+      .prepare('SELECT (audio IS NOT NULL) AS has_audio FROM course_pages WHERE course_id = ? AND page_number = ?')
+      .get('b1-sprechen', pageNumber);
+    if (!page || page.has_audio) continue;
+
+    let buffer;
+    try {
+      buffer = await fs.readFile(path.join(SPRECHEN_B1_AUDIO_DIR, `${SPRECHEN_B1_TEIL1_TOPICS[i]}.mp3`));
+    } catch (err) {
+      if (err.code === 'ENOENT') continue;
+      throw err;
+    }
+    setCoursePageAudio('b1-sprechen', pageNumber, buffer);
+    console.log(`Attached narration audio to b1-sprechen page ${pageNumber} (${SPRECHEN_B1_TEIL1_TOPICS[i]}).`);
+  }
+}
+
 export async function seedIfEmpty() {
   await seedDictionary();
   await seedWikidict();
@@ -311,4 +345,5 @@ export async function seedIfEmpty() {
   cleanupOldA1Lektionen();
   await seedB1SkillSections();
   await seedSprechenB1Teil1();
+  await seedSprechenB1Audio();
 }

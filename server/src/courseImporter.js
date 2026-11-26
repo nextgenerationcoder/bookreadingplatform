@@ -129,11 +129,14 @@ function courseMeta(courseId) {
 }
 
 function replacePage(courseId, page) {
+  const existing = db
+    .prepare('SELECT audio FROM course_pages WHERE course_id = ? AND page_number = ?')
+    .get(courseId, page.page);
   db.prepare('DELETE FROM course_pages WHERE course_id = ? AND page_number = ?').run(courseId, page.page);
   const insertPage = db.prepare(
-    'INSERT INTO course_pages (course_id, page_number, chapter) VALUES (?, ?, ?)'
+    'INSERT INTO course_pages (course_id, page_number, chapter, audio) VALUES (?, ?, ?, ?)'
   );
-  const { lastInsertRowid: pageId } = insertPage.run(courseId, page.page, page.chapter || null);
+  const { lastInsertRowid: pageId } = insertPage.run(courseId, page.page, page.chapter || null, existing?.audio || null);
 
   const insertSentence = db.prepare(
     'INSERT INTO course_sentences (page_id, num, de, fa, chapter) VALUES (?, ?, ?, ?, ?)'
@@ -147,10 +150,17 @@ function replacePage(courseId, page) {
 // whatever was at that page number before, same as replacePage() above -
 // no sentences get inserted for it.
 function replaceHtmlPage(courseId, pageNumber, chapter, html) {
+  // DELETE+INSERT (not UPDATE) so a page number that didn't exist yet gets
+  // created too - but that means a column neither parameter here touches,
+  // like audio, would silently come back NULL unless carried over by hand:
+  // read whatever this page number already had before replacing it.
+  const existing = db
+    .prepare('SELECT audio FROM course_pages WHERE course_id = ? AND page_number = ?')
+    .get(courseId, pageNumber);
   db.prepare('DELETE FROM course_pages WHERE course_id = ? AND page_number = ?').run(courseId, pageNumber);
   db.prepare(
-    'INSERT INTO course_pages (course_id, page_number, chapter, html) VALUES (?, ?, ?, ?)'
-  ).run(courseId, pageNumber, chapter || null, html);
+    'INSERT INTO course_pages (course_id, page_number, chapter, html, audio) VALUES (?, ?, ?, ?, ?)'
+  ).run(courseId, pageNumber, chapter || null, html, existing?.audio || null);
 }
 
 // Creates (or replaces, if courseId already exists) a course whose first
@@ -265,6 +275,26 @@ export function getCoursePageHtml(courseId, pageNumber) {
   return row?.html || null;
 }
 
+// The raw audio bytes for one page's narration track, for GET
+// /api/courses/:courseId/pages/:pageNumber/audio to serve with Range
+// support (see routes/courses.js) - returns null if this page has none.
+export function getCoursePageAudio(courseId, pageNumber) {
+  const row = db
+    .prepare('SELECT audio FROM course_pages WHERE course_id = ? AND page_number = ?')
+    .get(courseId, pageNumber);
+  return row?.audio || null;
+}
+
+// Attaches (or replaces) a page's narration track. Independent of
+// replaceHtmlPage/replacePage above - doesn't touch html/sentences, so it
+// can be called on an already-imported page without re-uploading its text.
+export function setCoursePageAudio(courseId, pageNumber, buffer) {
+  const result = db
+    .prepare('UPDATE course_pages SET audio = ? WHERE course_id = ? AND page_number = ?')
+    .run(buffer, courseId, pageNumber);
+  if (result.changes === 0) throw new Error(`Page ${pageNumber} not found in "${courseId}"`);
+}
+
 export function renameCourse(courseId, title) {
   const result = db.prepare('UPDATE courses SET title = ? WHERE id = ?').run(title, courseId);
   if (result.changes === 0) throw new Error(`Course "${courseId}" not found`);
@@ -282,8 +312,14 @@ export function getCourse(courseId) {
   const meta = courseMeta(courseId);
   if (!meta) return null;
 
+  // "audio IS NOT NULL" rather than selecting audio itself - this response
+  // lists every page's metadata, and a page's narration track can be
+  // several MB; nothing here needs the bytes, just whether one exists (the
+  // player fetches them separately via GET .../pages/:n/audio).
   const pages = db
-    .prepare('SELECT id, page_number, chapter, html FROM course_pages WHERE course_id = ? ORDER BY page_number')
+    .prepare(
+      'SELECT id, page_number, chapter, html, (audio IS NOT NULL) AS has_audio FROM course_pages WHERE course_id = ? ORDER BY page_number'
+    )
     .all(courseId);
   const sentenceStmt = db.prepare(
     'SELECT num, de, fa, chapter FROM course_sentences WHERE page_id = ? ORDER BY num'
@@ -298,6 +334,7 @@ export function getCourse(courseId) {
       page: p.page_number,
       chapter: p.chapter,
       html: p.html || null,
+      hasAudio: Boolean(p.has_audio),
       sentences: p.html ? [] : sentenceStmt.all(p.id),
     })),
   };

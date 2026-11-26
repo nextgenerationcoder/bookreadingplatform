@@ -12,6 +12,8 @@ import {
   createCourseFromHtml,
   addHtmlPageToCourse,
   getCoursePageHtml,
+  getCoursePageAudio,
+  setCoursePageAudio,
   listCoursePageNotes,
   createCoursePageNote,
   updateCoursePageNoteText,
@@ -20,6 +22,9 @@ import {
 
 const router = Router();
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
+// A narration MP3 runs well past the 10MB cap above once a lesson is more
+// than a few minutes long - its own, larger limit.
+const audioUpload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 50 * 1024 * 1024 } });
 
 function parseLang(raw) {
   const match = typeof raw === 'string' && raw.match(/^(\w+)\s*->\s*(\w+)$/);
@@ -125,6 +130,53 @@ router.get('/:courseId/pages/:pageNumber/view', (req, res) => {
   if (!html) return res.status(404).send('Not found');
   res.setHeader('Content-Type', 'text/html; charset=utf-8');
   res.send(html);
+});
+
+// POST /api/courses/:courseId/pages/:pageNumber/audio (multipart "file", an
+// .mp3) — attaches/replaces one page's narration track. Independent of the
+// page's own text/HTML content (see courseImporter.js's replaceHtmlPage/
+// replacePage, which both now preserve this column across a content
+// replace instead of silently wiping it).
+router.post('/:courseId/pages/:pageNumber/audio', audioUpload.single('file'), (req, res) => {
+  if (!req.file) return res.status(400).json({ error: 'file is required' });
+  const pageNumber = Number(req.params.pageNumber);
+  try {
+    setCoursePageAudio(req.params.courseId, pageNumber, req.file.buffer);
+    res.json({ ok: true });
+  } catch (err) {
+    res.status(404).json({ error: err.message });
+  }
+});
+
+// GET /api/courses/:courseId/pages/:pageNumber/audio — the narration track,
+// with HTTP Range support so the player (an <audio> element) can seek
+// without re-downloading everything before that point.
+router.get('/:courseId/pages/:pageNumber/audio', (req, res) => {
+  const pageNumber = Number(req.params.pageNumber);
+  const buffer = getCoursePageAudio(req.params.courseId, pageNumber);
+  if (!buffer) return res.status(404).send('Not found');
+
+  res.setHeader('Content-Type', 'audio/mpeg');
+  res.setHeader('Accept-Ranges', 'bytes');
+
+  const range = req.headers.range;
+  const match = range && range.match(/^bytes=(\d*)-(\d*)$/);
+  if (match && (match[1] || match[2])) {
+    const start = match[1] ? Number(match[1]) : buffer.length - Number(match[2]);
+    const end = match[2] && match[1] ? Math.min(Number(match[2]), buffer.length - 1) : buffer.length - 1;
+    if (start >= buffer.length || start > end) {
+      res.status(416).setHeader('Content-Range', `bytes */${buffer.length}`).end();
+      return;
+    }
+    res.status(206);
+    res.setHeader('Content-Range', `bytes ${start}-${end}/${buffer.length}`);
+    res.setHeader('Content-Length', end - start + 1);
+    res.end(buffer.subarray(start, end + 1));
+    return;
+  }
+
+  res.setHeader('Content-Length', buffer.length);
+  res.end(buffer);
 });
 
 // --- Freely-placed notes (right-click -> "Notiz" on an HTML course page) -

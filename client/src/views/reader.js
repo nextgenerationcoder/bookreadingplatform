@@ -103,6 +103,15 @@ export async function renderReader(host, bookId, kind = 'book') {
       <button id="nextSentenceBtn" type="button" title="Next sentence">⏭</button>
       <span id="ttsStatus" class="importStatus"></span>
     </div>
+    <div class="ttsBar trackPlayerBar" id="trackPlayerBar" hidden>
+      <button id="prevTrackBtn" type="button" title="Previous lesson">⏮ Lesson</button>
+      <button id="trackBack10Btn" type="button" title="Back 10 seconds">−10s</button>
+      <button id="trackPlayPauseBtn" type="button">▶ Play</button>
+      <button id="trackFwd10Btn" type="button" title="Forward 10 seconds">+10s</button>
+      <button id="nextTrackBtn" type="button" title="Next lesson">Lesson ⏭</button>
+      <input type="range" id="trackSeek" class="trackSeek" min="0" max="0" value="0" step="1">
+      <span id="trackTime" class="importStatus">0:00 / 0:00</span>
+    </div>
     <div class="hint" id="wordHint">Tap any German word to see its meaning. Words you tap are saved automatically.</div>
     <div id="pageHost"></div>
     <div class="pageFinishBar" id="pageFinishBar">
@@ -128,6 +137,14 @@ export async function renderReader(host, bookId, kind = 'book') {
   const ttsStatus = host.querySelector('#ttsStatus');
   const finishPageBtn = host.querySelector('#finishPageBtn');
   const finishPageStatus = host.querySelector('#finishPageStatus');
+  const trackPlayerBar = host.querySelector('#trackPlayerBar');
+  const prevTrackBtn = host.querySelector('#prevTrackBtn');
+  const trackBack10Btn = host.querySelector('#trackBack10Btn');
+  const trackPlayPauseBtn = host.querySelector('#trackPlayPauseBtn');
+  const trackFwd10Btn = host.querySelector('#trackFwd10Btn');
+  const nextTrackBtn = host.querySelector('#nextTrackBtn');
+  const trackSeek = host.querySelector('#trackSeek');
+  const trackTime = host.querySelector('#trackTime');
 
   // --- Read Aloud (Piper TTS) state ---------------------------------------
   // Word timing is estimated server-side (proportional to word length, not
@@ -160,6 +177,102 @@ export async function renderReader(host, bookId, kind = 'book') {
     currentWordSpans = [];
     currentTimings = [];
   }
+
+  // --- Narration track player (a real pre-recorded MP3 attached to a
+  // course page - see courseImporter.js's course_pages.audio - independent
+  // of the Piper TTS above, which synthesizes speech from the page's own
+  // .de/.fa sentences and has nothing to read for an HTML-type page). -----
+  let trackAudioEl = null;
+  let trackSeeking = false;
+  // Set by goTrack() right before go() re-renders the next/previous page -
+  // tells renderPage() whether to start that page's track playing right
+  // away (continuous listening across lessons) - the plain page Next/
+  // Previous buttons also call go() but never set this, so they only ever
+  // stop playback, never start it on the new page.
+  let pendingTrackAutoplay = false;
+
+  function formatTrackTime(seconds) {
+    if (!Number.isFinite(seconds)) return '0:00';
+    const m = Math.floor(seconds / 60);
+    const s = Math.floor(seconds % 60);
+    return `${m}:${String(s).padStart(2, '0')}`;
+  }
+
+  function stopTrackAudio() {
+    if (trackAudioEl) {
+      trackAudioEl.pause();
+      trackAudioEl.src = '';
+      trackAudioEl.ontimeupdate = null;
+      trackAudioEl.onloadedmetadata = null;
+      trackAudioEl.onended = null;
+      trackAudioEl.onerror = null;
+      trackAudioEl = null;
+    }
+    trackPlayPauseBtn.textContent = '▶ Play';
+    trackSeek.value = '0';
+    trackTime.textContent = '0:00 / 0:00';
+  }
+
+  function setupTrackAudio(page, { autoplay } = {}) {
+    stopTrackAudio();
+    trackAudioEl = new Audio(api.coursePageAudioUrl(bookId, page.page));
+
+    trackAudioEl.onloadedmetadata = () => {
+      trackSeek.max = String(Math.floor(trackAudioEl.duration) || 0);
+      trackTime.textContent = `${formatTrackTime(trackAudioEl.currentTime)} / ${formatTrackTime(trackAudioEl.duration)}`;
+    };
+    trackAudioEl.ontimeupdate = () => {
+      if (!trackSeeking) trackSeek.value = String(Math.floor(trackAudioEl.currentTime));
+      trackTime.textContent = `${formatTrackTime(trackAudioEl.currentTime)} / ${formatTrackTime(trackAudioEl.duration)}`;
+    };
+    trackAudioEl.onended = () => {
+      trackPlayPauseBtn.textContent = '▶ Play';
+    };
+    trackAudioEl.onerror = () => {
+      trackTime.textContent = 'Playback error.';
+    };
+
+    if (autoplay) {
+      trackAudioEl
+        .play()
+        .then(() => { trackPlayPauseBtn.textContent = '⏸ Pause'; })
+        .catch(() => {}); // autoplay can be blocked; the learner can press Play
+    }
+  }
+
+  trackPlayPauseBtn.onclick = () => {
+    if (!trackAudioEl) return;
+    if (trackAudioEl.paused) {
+      trackAudioEl.play().then(() => { trackPlayPauseBtn.textContent = '⏸ Pause'; }).catch(() => {});
+    } else {
+      trackAudioEl.pause();
+      trackPlayPauseBtn.textContent = '▶ Play';
+    }
+  };
+  trackBack10Btn.onclick = () => {
+    if (trackAudioEl) trackAudioEl.currentTime = Math.max(0, trackAudioEl.currentTime - 10);
+  };
+  trackFwd10Btn.onclick = () => {
+    if (trackAudioEl) trackAudioEl.currentTime = Math.min(trackAudioEl.duration || Infinity, trackAudioEl.currentTime + 10);
+  };
+  trackSeek.addEventListener('input', () => {
+    trackSeeking = true;
+    if (trackAudioEl) trackTime.textContent = `${formatTrackTime(Number(trackSeek.value))} / ${formatTrackTime(trackAudioEl.duration)}`;
+  });
+  trackSeek.addEventListener('change', () => {
+    if (trackAudioEl) trackAudioEl.currentTime = Number(trackSeek.value);
+    trackSeeking = false;
+  });
+
+  // "Next/Previous lesson": like the plain page Next/Previous buttons, but
+  // remembers whether the track was playing so the new lesson's track picks
+  // up immediately instead of needing a separate tap on Play.
+  function goTrack(delta) {
+    pendingTrackAutoplay = Boolean(trackAudioEl && !trackAudioEl.paused);
+    go(delta);
+  }
+  prevTrackBtn.onclick = () => goTrack(-1);
+  nextTrackBtn.onclick = () => goTrack(1);
 
   // Crosses into the previous/next page (re-rendering it) when index runs
   // past the current page's sentences, returning the resolved in-page
@@ -282,6 +395,7 @@ export async function renderReader(host, bookId, kind = 'book') {
     const next = pageIndex + delta;
     if (next < 0 || next >= book.pages.length) return;
     stopAudio();
+    stopTrackAudio();
     speaking = false;
     updatePlayButton();
     pageIndex = next;
@@ -301,6 +415,7 @@ export async function renderReader(host, bookId, kind = 'book') {
     }
     gotoPageStatus.hidden = true;
     stopAudio();
+    stopTrackAudio();
     speaking = false;
     updatePlayButton();
     pageIndex = next;
@@ -321,6 +436,7 @@ export async function renderReader(host, bookId, kind = 'book') {
     if (!document.body.contains(host)) {
       document.removeEventListener('keydown', onKeydown);
       stopAudio();
+      stopTrackAudio();
       closeTranslationPicker();
       closeVerbLinkPicker();
       closePatternConfirm();
@@ -336,6 +452,8 @@ export async function renderReader(host, bookId, kind = 'book') {
     const page = book.pages[pageIndex];
     prevBtn.disabled = pageIndex === 0;
     nextBtn.disabled = pageIndex === book.pages.length - 1;
+    prevTrackBtn.disabled = pageIndex === 0;
+    nextTrackBtn.disabled = pageIndex === book.pages.length - 1;
     const first = book.pages[0].page;
     const last = book.pages[book.pages.length - 1].page;
     indicator.textContent = `Page ${page.page} of ${first}–${last}`;
@@ -387,6 +505,11 @@ export async function renderReader(host, bookId, kind = 'book') {
 
       pageHost.appendChild(section);
     }
+
+    trackPlayerBar.hidden = !page.hasAudio;
+    if (page.hasAudio) setupTrackAudio(page, { autoplay: pendingTrackAutoplay });
+    else stopTrackAudio();
+    pendingTrackAutoplay = false;
 
     window.scrollTo({ top: 0, behavior: 'instant' });
     hidePopup();

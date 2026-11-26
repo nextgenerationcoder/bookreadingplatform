@@ -126,6 +126,12 @@ export const api = {
     return postForm(`/api/courses/${courseId}/pages/html`, fd);
   },
   coursePageViewUrl: (courseId, pageNumber) => `/api/courses/${courseId}/pages/${pageNumber}/view`,
+  coursePageAudioUrl: (courseId, pageNumber) => `/api/courses/${courseId}/pages/${pageNumber}/audio`,
+  uploadCoursePageAudio: (courseId, pageNumber, file) => {
+    const fd = new FormData();
+    fd.append('file', file);
+    return postForm(`/api/courses/${courseId}/pages/${pageNumber}/audio`, fd);
+  },
 
   // Freely-placed notes (right-click -> "Notiz" on an HTML course page) -
   // same shape as the worksheet notes below, just keyed by (courseId, pageNumber).

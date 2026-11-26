@@ -210,6 +210,16 @@ const coursePageColumns = db.prepare('PRAGMA table_info(course_pages)').all().ma
 if (!coursePageColumns.includes('html')) {
   db.exec('ALTER TABLE course_pages ADD COLUMN html TEXT');
 }
+// An optional narration track (MP3) for a page - independent of whether
+// the page itself is HTML or sentence-pairs, though in practice only the
+// Sprechen worksheets have one so far. Stored as a BLOB the same way
+// html is stored inline rather than on disk, for the same reason (shared,
+// seeded content, not a private per-user upload) - served with HTTP Range
+// support (see routes/courses.js) so the player can seek without
+// downloading the whole file first.
+if (!coursePageColumns.includes('audio')) {
+  db.exec('ALTER TABLE course_pages ADD COLUMN audio BLOB');
+}
 
 // Freely-placed notes a learner adds anywhere in an HTML course page via
 // right-click -> "Notiz" - same feature and same block_index/char_offset
