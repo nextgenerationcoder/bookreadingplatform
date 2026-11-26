@@ -80,9 +80,10 @@ function mount(root){
   box.addEventListener('click',()=>{const sel=window.getSelection();if(sel&&!sel.isCollapsed&&sel.toString().trim())return;setRevealed(row,!box.classList.contains('revealed'))});box.addEventListener('keydown',(e)=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();box.click()}});
   row.querySelectorAll('.fa-word').forEach((btn,index)=>btn.addEventListener('click',()=>{
    const ids=Array.isArray(state.words[id])?[...state.words[id]]:[];
-   const code=String(index);if(!ids.includes(code))ids.push(code);
+   const code=String(index);const wasSelected=ids.includes(code);
+   const newIds=wasSelected?ids.filter(x=>x!==code):[...ids,code];
    row.querySelectorAll('.fa-word').forEach(n=>n.classList.remove('selected'));
-   renderWords(row,ids);addCandidate(row,'word',btn.textContent.trim(),btn.dataset.gloss||'');
+   renderWords(row,newIds);if(!wasSelected)addCandidate(row,'word',btn.textContent.trim(),btn.dataset.gloss||'');
   }));
   for(const button of row.querySelectorAll('.rating-button'))button.addEventListener('click',()=>{
    const rating=button.dataset.rating;
