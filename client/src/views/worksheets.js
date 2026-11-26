@@ -337,6 +337,18 @@ async function lookupPersianWord(doc, anchorEl, persianPhrase, germanSentence, p
   // which a full reveal would.
   hidePopup();
   appendToWordList(doc, box, german);
+
+  // A curated .fa-word click also registers a Learn candidate
+  // (addCandidate) alongside the word-list display - an AI-found word
+  // should get the same "show up below in Learn, waiting for ✓/✕" ✓,
+  // but addCandidate is closured inside the worksheet's own mount()
+  // script, unreachable from here. worksheet:ai-candidate is the mirror
+  // of worksheet:learn-decision (the kit's own event OUT) - an event IN,
+  // which the kit's per-row listener (see shared/worksheet.js) turns back
+  // into a real addCandidate() call.
+  box
+    .closest('.worksheet-row')
+    ?.dispatchEvent(new doc.defaultView.CustomEvent('worksheet:ai-candidate', { detail: { fa: persianPhrase, de: german }, bubbles: true }));
 }
 
 // Mirrors the worksheet's own renderWords() output for one entry (see

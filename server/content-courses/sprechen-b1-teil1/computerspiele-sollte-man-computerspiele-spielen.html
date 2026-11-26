@@ -85,6 +85,7 @@ function mount(root){
    row.querySelectorAll('.fa-word').forEach(n=>n.classList.remove('selected'));
    renderWords(row,newIds);if(!wasSelected)addCandidate(row,'word',btn.textContent.trim(),btn.dataset.gloss||'');
   }));
+  row.addEventListener('worksheet:ai-candidate',(e)=>{const d=e.detail||{};if(d.de)addCandidate(row,'word',d.fa||'',d.de)});
   for(const button of row.querySelectorAll('.rating-button'))button.addEventListener('click',()=>{
    const rating=button.dataset.rating;
    if(rating==='structure'){
