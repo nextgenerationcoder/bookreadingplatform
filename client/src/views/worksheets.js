@@ -196,6 +196,57 @@ function splitBlockAtOffset(doc, blockEl, charOffset, noteEl) {
   return blockEl;
 }
 
+// Within a Sprechen-B1-kit-style row (see server/content-courses/
+// sprechen-b1-teil1/), each .fa-word button already carries a precise,
+// human-curated German<->Persian pairing - data-gloss is the German
+// phrase, the button's own visible text is its Persian translation -
+// richer and more reliable for THAT exact phrase than this app's own
+// generic dictionary (which only knows isolated words and often has no
+// entry at all for a multi-word chunk). Also seeds the shared `dictionary`
+// object under the phrase's own key, so Ctrl/Cmd+click's "add to To
+// Learn" (ensureGloss) finds it too instead of falling back to a fresh,
+// likely-empty lookup for the whole phrase.
+function collectCuratedPhrases(deFullEl, dictionary) {
+  const row = deFullEl.closest('.worksheet-row');
+  if (!row) return [];
+  const phrases = [...row.querySelectorAll('.fa-word[data-gloss]')]
+    .map((btn) => ({ de: btn.dataset.gloss, fa: btn.textContent.trim() }))
+    .filter((p) => p.de && p.fa);
+  for (const { de, fa } of phrases) dictionary[normalizeWord(de)] = fa;
+  return phrases.sort((a, b) => b.de.length - a.de.length);
+}
+
+// Wraps `text` into clickable spans the same way renderClickableGermanText
+// does, except any substring that exactly matches one of `phrases` (tried
+// longest-first, so a 4-word curated phrase wins over any single word
+// inside it) becomes ONE span carrying that phrase's curated gloss
+// directly - no dictionary lookup, no "Looking up…". Whatever isn't
+// covered by a phrase falls back to the normal per-word/dictionary
+// behavior, unchanged.
+function wrapWithCuratedPhrases(container, text, phrases, options) {
+  container.innerHTML = '';
+  let i = 0;
+  while (i < text.length) {
+    const match = phrases.find((p) => text.startsWith(p.de, i));
+    if (match) {
+      const span = document.createElement('span');
+      span.className = 'word';
+      span.textContent = match.de;
+      span.dataset.gloss = match.fa;
+      attachWordClickHandlers(span, match.de, { ...options, sentence: text });
+      container.appendChild(span);
+      i += match.de.length;
+      continue;
+    }
+    let j = i + 1;
+    while (j < text.length && !phrases.some((p) => text.startsWith(p.de, j))) j++;
+    const chunk = document.createElement('span');
+    renderClickableGermanText(chunk, text.slice(i, j), options);
+    while (chunk.firstChild) container.appendChild(chunk.firstChild);
+    i = j;
+  }
+}
+
 function autoGrowTextarea(ta) {
   ta.style.height = 'auto';
   ta.style.height = `${ta.scrollHeight + 2}px`;
@@ -615,7 +666,11 @@ export function applyClickableTextInsideFrame(iframe, callbacks) {
     for (const textNode of textNodes) {
       const span = doc.createElement('span');
       textNode.parentNode.replaceChild(span, textNode);
-      renderClickableGermanText(span, textNode.nodeValue, { dictionary, getFrameRect, bookId: callbacks.bookId || 'worksheet', page: 0 });
+      const options = { dictionary, getFrameRect, bookId: callbacks.bookId || 'worksheet', page: 0 };
+      const deFullEl = span.closest('.de-full');
+      const curatedPhrases = deFullEl ? collectCuratedPhrases(deFullEl, dictionary) : [];
+      if (curatedPhrases.length) wrapWithCuratedPhrases(span, textNode.nodeValue, curatedPhrases, options);
+      else renderClickableGermanText(span, textNode.nodeValue, options);
     }
 
     // Add our translate/save/context actions on TOP of each pre-existing

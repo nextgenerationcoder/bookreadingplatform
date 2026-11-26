@@ -135,15 +135,21 @@ export function attachWordClickHandlers(el, word, { dictionary, sentence, bookId
   }
 
   el.addEventListener('click', async (e) => {
+    // Always stopped, even for a plain click with no modifier - a click on
+    // a word is fully handled right here (translate it), so it should
+    // never also trigger some surrounding container's own click behavior
+    // (e.g. a worksheet's "click anywhere to hide this sentence again"
+    // toggle, which otherwise fires right after the translation popup
+    // opens and immediately hides the very word just translated).
+    e.stopPropagation();
+
     // Checked before the plain Ctrl/Cmd+click case below, since that combo
     // is also true whenever this one is (Alt is just the extra modifier).
     if ((e.ctrlKey || e.metaKey) && e.altKey) {
-      e.stopPropagation();
       await contextualTranslate();
       return;
     }
     if (e.ctrlKey || e.metaKey) {
-      e.stopPropagation();
       await addToMyWords();
       return;
     }
