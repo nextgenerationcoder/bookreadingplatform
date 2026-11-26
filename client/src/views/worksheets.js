@@ -33,7 +33,31 @@ import { showWordMenu, hideWordMenu, showPatternConfirm } from '../wordMenu.js';
 // right next to its <select>, since the <select> itself is a sibling
 // element the text node's replacement never touches - becomes clickable.
 const NON_CLICKABLE_ANCESTOR_TAGS = new Set(['SCRIPT', 'STYLE', 'INPUT', 'TEXTAREA', 'SELECT', 'OPTION', 'BUTTON']);
-const NON_CLICKABLE_ANCESTOR_SELECTOR = '#marking, .noteWrap, .markingNotes, .noteToggle, .noteEnter, .freeNote';
+// .row-index (a plain "s001" id label) and .structure-panel (a grammar
+// formula like "X + ist + Y" plus its variable key, not real sentence
+// prose - the Sprechen B1 Teil 1 kit's own convention, see
+// server/content-courses/sprechen-b1-teil1/) are excluded for a different
+// reason than the rest of this list: not because they're app/kit UI chrome
+// clicks shouldn't fire on, but because wrapping their Latin-letter
+// fragments ("s" out of "s001", "X"/"Y" placeholder variables) as if they
+// were German words pollutes any [data-gloss]-based selector the content's
+// OWN script uses for something else entirely - see the Sprechen worksheet
+// kit's own fa-word click handler, which maps each Persian word button to
+// its German gloss positionally via `row.querySelectorAll('[data-gloss]')`;
+// our wrapped placeholder spans carrying a data-gloss of their own were
+// shifting that mapping and showing the wrong (or no) translation.
+const NON_CLICKABLE_ANCESTOR_SELECTOR =
+  '#marking, .noteWrap, .markingNotes, .noteToggle, .noteEnter, .freeNote, .row-index, .structure-panel';
+// Elements whose content should stay clickable/selectable even though a
+// BUTTON ancestor would otherwise exclude them (see
+// NON_CLICKABLE_ANCESTOR_TAGS's own comment) - the Sprechen B1 kit hides
+// each sentence's real German text (.de-full) and its word-by-word reveal
+// list (.word-list) inside a <button class="reveal-box"> that just toggles
+// visibility; unlike the "whole worksheet built out of <button class=word>
+// tokens" case that exclusion exists for, these buttons wrap real prose
+// worth making clickable, not a self-contained word-marking feature of
+// their own.
+const FORCE_WALKABLE_SELECTOR = '.de-full, .word-list';
 
 // The worksheet is its own document with its own stylesheet, which knows
 // nothing about classes this app adds at runtime - a worksheet whose OWN
@@ -578,6 +602,7 @@ export function applyClickableTextInsideFrame(iframe, callbacks) {
       acceptNode(node) {
         if (!/[A-Za-zÀ-ÖØ-öø-ÿ]/.test(node.nodeValue || '')) return NodeFilter.FILTER_REJECT;
         for (let el = node.parentElement; el; el = el.parentElement) {
+          if (el.matches?.(FORCE_WALKABLE_SELECTOR)) break;
           if (NON_CLICKABLE_ANCESTOR_TAGS.has(el.tagName)) return NodeFilter.FILTER_REJECT;
           if (el.matches?.(NON_CLICKABLE_ANCESTOR_SELECTOR)) return NodeFilter.FILTER_REJECT;
         }
