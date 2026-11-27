@@ -127,6 +127,7 @@ export const api = {
   },
   coursePageViewUrl: (courseId, pageNumber) => `/api/courses/${courseId}/pages/${pageNumber}/view`,
   coursePageAudioUrl: (courseId, pageNumber) => `/api/courses/${courseId}/pages/${pageNumber}/audio`,
+  getCourseShadowingChunks: (courseId, pageNumber) => get(`/api/courses/${courseId}/pages/${pageNumber}/shadowing-chunks`),
   uploadCoursePageAudio: (courseId, pageNumber, file) => {
     const fd = new FormData();
     fd.append('file', file);

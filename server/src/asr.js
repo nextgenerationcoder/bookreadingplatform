@@ -51,3 +51,36 @@ export async function transcribeAudio({ provider, apiKey, audioBuffer, mimeType,
   if (!apiKey) throw new Error('No Groq API key configured - add one in Settings to use the mic button.');
   return (await impl.call(apiKey, audioBuffer, mimeType, filename, { hotwords })).trim();
 }
+
+// For shadowing-mode chunking (see routes/courses.js's .../shadowing-
+// chunks): per-word start/end timestamps for a whole narration track, so
+// chunk boundaries fall on real word edges instead of an arbitrary fixed
+// duration that could cut a word in half. Groq's Whisper endpoint mirrors
+// OpenAI's audio API here too - response_format=verbose_json plus
+// timestamp_granularities[]=word returns a `words` array of
+// {word, start, end} (seconds) alongside the plain transcript. Only Groq
+// is wired up (same as transcribeAudio above - no self-hosted fallback).
+export async function transcribeWithWordTimestamps({ provider, apiKey, audioBuffer, mimeType, filename = 'audio.mp3' }) {
+  if (provider && provider !== 'groq') throw new Error(`Unsupported ASR provider for word timestamps: ${provider}`);
+  if (!apiKey) throw new Error('No Groq API key configured - add one in Settings to use shadowing mode.');
+
+  const form = new FormData();
+  form.append('model', GROQ_MODEL);
+  form.append('language', 'de');
+  form.append('response_format', 'verbose_json');
+  form.append('timestamp_granularities[]', 'word');
+  form.append('file', new Blob([audioBuffer], { type: mimeType }), filename);
+
+  const res = await fetch('https://api.groq.com/openai/v1/audio/transcriptions', {
+    method: 'POST',
+    headers: { authorization: `Bearer ${apiKey}` },
+    body: form,
+    signal: AbortSignal.timeout(120000), // a multi-minute lesson track takes longer than a single spoken answer
+  });
+  if (!res.ok) {
+    throw new Error(`Groq API error (${res.status}): ${await res.text().catch(() => res.statusText)}`);
+  }
+  const data = await res.json();
+  const words = Array.isArray(data.words) ? data.words : [];
+  return words.map((w) => ({ word: w.word, start: w.start, end: w.end }));
+}

@@ -130,13 +130,19 @@ function courseMeta(courseId) {
 
 function replacePage(courseId, page) {
   const existing = db
-    .prepare('SELECT audio FROM course_pages WHERE course_id = ? AND page_number = ?')
+    .prepare('SELECT audio, shadowing_chunks FROM course_pages WHERE course_id = ? AND page_number = ?')
     .get(courseId, page.page);
   db.prepare('DELETE FROM course_pages WHERE course_id = ? AND page_number = ?').run(courseId, page.page);
   const insertPage = db.prepare(
-    'INSERT INTO course_pages (course_id, page_number, chapter, audio) VALUES (?, ?, ?, ?)'
+    'INSERT INTO course_pages (course_id, page_number, chapter, audio, shadowing_chunks) VALUES (?, ?, ?, ?, ?)'
   );
-  const { lastInsertRowid: pageId } = insertPage.run(courseId, page.page, page.chapter || null, existing?.audio || null);
+  const { lastInsertRowid: pageId } = insertPage.run(
+    courseId,
+    page.page,
+    page.chapter || null,
+    existing?.audio || null,
+    existing?.shadowing_chunks || null
+  );
 
   const insertSentence = db.prepare(
     'INSERT INTO course_sentences (page_id, num, de, fa, chapter) VALUES (?, ?, ?, ?, ?)'
@@ -155,12 +161,12 @@ function replaceHtmlPage(courseId, pageNumber, chapter, html) {
   // like audio, would silently come back NULL unless carried over by hand:
   // read whatever this page number already had before replacing it.
   const existing = db
-    .prepare('SELECT audio FROM course_pages WHERE course_id = ? AND page_number = ?')
+    .prepare('SELECT audio, shadowing_chunks FROM course_pages WHERE course_id = ? AND page_number = ?')
     .get(courseId, pageNumber);
   db.prepare('DELETE FROM course_pages WHERE course_id = ? AND page_number = ?').run(courseId, pageNumber);
   db.prepare(
-    'INSERT INTO course_pages (course_id, page_number, chapter, html, audio) VALUES (?, ?, ?, ?, ?)'
-  ).run(courseId, pageNumber, chapter || null, html, existing?.audio || null);
+    'INSERT INTO course_pages (course_id, page_number, chapter, html, audio, shadowing_chunks) VALUES (?, ?, ?, ?, ?, ?)'
+  ).run(courseId, pageNumber, chapter || null, html, existing?.audio || null, existing?.shadowing_chunks || null);
 }
 
 // Creates (or replaces, if courseId already exists) a course whose first
@@ -292,6 +298,32 @@ export function setCoursePageAudio(courseId, pageNumber, buffer) {
   const result = db
     .prepare('UPDATE course_pages SET audio = ? WHERE course_id = ? AND page_number = ?')
     .run(buffer, courseId, pageNumber);
+  if (result.changes === 0) throw new Error(`Page ${pageNumber} not found in "${courseId}"`);
+  // A newly-uploaded track invalidates any chunks computed from the OLD
+  // one - better to re-transcribe once than silently show stale shadowing
+  // boundaries for different audio.
+  db.prepare('UPDATE course_pages SET shadowing_chunks = NULL WHERE course_id = ? AND page_number = ?').run(courseId, pageNumber);
+}
+
+// Parsed shadowing chunks ({start, end, text}[]) for a page's narration
+// track, or null if none have been computed yet (see
+// setCoursePageShadowingChunks and routes/courses.js's .../shadowing-chunks).
+export function getCoursePageShadowingChunks(courseId, pageNumber) {
+  const row = db
+    .prepare('SELECT shadowing_chunks FROM course_pages WHERE course_id = ? AND page_number = ?')
+    .get(courseId, pageNumber);
+  if (!row?.shadowing_chunks) return null;
+  try {
+    return JSON.parse(row.shadowing_chunks);
+  } catch {
+    return null;
+  }
+}
+
+export function setCoursePageShadowingChunks(courseId, pageNumber, chunks) {
+  const result = db
+    .prepare('UPDATE course_pages SET shadowing_chunks = ? WHERE course_id = ? AND page_number = ?')
+    .run(JSON.stringify(chunks), courseId, pageNumber);
   if (result.changes === 0) throw new Error(`Page ${pageNumber} not found in "${courseId}"`);
 }
 

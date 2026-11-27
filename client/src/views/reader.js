@@ -111,6 +111,11 @@ export async function renderReader(host, bookId, kind = 'book') {
       <button id="nextTrackBtn" type="button" title="Next lesson">Lesson ⏭</button>
       <input type="range" id="trackSeek" class="trackSeek" min="0" max="0" value="0" step="1">
       <span id="trackTime" class="importStatus">0:00 / 0:00</span>
+      <button id="shadowingToggleBtn" type="button" title="Listen to one small chunk at a time, with a pause to repeat it out loud">🗣 Shadowing</button>
+    </div>
+    <div class="shadowingBar" id="shadowingBar" hidden>
+      <span id="shadowingChunkText" class="shadowingChunkText"></span>
+      <span id="shadowingStatus" class="importStatus"></span>
     </div>
     <div class="hint" id="wordHint">Tap any German word to see its meaning. Words you tap are saved automatically.</div>
     <div id="pageHost"></div>
@@ -145,6 +150,10 @@ export async function renderReader(host, bookId, kind = 'book') {
   const nextTrackBtn = host.querySelector('#nextTrackBtn');
   const trackSeek = host.querySelector('#trackSeek');
   const trackTime = host.querySelector('#trackTime');
+  const shadowingToggleBtn = host.querySelector('#shadowingToggleBtn');
+  const shadowingBar = host.querySelector('#shadowingBar');
+  const shadowingChunkText = host.querySelector('#shadowingChunkText');
+  const shadowingStatus = host.querySelector('#shadowingStatus');
 
   // --- Read Aloud (Piper TTS) state ---------------------------------------
   // Word timing is estimated server-side (proportional to word length, not
@@ -274,6 +283,93 @@ export async function renderReader(host, bookId, kind = 'book') {
   prevTrackBtn.onclick = () => goTrack(-1);
   nextTrackBtn.onclick = () => goTrack(1);
 
+  // --- Shadowing mode: play one small chunk (see shadowingChunker.js on
+  // the server - a natural-pause-aware grouping of ~2-3 words from the
+  // track's own ASR word-timestamps, computed once and cached there),
+  // auto-pause right at its end, give the learner a moment sized to how
+  // long that chunk itself took to say (1.2x - enough to repeat it out
+  // loud without feeling rushed or dragging), then move on to the next
+  // one - the classic "listen, then shadow it" drill, hands-free once
+  // started. Chunks are cached per page (not per render) since re-opening
+  // the same page shouldn't refetch/recompute them.
+  let shadowingChunksByPage = new Map();
+  let shadowingActive = false;
+  let shadowingAdvanceTimer = null;
+  let shadowingBoundaryHandler = null;
+
+  function stopShadowing() {
+    shadowingActive = false;
+    if (shadowingAdvanceTimer) {
+      clearTimeout(shadowingAdvanceTimer);
+      shadowingAdvanceTimer = null;
+    }
+    if (trackAudioEl && shadowingBoundaryHandler) trackAudioEl.removeEventListener('timeupdate', shadowingBoundaryHandler);
+    shadowingBoundaryHandler = null;
+    shadowingToggleBtn.textContent = '🗣 Shadowing';
+    shadowingBar.hidden = true;
+    shadowingChunkText.textContent = '';
+    shadowingStatus.textContent = '';
+  }
+
+  function playShadowingChunk(chunks, index) {
+    if (!shadowingActive || !trackAudioEl) return;
+    if (index >= chunks.length) {
+      shadowingStatus.textContent = 'Finished - press Shadowing again to restart.';
+      stopShadowing();
+      return;
+    }
+    const chunk = chunks[index];
+    shadowingChunkText.textContent = chunk.text;
+    shadowingStatus.textContent = `Chunk ${index + 1} / ${chunks.length}`;
+    trackAudioEl.currentTime = chunk.start;
+    trackAudioEl.play().catch(() => {});
+
+    if (shadowingBoundaryHandler) trackAudioEl.removeEventListener('timeupdate', shadowingBoundaryHandler);
+    shadowingBoundaryHandler = () => {
+      if (!shadowingActive || trackAudioEl.currentTime < chunk.end) return;
+      trackAudioEl.removeEventListener('timeupdate', shadowingBoundaryHandler);
+      trackAudioEl.pause();
+      shadowingStatus.textContent = `Your turn… (${index + 1} / ${chunks.length})`;
+      const pauseMs = (chunk.end - chunk.start) * 1.2 * 1000;
+      shadowingAdvanceTimer = setTimeout(() => playShadowingChunk(chunks, index + 1), pauseMs);
+    };
+    trackAudioEl.addEventListener('timeupdate', shadowingBoundaryHandler);
+  }
+
+  async function toggleShadowing() {
+    if (shadowingActive) {
+      stopShadowing();
+      return;
+    }
+    const page = book.pages[pageIndex];
+    shadowingToggleBtn.disabled = true;
+    shadowingBar.hidden = false;
+    shadowingStatus.textContent = 'Loading…';
+    shadowingChunkText.textContent = '';
+
+    let chunks = shadowingChunksByPage.get(page.page);
+    if (!chunks) {
+      try {
+        ({ chunks } = await api.getCourseShadowingChunks(bookId, page.page));
+        shadowingChunksByPage.set(page.page, chunks);
+      } catch (err) {
+        shadowingStatus.textContent = `Error: ${err.message}`;
+        shadowingToggleBtn.disabled = false;
+        return;
+      }
+    }
+    shadowingToggleBtn.disabled = false;
+
+    if (!chunks || !chunks.length) {
+      shadowingStatus.textContent = 'No chunks available for this track.';
+      return;
+    }
+    shadowingActive = true;
+    shadowingToggleBtn.textContent = '⏹ Stop shadowing';
+    playShadowingChunk(chunks, 0);
+  }
+  shadowingToggleBtn.onclick = toggleShadowing;
+
   // Crosses into the previous/next page (re-rendering it) when index runs
   // past the current page's sentences, returning the resolved in-page
   // index, or null if there's no more book in that direction.
@@ -396,6 +492,7 @@ export async function renderReader(host, bookId, kind = 'book') {
     if (next < 0 || next >= book.pages.length) return;
     stopAudio();
     stopTrackAudio();
+    stopShadowing();
     speaking = false;
     updatePlayButton();
     pageIndex = next;
@@ -416,6 +513,7 @@ export async function renderReader(host, bookId, kind = 'book') {
     gotoPageStatus.hidden = true;
     stopAudio();
     stopTrackAudio();
+    stopShadowing();
     speaking = false;
     updatePlayButton();
     pageIndex = next;
@@ -437,6 +535,7 @@ export async function renderReader(host, bookId, kind = 'book') {
       document.removeEventListener('keydown', onKeydown);
       stopAudio();
       stopTrackAudio();
+      stopShadowing();
       closeTranslationPicker();
       closeVerbLinkPicker();
       closePatternConfirm();
@@ -509,6 +608,7 @@ export async function renderReader(host, bookId, kind = 'book') {
     trackPlayerBar.hidden = !page.hasAudio;
     if (page.hasAudio) setupTrackAudio(page, { autoplay: pendingTrackAutoplay });
     else stopTrackAudio();
+    stopShadowing();
     pendingTrackAutoplay = false;
 
     window.scrollTo({ top: 0, behavior: 'instant' });

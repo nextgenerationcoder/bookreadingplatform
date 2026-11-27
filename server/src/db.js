@@ -220,6 +220,15 @@ if (!coursePageColumns.includes('html')) {
 if (!coursePageColumns.includes('audio')) {
   db.exec('ALTER TABLE course_pages ADD COLUMN audio BLOB');
 }
+// Shadowing-mode chunk boundaries for the page's own audio (see
+// shadowingChunker.js) - a JSON array of {start, end, text}, computed once
+// by running the audio through Groq's word-timestamp transcription (an
+// account's own BYO key, like the mic button already uses) the first time
+// anyone opens shadowing mode for this page, then cached here so every
+// later learner gets it for free instead of re-transcribing the same file.
+if (!coursePageColumns.includes('shadowing_chunks')) {
+  db.exec('ALTER TABLE course_pages ADD COLUMN shadowing_chunks TEXT');
+}
 
 // Freely-placed notes a learner adds anywhere in an HTML course page via
 // right-click -> "Notiz" - same feature and same block_index/char_offset

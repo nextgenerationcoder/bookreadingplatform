@@ -14,11 +14,17 @@ import {
   getCoursePageHtml,
   getCoursePageAudio,
   setCoursePageAudio,
+  getCoursePageShadowingChunks,
+  setCoursePageShadowingChunks,
   listCoursePageNotes,
   createCoursePageNote,
   updateCoursePageNoteText,
   deleteCoursePageNote,
 } from '../courseImporter.js';
+import { db } from '../db.js';
+import { decrypt } from '../crypto.js';
+import { transcribeWithWordTimestamps } from '../asr.js';
+import { groupWordsIntoChunks } from '../shadowingChunker.js';
 
 const router = Router();
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
@@ -177,6 +183,47 @@ router.get('/:courseId/pages/:pageNumber/audio', (req, res) => {
 
   res.setHeader('Content-Length', buffer.length);
   res.end(buffer);
+});
+
+// GET /api/courses/:courseId/pages/:pageNumber/shadowing-chunks - small
+// listen-then-repeat chunks for shadowing practice (see
+// shadowingChunker.js), computed from the page's own narration track.
+// Cached in course_pages.shadowing_chunks once computed (shared across
+// every learner, not per-account) - this route only ever transcribes on a
+// cache miss, using whichever account happens to request it first their
+// own Groq key (the same one the mic button already uses), same BYO-key
+// convention as the rest of the app's AI features.
+router.get('/:courseId/pages/:pageNumber/shadowing-chunks', async (req, res) => {
+  const pageNumber = Number(req.params.pageNumber);
+  const cached = getCoursePageShadowingChunks(req.params.courseId, pageNumber);
+  if (cached) return res.json({ chunks: cached });
+
+  const buffer = getCoursePageAudio(req.params.courseId, pageNumber);
+  if (!buffer) return res.status(404).json({ error: 'this page has no narration track' });
+
+  const row = db.prepare('SELECT asr_provider, asr_api_key_enc FROM users WHERE id = ?').get(req.userId);
+  const provider = row?.asr_provider || 'groq';
+  if (!row?.asr_api_key_enc) {
+    return res.status(400).json({ error: 'Add a Groq API key in Settings to use shadowing mode.' });
+  }
+
+  let apiKey;
+  try {
+    apiKey = await decrypt(row.asr_api_key_enc);
+  } catch (err) {
+    console.error('shadowing-chunks: failed to decrypt Groq API key:', err);
+    return res.status(500).json({ error: 'Failed to read your Groq API key — try re-saving it in Settings.' });
+  }
+
+  try {
+    const words = await transcribeWithWordTimestamps({ provider, apiKey, audioBuffer: buffer, mimeType: 'audio/mpeg' });
+    const chunks = groupWordsIntoChunks(words);
+    setCoursePageShadowingChunks(req.params.courseId, pageNumber, chunks);
+    res.json({ chunks });
+  } catch (err) {
+    console.error('shadowing-chunks: transcription failed:', err);
+    res.status(502).json({ error: err.message });
+  }
 });
 
 // --- Freely-placed notes (right-click -> "Notiz" on an HTML course page) -

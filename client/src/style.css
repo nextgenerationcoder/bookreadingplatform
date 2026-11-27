@@ -51,6 +51,8 @@ button:disabled { opacity: .35 }
 .ttsBar #ttsStatus { margin: 0; font-size: 13px }
 .trackPlayerBar .trackSeek { flex: 1; min-width: 120px }
 .trackPlayerBar #trackTime { white-space: nowrap; font-variant-numeric: tabular-nums }
+.shadowingBar { display: flex; align-items: center; gap: 10px; padding: 8px 0; flex-wrap: wrap }
+.shadowingChunkText { font-size: 20px; font-weight: 600; color: var(--accent, #2a5c8a) }
 
 .pageFinishBar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin: 18px 0 30px; padding-top: 14px; border-top: 1px solid var(--line) }
 .pageFinishBar #finishPageStatus { margin: 0; font-size: 13px }
