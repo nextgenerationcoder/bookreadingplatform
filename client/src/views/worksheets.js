@@ -75,6 +75,10 @@ function injectStyles(doc) {
     .word { cursor: pointer; border-radius: 3px; padding: 0 1px }
     .word:hover { background: #e8f0f8 }
     .word.wordAdded { font-weight: 600; text-decoration: underline; text-decoration-style: dotted }
+    .word.wordKnown { color: #2f8f4e }
+    .word.wordLearning { color: #d98c2b }
+    .word.wordUnset { color: #9a9488 }
+    .hoerenCurrentWord { background: #fff3b0; border-radius: 3px }
     .freeNote { margin: 10px 0; border: 1px solid #e8d28a; background: #fffbea; border-radius: 8px; padding: 8px 10px; display: block }
     .freeNoteBar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px }
     .freeNoteLabel { font-size: 12px; color: #8a6d1f; font-weight: 600 }
@@ -798,6 +802,17 @@ export function applyClickableTextInsideFrame(iframe, callbacks) {
           if (el.matches?.(FORCE_WALKABLE_SELECTOR)) break;
           if (NON_CLICKABLE_ANCESTOR_TAGS.has(el.tagName)) return NodeFilter.FILTER_REJECT;
           if (el.matches?.(NON_CLICKABLE_ANCESTOR_SELECTOR)) return NodeFilter.FILTER_REJECT;
+          // A pre-existing .word element (not just one wrapped in a BUTTON,
+          // like NON_CLICKABLE_ANCESTOR_TAGS already covers - a page can
+          // ship its own plain <span class="word" data-start=...> too, e.g.
+          // a Hören page's word-level timing spans) is already in
+          // preexistingWordEls and gets wired up by that separate loop below
+          // - without this, its own text node would ALSO get caught by this
+          // walker and double-wrapped in a second, nested .word span, which
+          // then swallows its click (via that inner span's own
+          // stopPropagation) before the outer one - the one actually
+          // carrying data-start/data-end/dataset.word - ever sees it.
+          if (el.classList?.contains('word')) return NodeFilter.FILTER_REJECT;
         }
         return NodeFilter.FILTER_ACCEPT;
       },
@@ -808,7 +823,7 @@ export function applyClickableTextInsideFrame(iframe, callbacks) {
     for (const textNode of textNodes) {
       const span = doc.createElement('span');
       textNode.parentNode.replaceChild(span, textNode);
-      const options = { dictionary, getFrameRect, bookId: callbacks.bookId || 'worksheet', page: 0 };
+      const options = { dictionary, getFrameRect, bookId: callbacks.bookId || 'worksheet', page: 0, vocabStatus: callbacks.vocabStatus };
       const deFullEl = span.closest('.de-full');
       const curatedPhrases = deFullEl ? collectCuratedPhrases(deFullEl, dictionary) : [];
       if (curatedPhrases.length) wrapWithCuratedPhrases(span, textNode.nodeValue, curatedPhrases, options);
@@ -832,6 +847,7 @@ export function applyClickableTextInsideFrame(iframe, callbacks) {
         getFrameRect,
         bookId: callbacks.bookId || 'worksheet',
         page: 0,
+        vocabStatus: callbacks.vocabStatus,
         sentence: context ? context.textContent.trim() : word,
       });
     }

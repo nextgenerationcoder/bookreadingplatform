@@ -18,6 +18,7 @@ const WORD_FREQUENCY_SEED = path.join(__dirname, '..', 'data', 'word-frequency.s
 const GRAMMAR_LESSONS_SEED = path.join(__dirname, '..', 'data', 'grammar-lessons.seed.json');
 const SPRECHEN_B1_TEIL1_DIR = path.join(__dirname, '..', 'content-courses', 'sprechen-b1-teil1');
 const SPRECHEN_B1_AUDIO_DIR = path.join(SPRECHEN_B1_TEIL1_DIR, 'audio');
+const HOEREN_B1_DIR = path.join(__dirname, '..', 'content-courses', 'hoeren-b1');
 
 async function seedDictionary() {
   const { count } = db.prepare('SELECT COUNT(*) AS count FROM dictionary').get();
@@ -336,6 +337,41 @@ async function seedSprechenB1Audio() {
   }
 }
 
+// The first real Hören lesson (Lektion 2, Aufgabe 3 - see
+// server/src/hoerenChunker.js for how its word-timing/chunk data got baked
+// straight into the HTML as data-start/data-end attributes, no separate DB
+// column needed). Gated on the placeholder's own Persian "no content yet"
+// text still being there (not on the course not existing at all, like
+// seedSprechenB1Teil1 - b1-hoeren already exists from seedB1SkillSections'
+// placeholder) - so a real lesson a user has since replaced or added to
+// never gets silently overwritten by a later deploy, same spirit as every
+// other guard in this file.
+async function seedHoerenB1Lektion2Aufgabe3() {
+  const page = db
+    .prepare(
+      `SELECT html FROM course_pages WHERE course_id = 'b1-hoeren' AND page_number = 1`
+    )
+    .get();
+  if (!page || !page.html || !page.html.includes('هنوز محتوایی ندارد')) return;
+
+  let html;
+  try {
+    html = await fs.readFile(path.join(HOEREN_B1_DIR, 'lektion2-aufgabe3.html'), 'utf-8');
+  } catch (err) {
+    if (err.code === 'ENOENT') return;
+    throw err;
+  }
+  addHtmlPageToCourse('b1-hoeren', { pageNumber: 1, chapter: 'Lektion 2', html });
+
+  try {
+    const audio = await fs.readFile(path.join(HOEREN_B1_DIR, 'audio', 'lektion2-aufgabe3.mp3'));
+    setCoursePageAudio('b1-hoeren', 1, audio);
+  } catch (err) {
+    if (err.code !== 'ENOENT') throw err;
+  }
+  console.log('Seeded "Hören" (b1-hoeren) page 1 with Lektion 2, Aufgabe 3.');
+}
+
 export async function seedIfEmpty() {
   await seedDictionary();
   await seedWikidict();
@@ -346,4 +382,5 @@ export async function seedIfEmpty() {
   await seedB1SkillSections();
   await seedSprechenB1Teil1();
   await seedSprechenB1Audio();
+  await seedHoerenB1Lektion2Aufgabe3();
 }

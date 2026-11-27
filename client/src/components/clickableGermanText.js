@@ -5,13 +5,14 @@
 // in and get the same click/translate/save-to-vocabulary behavior, without
 // needing a full book/page/sentence structure around it.
 //
-// Deliberately simpler than reader.js's own word handling: this has no
-// concept of a word's prior "known/learning/unknown" status (no
-// wordKnown/wordLearning/wordUnset coloring, no "mark unknown" to undo a
-// save) - its only job is translate-on-click and add-to-To-Learn-on-
-// Ctrl/Cmd-click. reader.js is left exactly as it is; this is a copy, not a
-// refactor, so keep both in sync by hand if the shared lookup/popup logic
-// changes in one and should change in the other too.
+// Deliberately simpler than reader.js's own word handling: no "mark
+// unknown" to undo a save, and the wordKnown/wordLearning/wordUnset
+// coloring below only activates when a caller passes a `vocabStatus` map
+// (reader.js's book pages always have one; a plain worksheet with no
+// logged-in vocab context can just omit it and nothing colors). reader.js
+// is left exactly as it is; this is a copy, not a refactor, so keep both in
+// sync by hand if the shared lookup/popup logic changes in one and should
+// change in the other too.
 //
 // Uses the same backend endpoints as reader.js (api.lookupWord,
 // api.markWordUnknown, api.recordWordClick), plus two endpoints reader.js
@@ -26,6 +27,17 @@ import { showPopupFor, hidePopup } from '../popup.js';
 
 const TOKEN_RE = /[A-Za-zÀ-ÖØ-öø-ÿ'’-]+|[^A-Za-zÀ-ÖØ-öø-ÿ'’-]+/g;
 const NO_GLOSS = 'Not yet in the dictionary.';
+
+// Mirrors reader.js's own applyWordColor (see its doc comment there for why
+// 'learned'/'passive' are both green) - duplicated rather than shared since
+// reader.js's version also touches book-page-only state (clickedWords).
+function applyVocabStatusColor(el, vocabStatus, key) {
+  el.classList.remove('wordKnown', 'wordLearning', 'wordUnset');
+  const status = vocabStatus[key];
+  if (status === 'learned' || status === 'passive') el.classList.add('wordKnown');
+  else if (status === 'learning') el.classList.add('wordLearning');
+  else el.classList.add('wordUnset');
+}
 
 /**
  * Wires up click/Ctrl+click/Ctrl+Alt+click word behavior on an EXISTING
@@ -52,13 +64,15 @@ const NO_GLOSS = 'Not yet in the dictionary.';
  * @param {number} [options.page] - see renderClickableGermanText.
  * @param {() => {left: number, top: number}} [options.getFrameRect] - see
  *   renderClickableGermanText.
+ * @param {object} [options.vocabStatus] - see renderClickableGermanText.
  */
-export function attachWordClickHandlers(el, word, { dictionary, sentence, bookId, page, getFrameRect } = {}) {
+export function attachWordClickHandlers(el, word, { dictionary, sentence, bookId, page, getFrameRect, vocabStatus } = {}) {
   const doc = el.ownerDocument || document;
   el.dataset.word = word;
   if (el.dataset.gloss === undefined) el.dataset.gloss = dictionary[normalizeWord(word)] || NO_GLOSS;
   el.dataset.sentence = sentence || word;
   if (!el.title) el.title = 'Click: translate. Ctrl/Cmd+click: add to To Learn. Ctrl/Cmd+Alt+click: ask AI (context).';
+  if (vocabStatus) applyVocabStatusColor(el, vocabStatus, normalizeWord(word));
 
   function popupAt(gloss) {
     showPopupFor(el, word, gloss, getFrameRect ? getFrameRect() : undefined);
@@ -100,7 +114,17 @@ export function attachWordClickHandlers(el, word, { dictionary, sentence, bookId
       popupAt(`Error: ${err.message}`);
       return;
     }
-    doc.querySelectorAll(`[data-word="${CSS.escape(word)}"]`).forEach((other) => other.classList.add('wordAdded'));
+    const key = normalizeWord(word);
+    doc.querySelectorAll(`[data-word="${CSS.escape(word)}"]`).forEach((other) => {
+      other.classList.add('wordAdded');
+      // Same "never downgrade an already-learned word" rule as reader.js's
+      // onWordClick - a word just added here is freshly in progress, not
+      // retroactively un-mastered if it was already green.
+      if (vocabStatus && vocabStatus[key] !== 'learned') {
+        vocabStatus[key] = 'learning';
+        applyVocabStatusColor(other, vocabStatus, key);
+      }
+    });
     popupAt(gloss ? `${gloss} — added to To Learn ✓` : 'Added to To Learn ✓');
   }
 
@@ -186,8 +210,14 @@ export function attachWordClickHandlers(el, word, { dictionary, sentence, bookId
  *   scroll/resize), and passed through to popup.js so the translation popup
  *   (which always renders into *this* document's <body>) lands in the right
  *   place instead of offset by wherever the iframe happens to sit.
+ * @param {object} [options.vocabStatus] - {normalizedWord: 'learned'|
+ *   'passive'|'learning'} - when given, each word span is colored exactly
+ *   like reader.js's book pages (green/orange/gray) and stays live-updated
+ *   when a word gets added to To Learn here. Omit for a context with no
+ *   logged-in vocab state (e.g. a worksheet rendered without one) - words
+ *   then get no color at all, just the plain translate-on-click behavior.
  */
-export function renderClickableGermanText(container, text, { dictionary, bookId, page, getFrameRect } = {}) {
+export function renderClickableGermanText(container, text, { dictionary, bookId, page, getFrameRect, vocabStatus } = {}) {
   // Splits `text` into sentences up front and, while tokenizing, tracks
   // which sentence each word token falls in (by its running character
   // offset) - so Ctrl/Cmd+Alt+click can hand the AI the one sentence this
@@ -217,7 +247,7 @@ export function renderClickableGermanText(container, text, { dictionary, bookId,
     const span = document.createElement('span');
     span.className = 'word';
     span.textContent = token;
-    attachWordClickHandlers(span, token, { dictionary, bookId, page, getFrameRect, sentence: sentenceAtOffset(charOffset) });
+    attachWordClickHandlers(span, token, { dictionary, bookId, page, getFrameRect, vocabStatus, sentence: sentenceAtOffset(charOffset) });
     container.appendChild(span);
     charOffset += token.length;
   }

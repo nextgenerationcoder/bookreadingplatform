@@ -106,7 +106,9 @@ export async function renderReader(host, bookId, kind = 'book') {
     <div class="ttsBar trackPlayerBar" id="trackPlayerBar" hidden>
       <button id="prevTrackBtn" type="button" title="Previous lesson">⏮ Lesson</button>
       <button id="trackBack10Btn" type="button" title="Back 10 seconds">−10s</button>
+      <button id="prevChunkBtn" type="button" title="Previous chunk" hidden>⏮ Chunk</button>
       <button id="trackPlayPauseBtn" type="button">▶ Play</button>
+      <button id="nextChunkBtn" type="button" title="Next chunk" hidden>Chunk ⏭</button>
       <button id="trackFwd10Btn" type="button" title="Forward 10 seconds">+10s</button>
       <button id="nextTrackBtn" type="button" title="Next lesson">Lesson ⏭</button>
       <input type="range" id="trackSeek" class="trackSeek" min="0" max="0" value="0" step="1">
@@ -148,6 +150,8 @@ export async function renderReader(host, bookId, kind = 'book') {
   const trackPlayPauseBtn = host.querySelector('#trackPlayPauseBtn');
   const trackFwd10Btn = host.querySelector('#trackFwd10Btn');
   const nextTrackBtn = host.querySelector('#nextTrackBtn');
+  const prevChunkBtn = host.querySelector('#prevChunkBtn');
+  const nextChunkBtn = host.querySelector('#nextChunkBtn');
   const trackSeek = host.querySelector('#trackSeek');
   const trackTime = host.querySelector('#trackTime');
   const shadowingToggleBtn = host.querySelector('#shadowingToggleBtn');
@@ -568,6 +572,12 @@ export async function renderReader(host, bookId, kind = 'book') {
     pageHost.innerHTML = '';
     wordIndexCounter = 0;
     lastCommittedIndex = -1;
+    // Hidden up front, not just left over from the previous page - the new
+    // Hören page's own load handler (wireUpHoerenNav) re-shows them once it
+    // can see whether THIS page actually has chunks, which only happens
+    // once the iframe finishes loading a moment later.
+    prevChunkBtn.hidden = true;
+    nextChunkBtn.hidden = true;
 
     // An HTML-type course page (see courseImporter.js's course_pages.html
     // comment) has no .word spans / sentences of its own to read aloud or
@@ -637,9 +647,64 @@ export async function renderReader(host, bookId, kind = 'book') {
         deleteNote: (noteId) => api.deleteCoursePageNote(bookId, page.page, noteId),
         askAi: (question) => api.askWorksheetAi(question),
         bookId,
+        vocabStatus,
       })
     );
     pageHost.appendChild(iframe);
+    iframe.addEventListener('load', () => wireUpHoerenNav(iframe));
+  }
+
+  // --- Hören chunk-nav + live word highlight (see server/src/hoerenChunker.js
+  // for how a page's generated HTML gets its .hoerenChunk/.hoerenWord
+  // data-start/data-end attributes) - a plain HTML course page with neither
+  // (an ordinary worksheet-style page, or one of the earlier Sprechen mp3
+  // pages) just leaves the Chunk buttons hidden and skips the highlight
+  // listener entirely, so this is safe to call on every HTML page's load.
+  let hoerenCurrentWordEl = null;
+
+  function wireUpHoerenNav(iframe) {
+    let doc;
+    try {
+      doc = iframe.contentDocument;
+    } catch {
+      return;
+    }
+    if (!doc) return;
+
+    const chunkStarts = [...new Set([...doc.querySelectorAll('.hoerenChunk[data-chunk-start]')].map((el) => Number(el.dataset.chunkStart)))].sort(
+      (a, b) => a - b
+    );
+    const hasChunks = chunkStarts.length > 0 && Boolean(trackAudioEl);
+    prevChunkBtn.hidden = !hasChunks;
+    nextChunkBtn.hidden = !hasChunks;
+    hoerenCurrentWordEl = null;
+    if (!hasChunks) return;
+
+    function seekToChunk(forward) {
+      if (!trackAudioEl) return;
+      const t = trackAudioEl.currentTime;
+      if (forward) {
+        const next = chunkStarts.find((s) => s > t + 0.15);
+        if (next !== undefined) trackAudioEl.currentTime = next;
+      } else {
+        const earlier = chunkStarts.filter((s) => s < t - 0.15);
+        trackAudioEl.currentTime = earlier.length ? earlier[earlier.length - 1] : 0;
+      }
+    }
+    prevChunkBtn.onclick = () => seekToChunk(false);
+    nextChunkBtn.onclick = () => seekToChunk(true);
+
+    const words = [...doc.querySelectorAll('.hoerenWord[data-start]')];
+    if (!words.length || !trackAudioEl) return;
+    trackAudioEl.addEventListener('timeupdate', () => {
+      if (!trackAudioEl) return;
+      const t = trackAudioEl.currentTime;
+      const current = words.find((w) => t >= Number(w.dataset.start) && t < Number(w.dataset.end));
+      if (current === hoerenCurrentWordEl) return;
+      hoerenCurrentWordEl?.classList.remove('hoerenCurrentWord');
+      current?.classList.add('hoerenCurrentWord');
+      hoerenCurrentWordEl = current || null;
+    });
   }
 
   function renderSentence(sentence, pageNum) {
