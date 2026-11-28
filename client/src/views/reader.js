@@ -287,100 +287,76 @@ export async function renderReader(host, bookId, kind = 'book') {
   prevTrackBtn.onclick = () => goTrack(-1);
   nextTrackBtn.onclick = () => goTrack(1);
 
-  // --- Shadowing mode: play one small chunk (see shadowingChunker.js on
-  // the server - a natural-pause-aware grouping of ~2-3 words from the
-  // track's own ASR word-timestamps, computed once and cached there),
-  // auto-pause right at its end, give the learner a moment sized to how
-  // long that chunk itself took to say (1.2x - enough to repeat it out
-  // loud without feeling rushed or dragging), then move on to the next
-  // one - the classic "listen, then shadow it" drill, hands-free once
-  // started. Chunks are cached per page (not per render) since re-opening
-  // the same page shouldn't refetch/recompute them.
-  let shadowingChunksByPage = new Map();
+  // --- Shadowing mode: swaps the player's source to a real, pre-rendered
+  // "Shadowing practice" MP3 (see shadowingAudioBuilder.js on the server -
+  // real silence and real time-stretched short chunks baked into the
+  // audio itself via ffmpeg, a direct port of the user's own
+  // shadowing_pipeline.py) and reuses the exact same Play/Pause/±10s/seek
+  // controls already wired to trackAudioEl, rather than live-pausing the
+  // original track from JS. Rendering happens server-side on the first
+  // request for a page (slow - one ffmpeg call per chunk) and is cached
+  // after that, so stay in the "rendering…" state until canplay fires.
   let shadowingActive = false;
-  let shadowingAdvanceTimer = null;
-  let shadowingBoundaryHandler = null;
+  let normalTrackUrl = null;
+  let shadowingLoadHandlers = null;
+
+  function clearShadowingLoadHandlers() {
+    if (!trackAudioEl || !shadowingLoadHandlers) return;
+    trackAudioEl.removeEventListener('canplay', shadowingLoadHandlers.onCanPlay);
+    trackAudioEl.removeEventListener('error', shadowingLoadHandlers.onError);
+    shadowingLoadHandlers = null;
+  }
 
   function stopShadowing() {
+    if (!shadowingActive) return;
     shadowingActive = false;
-    if (shadowingAdvanceTimer) {
-      clearTimeout(shadowingAdvanceTimer);
-      shadowingAdvanceTimer = null;
-    }
-    if (trackAudioEl && shadowingBoundaryHandler) trackAudioEl.removeEventListener('timeupdate', shadowingBoundaryHandler);
-    shadowingBoundaryHandler = null;
+    clearShadowingLoadHandlers();
     shadowingToggleBtn.textContent = '🗣 Shadowing';
+    shadowingToggleBtn.disabled = false;
     shadowingBar.hidden = true;
-    shadowingChunkText.textContent = '';
     shadowingStatus.textContent = '';
-  }
-
-  function playShadowingChunk(chunks, index) {
-    if (!shadowingActive || !trackAudioEl) return;
-    if (index >= chunks.length) {
-      shadowingStatus.textContent = 'Finished - press Shadowing again to restart.';
-      stopShadowing();
-      return;
-    }
-    const chunk = chunks[index];
-    shadowingChunkText.textContent = chunk.text;
-    shadowingStatus.textContent = `Chunk ${index + 1} / ${chunks.length}`;
-    trackAudioEl.currentTime = chunk.start;
-    trackAudioEl.play().catch(() => {});
-
-    if (shadowingBoundaryHandler) trackAudioEl.removeEventListener('timeupdate', shadowingBoundaryHandler);
-    shadowingBoundaryHandler = () => {
-      if (!shadowingActive || trackAudioEl.currentTime < chunk.end) return;
-      trackAudioEl.removeEventListener('timeupdate', shadowingBoundaryHandler);
+    if (trackAudioEl && normalTrackUrl) {
       trackAudioEl.pause();
-      shadowingStatus.textContent = `Your turn… (${index + 1} / ${chunks.length})`;
-      // Per shadowing_pipeline.py's own formula: slowed duration = max(real
-      // speech duration, 1.5s), pause = slowed * 1.2 - a chunk shorter than
-      // 1.5s (e.g. a bare "Ja.") still gets a real repeat-it-out-loud pause
-      // sized off that 1.5s floor, not off its own near-instant duration.
-      // The script also time-stretches the chunk's own audio up to that
-      // floor before playing it; a plain <audio> element re-pitching
-      // playback live isn't worth the complexity here, so only the pause
-      // length picks up the floor, not the chunk's own playback speed.
-      const speechDuration = chunk.end - chunk.start;
-      const slowedDuration = Math.max(speechDuration, 1.5);
-      const pauseMs = slowedDuration * 1.2 * 1000;
-      shadowingAdvanceTimer = setTimeout(() => playShadowingChunk(chunks, index + 1), pauseMs);
-    };
-    trackAudioEl.addEventListener('timeupdate', shadowingBoundaryHandler);
+      trackAudioEl.src = normalTrackUrl;
+      trackAudioEl.load();
+      trackPlayPauseBtn.textContent = '▶ Play';
+    }
   }
 
-  async function toggleShadowing() {
+  function toggleShadowing() {
     if (shadowingActive) {
       stopShadowing();
       return;
     }
+    if (!trackAudioEl) return;
     const page = book.pages[pageIndex];
-    shadowingToggleBtn.disabled = true;
-    shadowingBar.hidden = false;
-    shadowingStatus.textContent = 'Loading…';
-    shadowingChunkText.textContent = '';
-
-    let chunks = shadowingChunksByPage.get(page.page);
-    if (!chunks) {
-      try {
-        ({ chunks } = await api.getCourseShadowingChunks(bookId, page.page));
-        shadowingChunksByPage.set(page.page, chunks);
-      } catch (err) {
-        shadowingStatus.textContent = `Error: ${err.message}`;
-        shadowingToggleBtn.disabled = false;
-        return;
-      }
-    }
-    shadowingToggleBtn.disabled = false;
-
-    if (!chunks || !chunks.length) {
-      shadowingStatus.textContent = 'No chunks available for this track.';
-      return;
-    }
+    normalTrackUrl = trackAudioEl.src;
     shadowingActive = true;
     shadowingToggleBtn.textContent = '⏹ Stop shadowing';
-    playShadowingChunk(chunks, 0);
+    shadowingToggleBtn.disabled = true;
+    shadowingBar.hidden = false;
+    shadowingChunkText.textContent = '';
+    shadowingStatus.textContent = 'Preparing the shadowing track… this can take a while the first time.';
+
+    trackAudioEl.pause();
+    trackAudioEl.src = api.courseShadowingAudioUrl(bookId, page.page);
+    trackAudioEl.load();
+
+    clearShadowingLoadHandlers();
+    const onCanPlay = () => {
+      clearShadowingLoadHandlers();
+      shadowingStatus.textContent = '';
+      shadowingToggleBtn.disabled = false;
+      trackAudioEl.play().then(() => { trackPlayPauseBtn.textContent = '⏸ Pause'; }).catch(() => {});
+    };
+    const onError = () => {
+      clearShadowingLoadHandlers();
+      shadowingStatus.textContent = 'Could not build/load the shadowing track.';
+      shadowingToggleBtn.disabled = false;
+    };
+    shadowingLoadHandlers = { onCanPlay, onError };
+    trackAudioEl.addEventListener('canplay', onCanPlay, { once: true });
+    trackAudioEl.addEventListener('error', onError, { once: true });
   }
   shadowingToggleBtn.onclick = toggleShadowing;
 
@@ -691,7 +667,10 @@ export async function renderReader(host, bookId, kind = 'book') {
     if (!hasChunks) return;
 
     function seekToChunk(forward) {
-      if (!trackAudioEl) return;
+      // Same reason as the highlight listener above - while Shadowing mode
+      // has swapped in the rendered practice track, these boundaries (from
+      // the original narration) don't correspond to real seek points in it.
+      if (!trackAudioEl || shadowingActive) return;
       const t = trackAudioEl.currentTime;
       if (forward) {
         const next = chunkStarts.find((s) => s > t + 0.15);
@@ -707,7 +686,10 @@ export async function renderReader(host, bookId, kind = 'book') {
     const words = [...doc.querySelectorAll('.hoerenWord[data-start]')];
     if (!words.length || !trackAudioEl) return;
     trackAudioEl.addEventListener('timeupdate', () => {
-      if (!trackAudioEl) return;
+      // Shadowing mode swaps trackAudioEl's src to a differently-timed
+      // rendered track (see toggleShadowing) - these word timestamps are
+      // only valid against the page's own original narration.
+      if (!trackAudioEl || shadowingActive) return;
       const t = trackAudioEl.currentTime;
       const current = words.find((w) => t >= Number(w.dataset.start) && t < Number(w.dataset.end));
       if (current === hoerenCurrentWordEl) return;

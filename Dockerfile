@@ -37,7 +37,10 @@ WORKDIR /app
 # model files (from Hugging Face) are downloaded lazily on first use into the
 # persisted data volume - see server/src/tts.js - so a flaky/blocked Hugging
 # Face connection at build time can't break the image build.
-RUN apt-get update && apt-get install -y --no-install-recommends python3 python3-pip && rm -rf /var/lib/apt/lists/* \
+#
+# ffmpeg for shadowingAudioBuilder.js (also spawned as a child process) -
+# builds the real pre-rendered Shadowing-practice MP3 per course page.
+RUN apt-get update && apt-get install -y --no-install-recommends python3 python3-pip ffmpeg && rm -rf /var/lib/apt/lists/* \
   && pip install --break-system-packages --no-cache-dir piper-tts
 
 COPY --from=build /app/node_modules ./node_modules

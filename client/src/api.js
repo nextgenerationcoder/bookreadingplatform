@@ -128,6 +128,11 @@ export const api = {
   coursePageViewUrl: (courseId, pageNumber) => `/api/courses/${courseId}/pages/${pageNumber}/view`,
   coursePageAudioUrl: (courseId, pageNumber) => `/api/courses/${courseId}/pages/${pageNumber}/audio`,
   getCourseShadowingChunks: (courseId, pageNumber) => get(`/api/courses/${courseId}/pages/${pageNumber}/shadowing-chunks`),
+  // No fetch wrapper needed - handed straight to an <audio> element's src,
+  // same as coursePageAudioUrl above. The first load can be slow (the
+  // server renders it on a cache miss - see shadowingAudioBuilder.js);
+  // every load after that is instant.
+  courseShadowingAudioUrl: (courseId, pageNumber) => `/api/courses/${courseId}/pages/${pageNumber}/shadowing-audio`,
   uploadCoursePageAudio: (courseId, pageNumber, file) => {
     const fd = new FormData();
     fd.append('file', file);

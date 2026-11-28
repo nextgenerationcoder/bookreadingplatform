@@ -229,6 +229,18 @@ if (!coursePageColumns.includes('audio')) {
 if (!coursePageColumns.includes('shadowing_chunks')) {
   db.exec('ALTER TABLE course_pages ADD COLUMN shadowing_chunks TEXT');
 }
+// The actual pre-rendered Shadowing-practice MP3 for this page - real
+// silence and (for a too-short chunk) real time-stretched speech baked
+// into the audio itself via ffmpeg (see shadowingAudioBuilder.js, a direct
+// port of the user's own shadowing_pipeline.py), not just a live pause
+// computed while the original narration track plays. Computed once the
+// same way shadowing_chunks is (an account's own BYO Groq key, first
+// learner to open Shadowing for this page pays the one-time cost), then
+// served to everyone after that - same caching idea, separate column since
+// this is real audio bytes, not JSON.
+if (!coursePageColumns.includes('shadowing_audio')) {
+  db.exec('ALTER TABLE course_pages ADD COLUMN shadowing_audio BLOB');
+}
 
 // Freely-placed notes a learner adds anywhere in an HTML course page via
 // right-click -> "Notiz" - same feature and same block_index/char_offset

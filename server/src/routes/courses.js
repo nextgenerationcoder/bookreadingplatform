@@ -16,6 +16,8 @@ import {
   setCoursePageAudio,
   getCoursePageShadowingChunks,
   setCoursePageShadowingChunks,
+  getCoursePageShadowingAudio,
+  setCoursePageShadowingAudio,
   listCoursePageNotes,
   createCoursePageNote,
   updateCoursePageNoteText,
@@ -25,6 +27,7 @@ import { db } from '../db.js';
 import { decrypt } from '../crypto.js';
 import { transcribeWithWordTimestamps } from '../asr.js';
 import { groupWordsIntoChunks } from '../shadowingChunker.js';
+import { buildShadowingAudio } from '../shadowingAudioBuilder.js';
 
 const router = Router();
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
@@ -154,14 +157,10 @@ router.post('/:courseId/pages/:pageNumber/audio', audioUpload.single('file'), (r
   }
 });
 
-// GET /api/courses/:courseId/pages/:pageNumber/audio — the narration track,
-// with HTTP Range support so the player (an <audio> element) can seek
-// without re-downloading everything before that point.
-router.get('/:courseId/pages/:pageNumber/audio', (req, res) => {
-  const pageNumber = Number(req.params.pageNumber);
-  const buffer = getCoursePageAudio(req.params.courseId, pageNumber);
-  if (!buffer) return res.status(404).send('Not found');
-
+// Shared by both GET audio routes below (narration + Shadowing-practice) -
+// serves `buffer` as audio/mpeg with HTTP Range support so an <audio>
+// element can seek without re-downloading everything before that point.
+function sendAudioBuffer(req, res, buffer) {
   res.setHeader('Content-Type', 'audio/mpeg');
   res.setHeader('Accept-Ranges', 'bytes');
 
@@ -183,6 +182,16 @@ router.get('/:courseId/pages/:pageNumber/audio', (req, res) => {
 
   res.setHeader('Content-Length', buffer.length);
   res.end(buffer);
+}
+
+// GET /api/courses/:courseId/pages/:pageNumber/audio — the narration track,
+// with HTTP Range support so the player (an <audio> element) can seek
+// without re-downloading everything before that point.
+router.get('/:courseId/pages/:pageNumber/audio', (req, res) => {
+  const pageNumber = Number(req.params.pageNumber);
+  const buffer = getCoursePageAudio(req.params.courseId, pageNumber);
+  if (!buffer) return res.status(404).send('Not found');
+  sendAudioBuffer(req, res, buffer);
 });
 
 // GET /api/courses/:courseId/pages/:pageNumber/shadowing-chunks - small
@@ -193,36 +202,77 @@ router.get('/:courseId/pages/:pageNumber/audio', (req, res) => {
 // cache miss, using whichever account happens to request it first their
 // own Groq key (the same one the mic button already uses), same BYO-key
 // convention as the rest of the app's AI features.
-router.get('/:courseId/pages/:pageNumber/shadowing-chunks', async (req, res) => {
-  const pageNumber = Number(req.params.pageNumber);
-  const cached = getCoursePageShadowingChunks(req.params.courseId, pageNumber);
-  if (cached) return res.json({ chunks: cached });
-
-  const buffer = getCoursePageAudio(req.params.courseId, pageNumber);
-  if (!buffer) return res.status(404).json({ error: 'this page has no narration track' });
+// Shared by both Shadowing routes below: the page's own cached chunks, or
+// transcribes-and-caches on a miss using the REQUESTING account's own Groq
+// key (same BYO-key convention as the rest of the app's AI features) -
+// `buffer` is the page's narration audio, already confirmed to exist by
+// the caller. Returns `{ chunks }` on success, or `{ error, status }`.
+async function getOrComputeShadowingChunks(req, courseId, pageNumber, buffer) {
+  const cached = getCoursePageShadowingChunks(courseId, pageNumber);
+  if (cached) return { chunks: cached };
 
   const row = db.prepare('SELECT asr_provider, asr_api_key_enc FROM users WHERE id = ?').get(req.userId);
   const provider = row?.asr_provider || 'groq';
   if (!row?.asr_api_key_enc) {
-    return res.status(400).json({ error: 'Add a Groq API key in Settings to use shadowing mode.' });
+    return { error: 'Add a Groq API key in Settings to use shadowing mode.', status: 400 };
   }
 
   let apiKey;
   try {
     apiKey = await decrypt(row.asr_api_key_enc);
   } catch (err) {
-    console.error('shadowing-chunks: failed to decrypt Groq API key:', err);
-    return res.status(500).json({ error: 'Failed to read your Groq API key — try re-saving it in Settings.' });
+    console.error('shadowing: failed to decrypt Groq API key:', err);
+    return { error: 'Failed to read your Groq API key — try re-saving it in Settings.', status: 500 };
   }
 
   try {
     const words = await transcribeWithWordTimestamps({ provider, apiKey, audioBuffer: buffer, mimeType: 'audio/mpeg' });
     const chunks = groupWordsIntoChunks(words);
-    setCoursePageShadowingChunks(req.params.courseId, pageNumber, chunks);
-    res.json({ chunks });
+    setCoursePageShadowingChunks(courseId, pageNumber, chunks);
+    return { chunks };
   } catch (err) {
-    console.error('shadowing-chunks: transcription failed:', err);
-    res.status(502).json({ error: err.message });
+    console.error('shadowing: transcription failed:', err);
+    return { error: err.message, status: 502 };
+  }
+}
+
+router.get('/:courseId/pages/:pageNumber/shadowing-chunks', async (req, res) => {
+  const pageNumber = Number(req.params.pageNumber);
+  const buffer = getCoursePageAudio(req.params.courseId, pageNumber);
+  if (!buffer) return res.status(404).json({ error: 'this page has no narration track' });
+
+  const result = await getOrComputeShadowingChunks(req, req.params.courseId, pageNumber, buffer);
+  if (result.error) return res.status(result.status).json({ error: result.error });
+  res.json({ chunks: result.chunks });
+});
+
+// GET /api/courses/:courseId/pages/:pageNumber/shadowing-audio - the real,
+// pre-rendered Shadowing-practice MP3 (see shadowingAudioBuilder.js): real
+// silence and real time-stretched speech baked into the audio itself,
+// rather than the original track with pauses computed live client-side.
+// Cached in course_pages.shadowing_audio once rendered (same
+// cache-once-serve-everyone idea as shadowing-chunks) - building it is
+// the slow part (one ffmpeg invocation per chunk plus a final concat), so
+// this can take a while on the very first request for a page; every
+// request after that is instant.
+router.get('/:courseId/pages/:pageNumber/shadowing-audio', async (req, res) => {
+  const pageNumber = Number(req.params.pageNumber);
+  const cachedAudio = getCoursePageShadowingAudio(req.params.courseId, pageNumber);
+  if (cachedAudio) return sendAudioBuffer(req, res, cachedAudio);
+
+  const buffer = getCoursePageAudio(req.params.courseId, pageNumber);
+  if (!buffer) return res.status(404).json({ error: 'this page has no narration track' });
+
+  const result = await getOrComputeShadowingChunks(req, req.params.courseId, pageNumber, buffer);
+  if (result.error) return res.status(result.status).json({ error: result.error });
+
+  try {
+    const rendered = await buildShadowingAudio(buffer, result.chunks);
+    setCoursePageShadowingAudio(req.params.courseId, pageNumber, rendered);
+    sendAudioBuffer(req, res, rendered);
+  } catch (err) {
+    console.error('shadowing-audio: render failed:', err);
+    res.status(502).json({ error: `Could not build the shadowing track: ${err.message}` });
   }
 });
 
