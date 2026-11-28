@@ -340,19 +340,24 @@ async function seedSprechenB1Audio() {
 // The first real Hören lesson (Lektion 2, Aufgabe 3 - see
 // server/src/hoerenChunker.js for how its word-timing/chunk data got baked
 // straight into the HTML as data-start/data-end attributes, no separate DB
-// column needed). Gated on the placeholder's own Persian "no content yet"
-// text still being there (not on the course not existing at all, like
-// seedSprechenB1Teil1 - b1-hoeren already exists from seedB1SkillSections'
-// placeholder) - so a real lesson a user has since replaced or added to
-// never gets silently overwritten by a later deploy, same spirit as every
-// other guard in this file.
+// column needed). Unlike every other seed function here, this one keeps
+// SYNCING the checked-in file on every boot (skipping only once the DB
+// already has byte-for-byte this exact HTML) rather than seeding once and
+// never touching it again - this one lesson is still under active
+// development (a real bug - doubled spacing at chunk boundaries - was
+// already found and fixed once after the first deploy), so the checked-in
+// file staying the source of truth is more useful right now than the
+// "never clobber a user's own edit" guarantee every other seed gives. Once
+// this lesson is stable, this should go back to a seed-once guard like the
+// rest, or page 1 risks being overwritten if someone edits it by hand
+// in-app.
 async function seedHoerenB1Lektion2Aufgabe3() {
   const page = db
     .prepare(
       `SELECT html FROM course_pages WHERE course_id = 'b1-hoeren' AND page_number = 1`
     )
     .get();
-  if (!page || !page.html || !page.html.includes('هنوز محتوایی ندارد')) return;
+  if (!page) return; // course/page don't exist yet - seedB1SkillSections runs first and creates it
 
   let html;
   try {
@@ -361,6 +366,7 @@ async function seedHoerenB1Lektion2Aufgabe3() {
     if (err.code === 'ENOENT') return;
     throw err;
   }
+  if (page.html === html) return;
   addHtmlPageToCourse('b1-hoeren', { pageNumber: 1, chapter: 'Lektion 2', html });
 
   try {
