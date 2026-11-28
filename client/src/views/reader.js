@@ -11,11 +11,9 @@ const NO_GLOSS = 'Not yet in the dictionary.';
 // kind: 'book' (default) or 'course' - courses live in their own tables
 // server-side but read identically (word clicks/progress/TTS/dictionary all
 // key off the same generic content id either way).
-export async function renderReader(host, bookId, kind = 'book') {
+export async function renderReader(host, bookId, kind = 'book', initialPageNumber) {
   const isCourse = kind === 'course';
   const getContent = isCourse ? api.getCourse : api.getBook;
-  const backHref = isCourse ? '#/courses' : '#/';
-  const backLabel = isCourse ? '← Courses' : '← Library';
   const editPageBase = isCourse ? `#/course/${encodeURIComponent(bookId)}` : `#/book/${encodeURIComponent(bookId)}`;
 
   host.innerHTML = '<div class="loading">Loading…</div>';
@@ -45,6 +43,16 @@ export async function renderReader(host, bookId, kind = 'book') {
     return;
   }
 
+  // A course with more than one page goes back to the lesson picker (see
+  // courseLessons.js), not straight to the flat course list - matches
+  // renderCourseCard's own link into this same multi-page course.
+  const backHref = isCourse
+    ? book.pages.length > 1
+      ? `#/course/${encodeURIComponent(bookId)}/lessons`
+      : '#/courses'
+    : '#/';
+  const backLabel = isCourse ? (book.pages.length > 1 ? '← Lessons' : '← Courses') : '← Library';
+
   let pageIndex = 0;
   // Reset per page (in renderPage()). wordIndexCounter gives every .word
   // span on the page a stable left-to-right position; lastCommittedIndex
@@ -54,14 +62,22 @@ export async function renderReader(host, bookId, kind = 'book') {
   // covers the tail beyond the last click through the end of the page.
   let wordIndexCounter = 0;
   let lastCommittedIndex = -1;
-  try {
-    const savedProgress = await api.getProgress(bookId).catch(() => null);
-    if (savedProgress?.page) {
-      const idx = book.pages.findIndex((p) => p.page === savedProgress.page);
-      if (idx >= 0) pageIndex = idx;
+  // An explicit ?page=N (from the lesson picker, or a direct link) wins
+  // over resuming saved progress - picking a specific lesson means "take
+  // me there", not "continue where I left off".
+  if (initialPageNumber !== undefined) {
+    const idx = book.pages.findIndex((p) => p.page === initialPageNumber);
+    if (idx >= 0) pageIndex = idx;
+  } else {
+    try {
+      const savedProgress = await api.getProgress(bookId).catch(() => null);
+      if (savedProgress?.page) {
+        const idx = book.pages.findIndex((p) => p.page === savedProgress.page);
+        if (idx >= 0) pageIndex = idx;
+      }
+    } catch {
+      // ignore, start from page 0
     }
-  } catch {
-    // ignore, start from page 0
   }
 
   function normalize(word) {

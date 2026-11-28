@@ -2,7 +2,7 @@ import './style.css';
 import { api } from './api.js';
 import { renderAuth } from './views/auth.js';
 import { renderLibrary } from './views/library.js';
-import { renderCourseLevels, renderCourseList } from './views/courses.js';
+import { renderCourseLevels, renderCourseList, renderCourseLessons } from './views/courses.js';
 import { renderGrammarList, renderGrammarLesson } from './views/grammar.js';
 import { renderPractice, renderPracticeCourse, loadPracticeLesson } from './views/practice.js';
 import { renderReader } from './views/reader.js';
@@ -80,8 +80,24 @@ function parseRoute() {
   if (courseEditPageMatch) {
     return { view: 'editPage', kind: 'course', bookId: decodeURIComponent(courseEditPageMatch[1]), pageNumber: Number(courseEditPageMatch[2]) };
   }
+  // A course with several distinct lessons (e.g. Hören's own pages, each
+  // a different Lektion/Aufgabe, not just sequential book-style pages)
+  // gets a picker instead of dropping straight into page 1 - see
+  // courseLessons.js and renderCourseCard's own link to this route.
+  const courseLessonsMatch = hash.match(/^\/course\/([^/]+)\/lessons$/);
+  if (courseLessonsMatch) return { view: 'courseLessons', bookId: decodeURIComponent(courseLessonsMatch[1]) };
   const courseMatch = hash.match(/^\/course\/([^/]+)$/);
-  if (courseMatch) return { view: 'reader', kind: 'course', bookId: decodeURIComponent(courseMatch[1]) };
+  if (courseMatch) {
+    // ?page=N (from the lesson picker, or a direct link) jumps straight to
+    // that page instead of resuming saved progress / starting at page 1.
+    const pageParam = new URLSearchParams(query).get('page');
+    return {
+      view: 'reader',
+      kind: 'course',
+      bookId: decodeURIComponent(courseMatch[1]),
+      pageNumber: pageParam ? Number(pageParam) : undefined,
+    };
+  }
 
   // "Interview" section (formerly "Learning") - a list of lessons instead
   // of the old single-lesson shortcut, now that more than one exists.
@@ -269,7 +285,9 @@ async function route() {
     const contentHost = await renderInterviewShell(host, STATIC_INTERVIEW_LESSONS, bookId);
     await renderInterviewLesson(contentHost, bookId);
   } else if (view === 'reader') {
-    await renderReader(host, bookId, kind);
+    await renderReader(host, bookId, kind, pageNumber);
+  } else if (view === 'courseLessons') {
+    await renderCourseLessons(host, bookId);
   } else if (view === 'interview') {
     const contentHost = await renderInterviewShell(host, STATIC_INTERVIEW_LESSONS, null);
     await renderInterviewHome(contentHost, STATIC_INTERVIEW_LESSONS);

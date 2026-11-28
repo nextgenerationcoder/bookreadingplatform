@@ -80,11 +80,55 @@ export async function renderCourseList(host, level) {
   }
 }
 
+// Shown instead of dropping straight into page 1 for any course with more
+// than one page (see renderCourseCard's own link to this route) - each
+// page is its own distinct lesson (Hören's two Lektion/Aufgabe pages,
+// Sprechen's ten topics, ...), not a sequential continuation, so a picker
+// serves a learner better than "Previous/Next" alone.
+export async function renderCourseLessons(host, courseId) {
+  host.innerHTML = '<div class="loading">Loading lessons…</div>';
+
+  let course;
+  try {
+    course = await api.getCourse(courseId);
+  } catch (err) {
+    host.innerHTML = `<div class="error">Failed to load course.<br><small>${err.message}</small></div>`;
+    return;
+  }
+
+  host.innerHTML = `
+    <div class="libraryHeader">
+      <a href="#/courses" class="backLink">← Courses</a>
+      <h1>${escapeHtml(course.title)}</h1>
+    </div>
+    <div class="bookGrid"></div>
+  `;
+
+  const grid = host.querySelector('.bookGrid');
+  for (const page of course.pages) {
+    const card = document.createElement('a');
+    card.className = 'bookCard';
+    card.href = `#/course/${encodeURIComponent(courseId)}?page=${page.page}`;
+    card.innerHTML = `
+      <span class="bookCardTitle">${escapeHtml(page.chapter || `Seite ${page.page}`)}</span>
+      <div class="bookCardMeta">${page.hasAudio ? '🔊 Audio' : ''}</div>
+    `;
+    grid.appendChild(card);
+  }
+}
+
 function renderCourseCard(course) {
   const card = document.createElement('div');
   card.className = 'bookCard';
+  // A course with more than one page gets a lesson picker first (each
+  // page is its own distinct Lektion/topic, not just a sequential
+  // continuation) rather than dropping straight into page 1.
+  const openHref =
+    course.pageCount > 1
+      ? `#/course/${encodeURIComponent(course.id)}/lessons`
+      : `#/course/${encodeURIComponent(course.id)}`;
   card.innerHTML = `
-    <a class="bookCardTitle" href="#/course/${encodeURIComponent(course.id)}">${escapeHtml(course.title)}</a>
+    <a class="bookCardTitle" href="${openHref}">${escapeHtml(course.title)}</a>
     <div class="bookCardMeta">
       ${course.language.source.toUpperCase()} → ${course.language.target.toUpperCase()}
       ${course.pageCount ? `· ${course.pageCount} pages (${course.firstPage}–${course.lastPage})` : ''}
