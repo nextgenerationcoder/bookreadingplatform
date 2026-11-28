@@ -362,8 +362,9 @@ async function seedSprechenB1Audio() {
 // it's built), can be left unset: the lesson then uses `audioFile` for
 // both normal playback AND Shadowing, same single track either way.
 const HOEREN_B1_LESSONS = [
-  { pageNumber: 1, chapter: 'Lektion 2', htmlFile: 'lektion2-aufgabe3.html', audioFile: 'lektion2-aufgabe3.mp3', shadowingAudioFile: 'lektion2-aufgabe3-shadowing.mp3' },
-  { pageNumber: 2, chapter: 'Lektion 1', htmlFile: 'lektion1-aufgabe23.html', audioFile: 'lektion1-aufgabe23.mp3' },
+  { pageNumber: 1, chapter: 'Lektion 2 (Aufgabe 3)', htmlFile: 'lektion2-aufgabe3.html', audioFile: 'lektion2-aufgabe3.mp3', shadowingAudioFile: 'lektion2-aufgabe3-shadowing.mp3' },
+  { pageNumber: 2, chapter: 'Lektion 1 A (Aufgabe 2+3)', htmlFile: 'lektion1-aufgabe23.html', audioFile: 'lektion1-aufgabe23.mp3' },
+  { pageNumber: 3, chapter: 'Lektion 1 C (Aufgabe 6+7)', htmlFile: 'lektion1-aufgabe67.html', audioFile: 'lektion1-aufgabe67.mp3' },
 ];
 
 async function seedHoerenB1Lessons() {
@@ -374,8 +375,8 @@ async function seedHoerenB1Lessons() {
     // lesson number) gets created fresh here, not skipped - only the
     // COURSE itself needs to already exist, each individual page doesn't.
     const page = db
-      .prepare('SELECT html, audio FROM course_pages WHERE course_id = ? AND page_number = ?')
-      .get('b1-hoeren', lesson.pageNumber) || { html: null, audio: null };
+      .prepare('SELECT html, audio, chapter FROM course_pages WHERE course_id = ? AND page_number = ?')
+      .get('b1-hoeren', lesson.pageNumber) || { html: null, audio: null, chapter: null };
 
     let html;
     try {
@@ -389,7 +390,7 @@ async function seedHoerenB1Lessons() {
     // unrelated change to the other too (this happened once already, for
     // Lektion 2's own audio - the first upload carried all 3 textbook
     // exercises, not only Aufgabe 3).
-    if (page.html !== html) {
+    if (page.html !== html || page.chapter !== lesson.chapter) {
       addHtmlPageToCourse('b1-hoeren', { pageNumber: lesson.pageNumber, chapter: lesson.chapter, html });
       console.log(`Synced "Hören" (b1-hoeren) page ${lesson.pageNumber} HTML.`);
     }
