@@ -1,28 +1,18 @@
-// Groups a flat list of ASR word-timestamps (see asr.js's
-// transcribeWithWordTimestamps) into small listen-then-repeat chunks for
-// shadowing practice. A chunk breaks either at a natural pause in the
-// speech (a real gap between two words' timestamps, not an arbitrary
-// fixed duration) or after `maxWords`, whichever comes first - so a chunk
-// never cuts a word in half, and a long clause without a pause still gets
-// split to a manageable size instead of becoming one giant chunk.
-export function groupWordsIntoChunks(words, { maxWords = 3, pauseThreshold = 0.4 } = {}) {
-  const chunks = [];
-  let current = [];
+// Chunking for Shadowing mode (listen-then-repeat drill) - ported exactly
+// from the user's own shadowing_pipeline.py: split on punctuation (,/.
+// only - NOT ?/!, matching that script precisely), then merge any chunk
+// under 3.5s into its neighbor, repeatedly, as long as the combined
+// duration stays at or under 5.0s. A chunk that can't be merged without
+// busting that cap is kept exactly as-is, never dropped.
+//
+// Different goal from hoerenChunker.js's buildHoerenChunks: that one makes
+// clause/sentence-sized chunks (~4s, header/filler-aware) for listening-
+// along navigation on a Hören page. This one makes short, phrase-sized
+// chunks a learner can realistically repeat out loud in the pause that
+// follows (see reader.js's playShadowingChunk for how that pause itself is
+// sized, per shadowing_pipeline.py's own "slowed duration" floor).
+import { chunkByPunctuation, mergeShortChunks } from './chunkingCore.js';
 
-  for (let i = 0; i < words.length; i++) {
-    current.push(words[i]);
-    const next = words[i + 1];
-    const gap = next ? next.start - words[i].end : Infinity;
-    const shouldBreak = current.length >= maxWords || gap >= pauseThreshold || !next;
-    if (shouldBreak) {
-      chunks.push({
-        start: current[0].start,
-        end: current[current.length - 1].end,
-        text: current.map((w) => w.word).join(' ').trim(),
-      });
-      current = [];
-    }
-  }
-
-  return chunks;
+export function groupWordsIntoChunks(words, { mergeBelow = 3.5, hardCap = 5.0 } = {}) {
+  return mergeShortChunks(chunkByPunctuation(words), { mergeBelow, hardCap });
 }

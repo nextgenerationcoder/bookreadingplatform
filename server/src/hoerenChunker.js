@@ -5,10 +5,16 @@
 // chunk" seeking), not an actual re-encoded MP3.
 //
 // Different goal from shadowingChunker.js's groupWordsIntoChunks: that one
-// makes tiny 2-3-word chunks for a listen-then-repeat drill. This one
-// makes clause/sentence-sized chunks (targeting ~4s, never below the
-// punctuation boundaries that make a chunk a complete thought) for
-// listening-along navigation on a Hören page.
+// makes tiny phrase-sized chunks for a listen-then-repeat drill (merge
+// below 3.5s/cap 5.0s, split only on ,/. - see its own comment for why not
+// ?/!). This one makes clause/sentence-sized chunks (targeting ~4s, never
+// below the punctuation boundaries that make a chunk a complete thought)
+// for listening-along navigation on a Hören page - same shared
+// chunkByPunctuation/mergeShortChunks core (chunkingCore.js), just this
+// caller's own regex (plus ?/!, a real bug this page's own dialogue
+// exposed - see removeFillerChunk/chunkByPunctuation's history) and
+// thresholds (merge below 3s/cap 6s).
+import { chunkByPunctuation as coreChunkByPunctuation, mergeShortChunks as coreMergeShortChunks } from './chunkingCore.js';
 
 const HEADER_WORDS = new Set(['b.', 'aufgabe', 'kursbuch', 'lektion', 'übung', 'track', 'und', 'starten', 'wir']);
 
@@ -34,31 +40,18 @@ export function removeHeader(words) {
   return words.slice(headerEnd);
 }
 
-// Splits the word list into segments at any word ending in a comma or
-// period - the natural "complete clause" boundaries a listener's ear
-// (and a chunk-by-chunk navigation UI) actually wants, rather than an
-// arbitrary word count or duration.
+// Splits the word list into segments at any word ending in a comma,
+// period, question mark or exclamation mark - the natural "complete
+// clause" boundaries a listener's ear (and a chunk-by-chunk navigation UI)
+// actually wants, rather than an arbitrary word count or duration. ?/! end
+// a clause just as much as ,/. do - a lot of real dialogue ("Lust?", "Du?")
+// would otherwise never split at all, running straight on until the next
+// comma, however much that is (shadowingChunker.js's own chunker, over in
+// chunkingCore.js, splits on ,/. only, matching shadowing_pipeline.py
+// exactly - this extra pair is specific to Hören's own clause-navigation
+// use, not a correction to that script).
 export function chunkByPunctuation(words) {
-  if (!words.length) return [];
-  const chunks = [];
-  let segStart = words[0].start;
-  let segWords = [];
-
-  for (const w of words) {
-    segWords.push(w);
-    // ?/! end a clause just as much as ,/. do - a lot of real dialogue
-    // ("Lust?", "Du?") would otherwise never split at all, running
-    // straight on until the next comma, however much that is.
-    if (/[,.?!]/.test(w.word)) {
-      chunks.push({ start: segStart, end: w.end, text: segWords.map((x) => x.word).join(' ') });
-      segStart = w.end;
-      segWords = [];
-    }
-  }
-  if (segWords.length) {
-    chunks.push({ start: segStart, end: segWords[segWords.length - 1].end, text: segWords.map((x) => x.word).join(' ') });
-  }
-  return chunks;
+  return coreChunkByPunctuation(words, /[,.?!]/);
 }
 
 // A short filler ("So," "Gut,") sitting right after a long silence, before
@@ -96,25 +89,12 @@ export function removeFillerChunk(chunks, { minGapAfter = 0.3 } = {}) {
 // until every chunk is either long enough or merging further would cross
 // `hardCap` - punctuation gives natural phrase boundaries, but a lot of
 // short interjections ("Ja." "Okay." "Hallo.") would otherwise flash by
-// too fast to be useful navigation points on their own.
+// too fast to be useful navigation points on their own. Hören's own
+// defaults (merge below 3s, cap 6s - centered on the user's stated ~4s
+// ideal) differ from shadowingChunker.js's (3.5s/5.0s), hence the
+// override here rather than just re-exporting chunkingCore.js's defaults.
 export function mergeShortChunks(chunks, { mergeBelow = 3, hardCap = 6 } = {}) {
-  const merged = [];
-  let i = 0;
-  while (i < chunks.length) {
-    let cur = { ...chunks[i] };
-    let curDur = cur.end - cur.start;
-
-    while (curDur < mergeBelow && i + 1 < chunks.length) {
-      const candidateDur = chunks[i + 1].end - cur.start;
-      if (candidateDur > hardCap) break;
-      cur = { start: cur.start, end: chunks[i + 1].end, text: `${cur.text} ${chunks[i + 1].text}` };
-      curDur = candidateDur;
-      i += 1;
-    }
-    merged.push(cur);
-    i += 1;
-  }
-  return merged;
+  return coreMergeShortChunks(chunks, { mergeBelow, hardCap });
 }
 
 // The full pipeline: header -> punctuation chunks -> drop a leading filler

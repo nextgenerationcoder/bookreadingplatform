@@ -334,7 +334,17 @@ export async function renderReader(host, bookId, kind = 'book') {
       trackAudioEl.removeEventListener('timeupdate', shadowingBoundaryHandler);
       trackAudioEl.pause();
       shadowingStatus.textContent = `Your turn… (${index + 1} / ${chunks.length})`;
-      const pauseMs = (chunk.end - chunk.start) * 1.2 * 1000;
+      // Per shadowing_pipeline.py's own formula: slowed duration = max(real
+      // speech duration, 1.5s), pause = slowed * 1.2 - a chunk shorter than
+      // 1.5s (e.g. a bare "Ja.") still gets a real repeat-it-out-loud pause
+      // sized off that 1.5s floor, not off its own near-instant duration.
+      // The script also time-stretches the chunk's own audio up to that
+      // floor before playing it; a plain <audio> element re-pitching
+      // playback live isn't worth the complexity here, so only the pause
+      // length picks up the floor, not the chunk's own playback speed.
+      const speechDuration = chunk.end - chunk.start;
+      const slowedDuration = Math.max(speechDuration, 1.5);
+      const pauseMs = slowedDuration * 1.2 * 1000;
       shadowingAdvanceTimer = setTimeout(() => playShadowingChunk(chunks, index + 1), pauseMs);
     };
     trackAudioEl.addEventListener('timeupdate', shadowingBoundaryHandler);
