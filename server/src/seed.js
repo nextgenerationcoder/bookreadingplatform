@@ -8,7 +8,12 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { db } from './db.js';
 import { parseBookText, saveImportedBook } from './bookImporter.js';
-import { createCourseFromHtml, addHtmlPageToCourse, setCoursePageAudio } from './courseImporter.js';
+import {
+  createCourseFromHtml,
+  addHtmlPageToCourse,
+  setCoursePageAudio,
+  setCoursePageShadowingAudio,
+} from './courseImporter.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const SEED_DICTIONARY = path.join(__dirname, '..', 'data', 'dictionary.seed.json');
@@ -384,6 +389,29 @@ async function seedHoerenB1Lektion2Aufgabe3() {
   if (audio && (!page.audio || !audio.equals(page.audio))) {
     setCoursePageAudio('b1-hoeren', 1, audio);
     console.log('Synced "Hören" (b1-hoeren) page 1 audio.');
+  }
+
+  // The real, pre-rendered Shadowing-practice MP3 - built by the user's
+  // own shadowing_pipeline.py (real silence + real time-stretched short
+  // chunks baked in via ffmpeg) rather than computed here, so Shadowing
+  // works without needing anyone's live Groq key for this one lesson.
+  // Read fresh (not from the `page` snapshot above) since setCoursePageAudio
+  // just now may have cleared this column as a side effect of the
+  // narration sync right above.
+  let shadowingAudio = null;
+  try {
+    shadowingAudio = await fs.readFile(path.join(HOEREN_B1_DIR, 'audio', 'lektion2-aufgabe3-shadowing.mp3'));
+  } catch (err) {
+    if (err.code !== 'ENOENT') throw err;
+  }
+  if (shadowingAudio) {
+    const current = db
+      .prepare(`SELECT shadowing_audio FROM course_pages WHERE course_id = 'b1-hoeren' AND page_number = 1`)
+      .get();
+    if (!current.shadowing_audio || !shadowingAudio.equals(current.shadowing_audio)) {
+      setCoursePageShadowingAudio('b1-hoeren', 1, shadowingAudio);
+      console.log('Synced "Hören" (b1-hoeren) page 1 Shadowing-practice audio.');
+    }
   }
 }
 

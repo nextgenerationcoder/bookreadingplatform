@@ -684,14 +684,21 @@ export async function renderReader(host, bookId, kind = 'book') {
     nextChunkBtn.onclick = () => seekToChunk(true);
 
     const words = [...doc.querySelectorAll('.hoerenWord[data-start]')];
+    // Shadowing's own rendered practice track has different per-word
+    // timing than the original narration (pauses/slowed segments are
+    // baked in) - a page built with that alignment data carries a second,
+    // parallel set of data-shadow-start/data-shadow-end attributes (not
+    // every word necessarily has one - a handful can fail to align
+    // between two separate transcription runs; those just never
+    // highlight during Shadowing, every other word still does).
+    const shadowWords = words.filter((w) => w.dataset.shadowStart !== undefined);
     if (!words.length || !trackAudioEl) return;
     trackAudioEl.addEventListener('timeupdate', () => {
-      // Shadowing mode swaps trackAudioEl's src to a differently-timed
-      // rendered track (see toggleShadowing) - these word timestamps are
-      // only valid against the page's own original narration.
-      if (!trackAudioEl || shadowingActive) return;
+      if (!trackAudioEl) return;
       const t = trackAudioEl.currentTime;
-      const current = words.find((w) => t >= Number(w.dataset.start) && t < Number(w.dataset.end));
+      const current = shadowingActive
+        ? shadowWords.find((w) => t >= Number(w.dataset.shadowStart) && t < Number(w.dataset.shadowEnd))
+        : words.find((w) => t >= Number(w.dataset.start) && t < Number(w.dataset.end));
       if (current === hoerenCurrentWordEl) return;
       hoerenCurrentWordEl?.classList.remove('hoerenCurrentWord');
       current?.classList.add('hoerenCurrentWord');
