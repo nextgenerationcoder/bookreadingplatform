@@ -342,75 +342,91 @@ async function seedSprechenB1Audio() {
   }
 }
 
-// The first real Hören lesson (Lektion 2, Aufgabe 3 - see
-// server/src/hoerenChunker.js for how its word-timing/chunk data got baked
-// straight into the HTML as data-start/data-end attributes, no separate DB
-// column needed). Unlike every other seed function here, this one keeps
-// SYNCING the checked-in file on every boot (skipping only once the DB
-// already has byte-for-byte this exact HTML) rather than seeding once and
-// never touching it again - this one lesson is still under active
-// development (a real bug - doubled spacing at chunk boundaries - was
-// already found and fixed once after the first deploy), so the checked-in
-// file staying the source of truth is more useful right now than the
-// "never clobber a user's own edit" guarantee every other seed gives. Once
-// this lesson is stable, this should go back to a seed-once guard like the
-// rest, or page 1 risks being overwritten if someone edits it by hand
-// in-app.
-async function seedHoerenB1Lektion2Aufgabe3() {
-  const page = db
-    .prepare(
-      `SELECT html, audio FROM course_pages WHERE course_id = 'b1-hoeren' AND page_number = 1`
-    )
-    .get();
-  if (!page) return; // course/page don't exist yet - seedB1SkillSections runs first and creates it
+// Real Hören lessons (word-timing/chunk data baked straight into each
+// page's own HTML as data-start/data-end attributes - see
+// server/src/hoerenChunker.js - no separate DB column needed for that
+// part). Unlike every other seed function here, these keep SYNCING their
+// checked-in files on every boot (skipping a file once the DB already has
+// it byte-for-byte) rather than seeding once and never touching it again -
+// these lessons are still under active development (real bugs - doubled
+// spacing, a stale concatenated-MP3 decode error - were already found and
+// fixed after earlier deploys), so the checked-in files staying
+// authoritative is more useful right now than the "never clobber a user's
+// own edit" guarantee every other seed gives. Once a given lesson is
+// stable, it should move to a seed-once guard like the rest, or risks
+// being overwritten if someone edits it by hand in-app.
+//
+// `shadowingAudioFile` is optional and, when a lesson has no separate
+// clean narration track (only the user's own pipeline's already-rendered
+// Shadowing MP3 was provided for it - see Lektion 1's own comment where
+// it's built), can be left unset: the lesson then uses `audioFile` for
+// both normal playback AND Shadowing, same single track either way.
+const HOEREN_B1_LESSONS = [
+  { pageNumber: 1, chapter: 'Lektion 2', htmlFile: 'lektion2-aufgabe3.html', audioFile: 'lektion2-aufgabe3.mp3', shadowingAudioFile: 'lektion2-aufgabe3-shadowing.mp3' },
+  { pageNumber: 2, chapter: 'Lektion 1', htmlFile: 'lektion1-aufgabe23.html', audioFile: 'lektion1-aufgabe23.mp3' },
+];
 
-  let html;
-  try {
-    html = await fs.readFile(path.join(HOEREN_B1_DIR, 'lektion2-aufgabe3.html'), 'utf-8');
-  } catch (err) {
-    if (err.code === 'ENOENT') return;
-    throw err;
-  }
-  // HTML and audio are checked independently (not "does the whole page
-  // match") so trimming just the audio file (as happened once already -
-  // the first upload carried all 3 exercises in this textbook track, not
-  // only Aufgabe 3) re-syncs without needing an unrelated HTML change too.
-  if (page.html !== html) {
-    addHtmlPageToCourse('b1-hoeren', { pageNumber: 1, chapter: 'Lektion 2', html });
-    console.log('Synced "Hören" (b1-hoeren) page 1 HTML.');
-  }
+async function seedHoerenB1Lessons() {
+  if (!db.prepare("SELECT 1 FROM courses WHERE id = 'b1-hoeren'").get()) return; // seedB1SkillSections runs first and creates it
 
-  let audio = null;
-  try {
-    audio = await fs.readFile(path.join(HOEREN_B1_DIR, 'audio', 'lektion2-aufgabe3.mp3'));
-  } catch (err) {
-    if (err.code !== 'ENOENT') throw err;
-  }
-  if (audio && (!page.audio || !audio.equals(page.audio))) {
-    setCoursePageAudio('b1-hoeren', 1, audio);
-    console.log('Synced "Hören" (b1-hoeren) page 1 audio.');
-  }
+  for (const lesson of HOEREN_B1_LESSONS) {
+    // A page this lesson hasn't been added for yet (e.g. a brand new
+    // lesson number) gets created fresh here, not skipped - only the
+    // COURSE itself needs to already exist, each individual page doesn't.
+    const page = db
+      .prepare('SELECT html, audio FROM course_pages WHERE course_id = ? AND page_number = ?')
+      .get('b1-hoeren', lesson.pageNumber) || { html: null, audio: null };
 
-  // The real, pre-rendered Shadowing-practice MP3 - built by the user's
-  // own shadowing_pipeline.py (real silence + real time-stretched short
-  // chunks baked in via ffmpeg) rather than computed here, so Shadowing
-  // works without needing anyone's live Groq key for this one lesson.
-  // Read fresh (not from the `page` snapshot above) since setCoursePageAudio
-  // just now may have cleared this column as a side effect of the
-  // narration sync right above.
-  let shadowingAudio = null;
-  try {
-    shadowingAudio = await fs.readFile(path.join(HOEREN_B1_DIR, 'audio', 'lektion2-aufgabe3-shadowing.mp3'));
-  } catch (err) {
-    if (err.code !== 'ENOENT') throw err;
-  }
-  if (shadowingAudio) {
-    const current = db
-      .prepare(`SELECT shadowing_audio FROM course_pages WHERE course_id = 'b1-hoeren' AND page_number = 1`)
-      .get();
-    if (!current.shadowing_audio || !shadowingAudio.equals(current.shadowing_audio)) {
-      setCoursePageShadowingAudio('b1-hoeren', 1, shadowingAudio);
-      console.log('Synced "Hören" (b1-hoeren) page 1 Shadowing-practice audio.');
+    let html;
+    try {
+      html = await fs.readFile(path.join(HOEREN_B1_DIR, lesson.htmlFile), 'utf-8');
+    } catch (err) {
+      if (err.code === 'ENOENT') continue;
+      throw err;
+    }
+    // HTML and audio are checked independently (not "does the whole page
+    // match") so trimming just one file re-syncs without needing an
+    // unrelated change to the other too (this happened once already, for
+    // Lektion 2's own audio - the first upload carried all 3 textbook
+    // exercises, not only Aufgabe 3).
+    if (page.html !== html) {
+      addHtmlPageToCourse('b1-hoeren', { pageNumber: lesson.pageNumber, chapter: lesson.chapter, html });
+      console.log(`Synced "Hören" (b1-hoeren) page ${lesson.pageNumber} HTML.`);
+    }
+
+    let audio = null;
+    try {
+      audio = await fs.readFile(path.join(HOEREN_B1_DIR, 'audio', lesson.audioFile));
+    } catch (err) {
+      if (err.code !== 'ENOENT') throw err;
+    }
+    if (audio && (!page.audio || !audio.equals(page.audio))) {
+      setCoursePageAudio('b1-hoeren', lesson.pageNumber, audio);
+      console.log(`Synced "Hören" (b1-hoeren) page ${lesson.pageNumber} audio.`);
+    }
+
+    // The real, pre-rendered Shadowing-practice MP3 - built by the user's
+    // own shadowing_pipeline.py (real silence + real time-stretched short
+    // chunks baked in via ffmpeg) rather than computed here, so Shadowing
+    // works without needing anyone's live Groq key. Falls back to the
+    // normal narration file when a lesson has no separate one (see this
+    // list's own comment above). Read fresh (not from the `page` snapshot
+    // above) since setCoursePageAudio just now may have cleared this
+    // column as a side effect of the narration sync right above.
+    let shadowingAudio = null;
+    try {
+      shadowingAudio = await fs.readFile(path.join(HOEREN_B1_DIR, 'audio', lesson.shadowingAudioFile || lesson.audioFile));
+    } catch (err) {
+      if (err.code !== 'ENOENT') throw err;
+    }
+    if (shadowingAudio) {
+      const current = db
+        .prepare('SELECT shadowing_audio FROM course_pages WHERE course_id = ? AND page_number = ?')
+        .get('b1-hoeren', lesson.pageNumber);
+      if (!current.shadowing_audio || !shadowingAudio.equals(current.shadowing_audio)) {
+        setCoursePageShadowingAudio('b1-hoeren', lesson.pageNumber, shadowingAudio);
+        console.log(`Synced "Hören" (b1-hoeren) page ${lesson.pageNumber} Shadowing-practice audio.`);
+      }
     }
   }
 }
@@ -425,5 +441,5 @@ export async function seedIfEmpty() {
   await seedB1SkillSections();
   await seedSprechenB1Teil1();
   await seedSprechenB1Audio();
-  await seedHoerenB1Lektion2Aufgabe3();
+  await seedHoerenB1Lessons();
 }
