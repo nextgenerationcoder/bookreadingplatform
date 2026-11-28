@@ -354,7 +354,7 @@ async function seedSprechenB1Audio() {
 async function seedHoerenB1Lektion2Aufgabe3() {
   const page = db
     .prepare(
-      `SELECT html FROM course_pages WHERE course_id = 'b1-hoeren' AND page_number = 1`
+      `SELECT html, audio FROM course_pages WHERE course_id = 'b1-hoeren' AND page_number = 1`
     )
     .get();
   if (!page) return; // course/page don't exist yet - seedB1SkillSections runs first and creates it
@@ -366,16 +366,25 @@ async function seedHoerenB1Lektion2Aufgabe3() {
     if (err.code === 'ENOENT') return;
     throw err;
   }
-  if (page.html === html) return;
-  addHtmlPageToCourse('b1-hoeren', { pageNumber: 1, chapter: 'Lektion 2', html });
+  // HTML and audio are checked independently (not "does the whole page
+  // match") so trimming just the audio file (as happened once already -
+  // the first upload carried all 3 exercises in this textbook track, not
+  // only Aufgabe 3) re-syncs without needing an unrelated HTML change too.
+  if (page.html !== html) {
+    addHtmlPageToCourse('b1-hoeren', { pageNumber: 1, chapter: 'Lektion 2', html });
+    console.log('Synced "Hören" (b1-hoeren) page 1 HTML.');
+  }
 
+  let audio = null;
   try {
-    const audio = await fs.readFile(path.join(HOEREN_B1_DIR, 'audio', 'lektion2-aufgabe3.mp3'));
-    setCoursePageAudio('b1-hoeren', 1, audio);
+    audio = await fs.readFile(path.join(HOEREN_B1_DIR, 'audio', 'lektion2-aufgabe3.mp3'));
   } catch (err) {
     if (err.code !== 'ENOENT') throw err;
   }
-  console.log('Seeded "Hören" (b1-hoeren) page 1 with Lektion 2, Aufgabe 3.');
+  if (audio && (!page.audio || !audio.equals(page.audio))) {
+    setCoursePageAudio('b1-hoeren', 1, audio);
+    console.log('Synced "Hören" (b1-hoeren) page 1 audio.');
+  }
 }
 
 export async function seedIfEmpty() {
