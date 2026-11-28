@@ -85,8 +85,16 @@ export async function buildShadowingAudio(sourceBuffer, chunks) {
     const listPath = path.join(tmpDir, 'concat.txt');
     await fs.writeFile(listPath, segments.map((s) => `file '${s}'`).join('\n'));
 
+    // Re-encoding here (not "-c copy") matters: each segment/silence file
+    // was encoded separately, with its own internal MP3 headers - a plain
+    // stream-copy concat just pastes those raw byte streams together,
+    // which plenty of decoders tolerate but some mobile browsers' <audio>
+    // elements choke on partway through (confirmed live: playback worked
+    // for the first real chunk, then hit a decode error). Re-encoding
+    // forces ffmpeg to produce one single, internally consistent
+    // bitstream for the whole file instead.
     const outPath = path.join(tmpDir, 'output.mp3');
-    await run('ffmpeg', ['-y', '-f', 'concat', '-safe', '0', '-i', listPath, '-c', 'copy', outPath]);
+    await run('ffmpeg', ['-y', '-f', 'concat', '-safe', '0', '-i', listPath, '-c:a', 'libmp3lame', '-b:a', '128k', outPath]);
 
     return fs.readFile(outPath);
   } finally {
